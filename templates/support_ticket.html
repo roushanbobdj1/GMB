@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} - Support{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .chat-bubble {
+        max-width: 80%;
+        padding: 1rem 1.25rem;
+        border-radius: 16px;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* User Message (Right) */
+    .chat-user {
+        align-self: flex-end;
+        background: var(--primary-gradient);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    /* Admin Message (Left) */
+    .chat-admin {
+        align-self: flex-start;
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+    }
+
+    [data-theme="dark"] .chat-admin {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e2e8f0;
+    }
+
+    .chat-meta {
+        font-size: 0.75rem;
+        opacity: 0.8;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .chat-user .chat-meta {
+        color: rgba(255,255,255,0.9);
+    }
+
+    .chat-admin .chat-meta {
+        color: var(--muted);
+    }
+
+    .chat-text {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+
+    .ticket-header-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        
+        <div class="ticket-header-card">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-secondary">#{{ ticket.id }}</span>
+                        <span class="badge {% if ticket.status == 'Open' %}bg-danger{% elif ticket.status == 'In Progress' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {{ ticket.status }}
+                        </span>
+                    </div>
+                    <h4 class="fw-bold mb-1">{{ ticket.subject }}</h4>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-calendar-alt me-1"></i> Created on {{ ticket.created_at.strftime('%d %b %Y, %I:%M %p') }}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge bg-light text-dark border"><i class="fas fa-tag me-1 text-primary"></i> {{ ticket.category|title }}</span>
+                <span class="badge bg-light text-dark border"><i class="fas fa-flag me-1 text-danger"></i> {{ ticket.priority }} Priority</span>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body p-4">
+                <div class="chat-container" id="chatContainer">
+                    
+                    <div class="chat-bubble chat-user">
+                        <div class="chat-meta">
+                            <i class="fas fa-user"></i> You (Original Message)
+                        </div>
+                        <p class="chat-text">{{ ticket.message }}</p>
+                    </div>
+
+                    {% for reply in ticket.replies %}
+                        {% if reply.is_admin_reply %}
+                        <div class="chat-bubble chat-admin">
+                            <div class="chat-meta">
+                                <i class="fas fa-headset"></i> Support Team &bull; {{ reply.created_at.strftime('%d %b, %H:%M') }}
+                            </div>
+                            <p class="chat-text">{{ reply.message }}</p>
+                        </div>
+                        {% else %}
+                        <div class="chat-bubble chat-user">
+                            <div class="chat-meta">
+                                <i class="fas fa-user"></i> You &bull; {{ reply.created_at.strftime('%d %b, %H:%M') }}
+                            </div>
+                            <p class="chat-text">{{ reply.message }}</p>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                </div>
+            </div>
+        </div>
+
+        {% if ticket.status != 'Closed' %}
+        <div class="card">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-reply me-2"></i> Add a Reply</h6>
+                <form id="replyForm">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="replyMessage" rows="4" placeholder="Type your message here..." required minlength="5"></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary" id="replyBtn">
+                            <i class="fas fa-paper-plane me-1"></i> Send Reply
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary text-center">
+            <i class="fas fa-lock me-2"></i> This ticket has been closed. You cannot add new replies.
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Scroll chat to bottom initially
+        const chatContainer = document.getElementById('chatContainer');
+        if(chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // ✅ Live chat: join this ticket's room and show admin replies instantly
+        if (window.gmbSocket) {
+            var ticketIdLive = {{ ticket.id }};
+            window.gmbSocket.emit('join_ticket', { ticket_id: ticketIdLive });
+            window.gmbSocket.on('ticket_reply', function (data) {
+                if (parseInt(data.ticket_id, 10) !== ticketIdLive) return;
+                if (data.is_admin) {
+                    const bubble = `
+                        <div class="chat-bubble chat-admin" style="animation: slideDown 0.3s ease;">
+                            <div class="chat-meta">
+                                <i class="fas fa-headset"></i> Support Team &bull; Just now
+                            </div>
+                            <p class="chat-text">${data.message}</p>
+                        </div>
+                    `;
+                    chatContainer.insertAdjacentHTML('beforeend', bubble);
+                    chatContainer.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+                    window.showNotification && window.showNotification('💬 New reply from Support Team', 'info');
+                }
+            });
+            window.gmbSocket.on('ticket_status_changed', function (data) {
+                if (parseInt(data.ticket_id, 10) !== ticketIdLive) return;
+                window.showNotification && window.showNotification('Ticket status updated to ' + data.status, 'info');
+                setTimeout(function () { window.location.reload(); }, 1500);
+            });
+        }
+
+        const replyForm = document.getElementById('replyForm');
+        if (replyForm) {
+            replyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const message = document.getElementById('replyMessage').value.trim();
+                const btn = document.getElementById('replyBtn');
+                
+                if (message.length < 5) return;
+
+                // UI loading state
+                const originalBtnText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                btn.disabled = true;
+
+                // Format data for Flask request.form
+                const formData = new URLSearchParams();
+                formData.append('message', message);
+
+                fetch("{{ url_for('reply_ticket', ticket_id=ticket.id) }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Dynamically add the new message to the chat
+                        const newBubble = `
+                            <div class="chat-bubble chat-user" style="animation: slideDown 0.3s ease;">
+                                <div class="chat-meta">
+                                    <i class="fas fa-user"></i> You &bull; Just now
+                                </div>
+                                <p class="chat-text">${message}</p>
+                            </div>
+                        `;
+                        chatContainer.insertAdjacentHTML('beforeend', newBubble);
+                        document.getElementById('replyMessage').value = '';
+                        
+                        // Scroll to new message
+                        chatContainer.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        window.showNotification(data.message || 'Failed to send reply', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    window.showNotification('A network error occurred.', 'error');
+                })
+                .finally(() => {
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

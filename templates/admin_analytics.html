@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - GMB Earn Admin{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    :root {
+        --primary: #0d6efd;
+        --success: #198754;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #0dcaf0;
+        --purple: #6f42c1;
+        --light: #f8f9fa;
+        --dark: #212529;
+    }
+
+    .analytics-card {
+        background: #fff;
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    
+    .analytics-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-pie text-primary"></i> Business Analytics</h2>
+        <button class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="analytics-card">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <p class="stat-label">Total Points Earned (By Users)</p>
+                <h3 class="stat-value">₹ {{ total_earned }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="analytics-card">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <p class="stat-label">Total Points Redeemed (Paid)</p>
+                <h3 class="stat-value">₹ {{ total_redeemed }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="analytics-card">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="fas fa-undo"></i>
+                </div>
+                <p class="stat-label">Total Refunded (Rejected Tasks)</p>
+                <h3 class="stat-value">₹ {{ total_refunded }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="analytics-card">
+                <h5 class="fw-bold mb-1">User Registration Trend</h5>
+                <p class="text-muted small">Last 7 Days</p>
+                <div class="chart-container">
+                    <canvas id="userGrowthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="analytics-card">
+                <h5 class="fw-bold mb-1">Task Status Distribution</h5>
+                <p class="text-muted small">Overall System Tasks</p>
+                <div class="chart-container">
+                    <canvas id="taskStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12">
+            <div class="analytics-card">
+                <h5 class="fw-bold mb-1">Top Performing Campaigns</h5>
+                <p class="text-muted small">Based on completed tasks</p>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="campaignChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. User Growth Line Chart
+        const userCtx = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(userCtx, {
+            type: 'line',
+            data: {
+                labels: {{ dates | tojson }},
+                datasets: [{
+                    label: 'New Users',
+                    data: {{ user_counts | tojson }},
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#0d6efd',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+
+        // 2. Task Status Doughnut Chart
+        const taskCtx = document.getElementById('taskStatusChart').getContext('2d');
+        new Chart(taskCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Approved', 'Pending', 'Rejected'],
+                datasets: [{
+                    data: [{{ approved_tasks }}, {{ pending_tasks }}, {{ rejected_tasks }}],
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // 3. Top Campaigns Bar Chart
+        const campCtx = document.getElementById('campaignChart').getContext('2d');
+        new Chart(campCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ campaign_names | safe }},
+                datasets: [{
+                    label: 'Completed Tasks',
+                    data: {{ campaign_completions | tojson }},
+                    backgroundColor: '#6f42c1',
+                    borderRadius: 6,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+    });
+</script>
+{% endblock %}

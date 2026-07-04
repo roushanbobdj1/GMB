@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - GMB Earn{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lb-hero {
+        background: linear-gradient(135deg, #6f42c1 0%, #0d6efd 100%);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        color: #fff;
+        margin-bottom: 2rem;
+        box-shadow: 0 12px 28px rgba(111, 66, 193, 0.25);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lb-hero::before {
+        content: '';
+        position: absolute;
+        top: -60%;
+        right: -30%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .lb-hero h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: .5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .lb-hero p {
+        opacity: .9;
+        position: relative;
+        z-index: 1;
+    }
+
+    .lb-podium {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .podium-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem 1.25rem;
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        width: 190px;
+    }
+
+    .podium-card.rank-1 {
+        order: 2;
+        transform: scale(1.08);
+        border-top: 4px solid #ffc107;
+    }
+
+    .podium-card.rank-2 {
+        order: 1;
+        border-top: 4px solid #adb5bd;
+    }
+
+    .podium-card.rank-3 {
+        order: 3;
+        border-top: 4px solid #cd7f32;
+    }
+
+    .podium-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto .75rem;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #fff;
+        background: var(--primary-gradient);
+    }
+
+    .podium-card.rank-1 .podium-avatar { background: linear-gradient(135deg,#ffc107,#ff9800); }
+    .podium-card.rank-2 .podium-avatar { background: linear-gradient(135deg,#adb5bd,#6c757d); }
+    .podium-card.rank-3 .podium-avatar { background: linear-gradient(135deg,#cd7f32,#8b5a2b); }
+
+    .podium-rank-badge {
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--muted);
+    }
+
+    .podium-name {
+        font-weight: 700;
+        margin: .35rem 0;
+        color: #2d3748;
+    }
+
+    [data-theme="dark"] .podium-name { color: #e2e8f0; }
+
+    .podium-score {
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    .podium-prize {
+        font-size: .8rem;
+        color: var(--success);
+        margin-top: .35rem;
+    }
+
+    .lb-table-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+
+    .lb-row {
+        display: flex;
+        align-items: center;
+        padding: .9rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        transition: background var(--transition-fast);
+    }
+
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row:hover { background: rgba(13,110,253,0.05); }
+
+    .lb-row.me {
+        background: rgba(13,110,253,0.08);
+        border-left: 3px solid var(--primary);
+    }
+
+    .lb-rank {
+        width: 45px;
+        font-weight: 700;
+        color: var(--muted);
+    }
+
+    .lb-name {
+        flex: 1;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    [data-theme="dark"] .lb-name { color: #e2e8f0; }
+
+    .lb-score {
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .my-rank-banner {
+        background: var(--primary-gradient);
+        color: #fff;
+        border-radius: var(--radius-lg);
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--muted);
+    }
+
+    .podium-tasks {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-top: .25rem;
+    }
+
+    .lb-stat-col {
+        width: 190px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--muted);
+        padding-left: 1rem;
+    }
+
+    .lb-row-header {
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 700;
+        color: var(--muted);
+        background: rgba(0,0,0,0.02);
+    }
+
+    .lb-row-header .lb-stat-col { color: var(--muted); }
+
+    @media (max-width: 576px) {
+        .lb-stat-col { width: auto; text-align: left; font-size: .85rem; }
+        .lb-row { flex-wrap: wrap; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="lb-hero">
+        <h1><i class="fas fa-trophy"></i> {{ settings.title }}</h1>
+        <p>{{ settings.subtitle }}</p>
+    </div>
+
+    {% if my_rank_row %}
+    <div class="my-rank-banner">
+        <div><i class="fas fa-user-check"></i> Your Current Rank: <strong>#{{ my_rank_row.rank }}</strong></div>
+        <div><i class="fas fa-coins"></i> Total Points Earned: <strong>{{ my_rank_row.total_points }}</strong></div>
+        <div><i class="fas fa-check-circle"></i> Tasks Completed: <strong>{{ my_rank_row.total_tasks_completed }}</strong></div>
+    </div>
+    {% endif %}
+
+    {% if rows %}
+    <div class="lb-podium">
+        {% for row in rows[:3] %}
+        <div class="podium-card rank-{{ row.rank }}">
+            <div class="podium-rank-badge">
+                {% if row.rank == 1 %}🥇 1st Place
+                {% elif row.rank == 2 %}🥈 2nd Place
+                {% else %}🥉 3rd Place{% endif %}
+            </div>
+            <div class="podium-avatar">{{ row.display_name[0]|upper if row.display_name else 'U' }}</div>
+            <div class="podium-name">{{ row.display_name }}</div>
+            <div class="podium-score"><i class="fas fa-coins"></i> {{ row.total_points }} Points Earned</div>
+            <div class="podium-tasks"><i class="fas fa-check-circle"></i> {{ row.total_tasks_completed }} Tasks Completed</div>
+            {% if row.rank == 1 and settings.prize_1st %}
+            <div class="podium-prize"><i class="fas fa-gift"></i> {{ settings.prize_1st }}</div>
+            {% elif row.rank == 2 and settings.prize_2nd %}
+            <div class="podium-prize"><i class="fas fa-gift"></i> {{ settings.prize_2nd }}</div>
+            {% elif row.rank == 3 and settings.prize_3rd %}
+            <div class="podium-prize"><i class="fas fa-gift"></i> {{ settings.prize_3rd }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="lb-table-card">
+        <div class="lb-row lb-row-header">
+            <div class="lb-rank">Rank</div>
+            <div class="lb-name">Name</div>
+            <div class="lb-stat-col"><i class="fas fa-coins"></i> Total Points Earned</div>
+            <div class="lb-stat-col"><i class="fas fa-check-circle"></i> Tasks Completed</div>
+        </div>
+        {% for row in rows %}
+        <div class="lb-row {% if my_rank_row and row.user_id == my_rank_row.user_id %}me{% endif %}">
+            <div class="lb-rank">#{{ row.rank }}</div>
+            <div class="lb-name">{{ row.display_name }}</div>
+            <div class="lb-stat-col lb-score">{{ row.total_points }} pts</div>
+            <div class="lb-stat-col">{{ row.total_tasks_completed }} tasks</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="lb-table-card">
+        <div class="empty-state">
+            <i class="fas fa-trophy fa-2x mb-3"></i>
+            <p>The leaderboard is currently empty. Complete tasks and earn points to reach the top!</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

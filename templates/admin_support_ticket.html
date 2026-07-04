@@ -1,0 +1,979 @@
+{% extends "base.html" %}
+
+{% block title %}Support Ticket #{{ ticket.id }} - GMB Earn Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       VARIABLES & GENERAL
+       ============================================ */
+    :root {
+        --primary: #0d6efd;
+        --primary-light: #0dcaf0;
+        --success: #198754;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #0d6efd;
+        --light: #f8f9fa;
+        --muted: #6c757d;
+        --border: #e9ecef;
+        
+        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        
+        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+        
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ============================================
+       PAGE HEADER
+       ============================================ */
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        background: white;
+        color: var(--muted);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 1.5rem;
+        transition: all var(--transition-base);
+    }
+
+    .back-button:hover {
+        background: var(--light);
+        color: #2d3748;
+        border-color: #dee2e6;
+    }
+
+    .ticket-header {
+        margin-bottom: 1rem;
+    }
+
+    .ticket-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .ticket-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .ticket-subtitle {
+        color: var(--muted);
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    /* ============================================
+       CARDS
+       ============================================ */
+    .ticket-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        transition: all var(--transition-base);
+    }
+
+    .ticket-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 1.25rem;
+    }
+
+    .card-header-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+    }
+
+    .card-header-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 1.75rem;
+    }
+
+    /* ============================================
+       USER INFO SECTION
+       ============================================ */
+    .user-info-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .user-info-row:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .info-field {
+        margin-bottom: 1.5rem;
+    }
+
+    .info-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    /* ============================================
+       TICKET MESSAGE
+       ============================================ */
+    .ticket-message {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .ticket-message p {
+        margin: 0;
+        color: #2d3748;
+        line-height: 1.6;
+    }
+
+    /* ============================================
+       CONVERSATION
+       ============================================ */
+    .conversation-container {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .message {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .message:last-child {
+        margin-bottom: 0;
+    }
+
+    .message-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .message-avatar.admin {
+        background: var(--success-gradient);
+    }
+
+    .message-avatar.user {
+        background: var(--primary-gradient);
+    }
+
+    .message-content {
+        flex: 1;
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .message-sender {
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 0.95rem;
+    }
+
+    .message-sender.admin {
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .message-time {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    .message-body {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 1rem;
+    }
+
+    .message-body p {
+        margin: 0;
+        color: #2d3748;
+        line-height: 1.6;
+    }
+
+    /* ============================================
+       REPLY FORM
+       ============================================ */
+    .reply-form {
+        margin-top: 1.75rem;
+    }
+
+    .reply-textarea {
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        padding: 1rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+        transition: all var(--transition-base);
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .reply-textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        outline: none;
+    }
+
+    .reply-textarea::placeholder {
+        color: #adb5bd;
+    }
+
+    .reply-help-text {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+
+    .reply-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+    }
+
+    .btn-reply {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: all var(--transition-base);
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .btn-reply-primary {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+
+    .btn-reply-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.3);
+    }
+
+    /* ============================================
+       QUICK ACTIONS
+       ============================================ */
+    .action-buttons {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .btn-action {
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: all var(--transition-base);
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .btn-action-warning {
+        background: var(--warning-gradient);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+    }
+
+    .btn-action-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-action-info {
+        background: var(--info-gradient);
+        color: white;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+    }
+
+    .btn-action-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-action-secondary {
+        background: white;
+        color: var(--muted);
+        border: 2px solid var(--border);
+    }
+
+    .btn-action-secondary:hover {
+        background: var(--light);
+        color: #2d3748;
+        border-color: #dee2e6;
+    }
+
+    /* ============================================
+       TICKET DETAILS
+       ============================================ */
+    .detail-item {
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .detail-item:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .detail-label {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    /* ============================================
+       BADGES
+       ============================================ */
+    .badge {
+        display: inline-block;
+        padding: 0.5rem 0.875rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .badge-status-open {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
+        color: #842029;
+    }
+
+    .badge-status-progress {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        color: #856404;
+    }
+
+    .badge-status-closed {
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
+        color: #0f5132;
+    }
+
+    .badge-priority-urgent {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
+        color: #842029;
+    }
+
+    .badge-priority-high {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        color: #856404;
+    }
+
+    .badge-priority-normal {
+        background: linear-gradient(135deg, rgba(108, 117, 125, 0.12) 0%, rgba(134, 142, 150, 0.12) 100%);
+        color: #495057;
+    }
+
+    .badge-category {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
+        color: #0d6efd;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 992px) {
+        .ticket-title {
+            font-size: 1.5rem;
+        }
+
+        .col-lg-8,
+        .col-lg-4 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .user-info-row {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .card-body {
+            padding: 1.25rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+        }
+
+        .card-header-title {
+            font-size: 0.9rem;
+        }
+
+        .conversation-container {
+            max-height: 400px;
+        }
+
+        .reply-textarea {
+            min-height: 100px;
+        }
+
+        .action-buttons {
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            padding: 0.65rem 1rem;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .ticket-title {
+            font-size: 1.25rem;
+        }
+
+        .back-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .message {
+            gap: 0.75rem;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+
+        .message-body {
+            padding: 0.75rem;
+        }
+
+        .detail-item {
+            padding-bottom: 1rem;
+        }
+    }
+
+    /* Dark Theme Support */
+    [data-theme="dark"] .ticket-card,
+    [data-theme="dark"] .card-header {
+        background: #2d3748;
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .card-header {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+    }
+
+    [data-theme="dark"] .ticket-title,
+    [data-theme="dark"] .card-header-title,
+    [data-theme="dark"] .info-value,
+    [data-theme="dark"] .detail-value,
+    [data-theme="dark"] .message-sender,
+    [data-theme="dark"] .message-body p {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .ticket-subtitle,
+    [data-theme="dark"] .info-label,
+    [data-theme="dark"] .detail-label,
+    [data-theme="dark"] .message-time,
+    [data-theme="dark"] .reply-help-text {
+        color: #a0aec0;
+    }
+
+    [data-theme="dark"] .ticket-message,
+    [data-theme="dark"] .message-body {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .detail-item,
+    [data-theme="dark"] .user-info-row {
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .reply-textarea {
+        background: #374151;
+        border-color: #4b5563;
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .reply-textarea:focus {
+        background: #374151;
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .btn-action-secondary {
+        background: #374151;
+        color: var(--muted);
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .btn-action-secondary:hover {
+        background: #4b5563;
+        color: #a0aec0;
+    }
+
+    /* Scrollbar for conversation */
+    .conversation-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .conversation-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .conversation-container::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+
+    .conversation-container::-webkit-scrollbar-thumb:hover {
+        background: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 py-lg-5">
+    <!-- Back Button -->
+    <a href="/admin/support" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back to Support
+    </a>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="ticket-header">
+            <h1 class="ticket-title">
+                <i class="fas fa-ticket-alt"></i> Ticket #{{ ticket.id }}
+            </h1>
+            <p class="ticket-subtitle">{{ ticket.subject }}</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- User Information -->
+            <div class="ticket-card mb-4">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-user"></i> User Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="user-info-row">
+                        <div class="info-field">
+                            <div class="info-label">Full Name</div>
+                            <div class="info-value">{{ ticket.user.name }}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="info-label">Email Address</div>
+                            <div class="info-value">{{ ticket.user.email }}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="info-label">Mobile Number</div>
+                            <div class="info-value">{{ ticket.user.mobile or '—' }}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="info-label">Member Since</div>
+                            <div class="info-value">{{ ticket.user.created_at.strftime('%d-%m-%Y') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Message -->
+            <div class="ticket-card mb-4">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-envelope"></i> Ticket Message
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="detail-label">Subject</p>
+                    <p class="detail-value mb-3">{{ ticket.subject }}</p>
+                    <p class="detail-label">Message</p>
+                    <div class="ticket-message">
+                        <p>{{ ticket.message }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation -->
+            <div class="ticket-card mb-4">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-comments"></i> Conversation ({{ ticket.replies|length }} replies)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="conversation-container">
+                        {% if ticket.replies %}
+                            {% for reply in ticket.replies %}
+                            <div class="message">
+                                <div class="message-avatar {% if reply.is_admin_reply %}admin{% else %}user{% endif %}">
+                                    <i class="fas fa-{% if reply.is_admin_reply %}shield-alt{% else %}user{% endif %}"></i>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-header">
+                                        <span class="message-sender {% if reply.is_admin_reply %}admin{% endif %}">
+                                            {% if reply.is_admin_reply %}
+                                                Admin Support
+                                            {% else %}
+                                                {{ ticket.user.name }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="message-time">{{ reply.created_at.strftime('%d-%m-%Y %H:%M') }}</span>
+                                    </div>
+                                    <div class="message-body">
+                                        <p>{{ reply.message }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="text-align: center; padding: 2rem; color: var(--muted);">
+                                <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5; display: block;"></i>
+                                <p>No replies yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reply Form -->
+            <div class="ticket-card">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-reply"></i> Send Reply
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="adminReplyForm" class="reply-form">
+                        <textarea 
+                            class="reply-textarea" 
+                            name="message" 
+                            placeholder="Type your reply here... Help the user with their issue."
+                            required
+                        ></textarea>
+                        <div class="reply-help-text">
+                            <i class="fas fa-lightbulb"></i> Minimum 5 characters required
+                        </div>
+                        <div class="reply-actions">
+                            <button type="submit" class="btn-reply btn-reply-primary">
+                                <i class="fas fa-paper-plane"></i> Send Reply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="ticket-card mb-4">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="action-buttons">
+                        {% if ticket.status != 'Closed' %}
+                        <button type="button" class="btn-action btn-action-warning" onclick="updateStatus('Closed')">
+                            <i class="fas fa-check-circle"></i> Close Ticket
+                        </button>
+                        {% endif %}
+                        
+                        {% if ticket.status == 'Open' %}
+                        <button type="button" class="btn-action btn-action-info" onclick="updateStatus('In Progress')">
+                            <i class="fas fa-spinner"></i> Mark In Progress
+                        </button>
+                        {% endif %}
+
+                        {% if ticket.status != 'Open' %}
+                        <button type="button" class="btn-action btn-action-secondary" onclick="updateStatus('Open')">
+                            <i class="fas fa-lock-open"></i> Reopen Ticket
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Details -->
+            <div class="ticket-card">
+                <div class="card-header">
+                    <h6 class="card-header-title">
+                        <i class="fas fa-info-circle"></i> Ticket Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Category -->
+                    <div class="detail-item">
+                        <div class="detail-label">Category</div>
+                        <span class="badge badge-category">{{ ticket.category }}</span>
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="detail-item">
+                        <div class="detail-label">Priority</div>
+                        <span class="badge {% if ticket.priority == 'Urgent' %}badge-priority-urgent{% elif ticket.priority == 'High' %}badge-priority-high{% else %}badge-priority-normal{% endif %}">
+                            {{ ticket.priority }}
+                        </span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <span class="badge {% if ticket.status == 'Open' %}badge-status-open{% elif ticket.status == 'In Progress' %}badge-status-progress{% else %}badge-status-closed{% endif %}">
+                            {{ ticket.status }}
+                        </span>
+                    </div>
+
+                    <!-- Created -->
+                    <div class="detail-item">
+                        <div class="detail-label">Created</div>
+                        <div class="detail-value">{{ ticket.created_at.strftime('%d-%m-%Y %H:%M') }}</div>
+                    </div>
+
+                    <!-- Last Updated -->
+                    <div class="detail-item">
+                        <div class="detail-label">Last Updated</div>
+                        <div class="detail-value">{{ ticket.updated_at.strftime('%d-%m-%Y %H:%M') }}</div>
+                    </div>
+
+                    <!-- Total Replies -->
+                    <div class="detail-item">
+                        <div class="detail-label">Total Replies</div>
+                        <div class="detail-value">{{ ticket.replies|length }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        const ticketId = {{ ticket.id }};
+
+        // ✅ Live chat: join this ticket's room and show student replies instantly
+        if (window.gmbSocket) {
+            window.gmbSocket.emit('join_ticket', { ticket_id: ticketId });
+            window.gmbSocket.on('ticket_reply', function (data) {
+                if (parseInt(data.ticket_id, 10) !== ticketId) return;
+                var container = document.querySelector('.conversation-container');
+                if (!container) return;
+                var bubble = document.createElement('div');
+                bubble.className = 'message';
+                bubble.style.animation = 'slideDown 0.3s ease';
+                bubble.innerHTML =
+                    '<div class="message-avatar ' + (data.is_admin ? 'admin' : 'user') + '">' +
+                        '<i class="fas fa-' + (data.is_admin ? 'shield-alt' : 'user') + '"></i>' +
+                    '</div>' +
+                    '<div class="message-content">' +
+                        '<div class="message-header">' +
+                            '<span class="message-sender ' + (data.is_admin ? 'admin' : '') + '">' + (data.is_admin ? 'Admin Support' : data.user_name) + '</span>' +
+                            '<span class="message-time">Just now</span>' +
+                        '</div>' +
+                        '<div class="message-body"><p>' + data.message + '</p></div>' +
+                    '</div>';
+                container.appendChild(bubble);
+                bubble.scrollIntoView({ behavior: 'smooth' });
+                if (!data.is_admin) {
+                    window.showNotification && window.showNotification('💬 New reply from student on ticket #' + ticketId, 'info');
+                }
+            });
+        }
+
+        document.getElementById('adminReplyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const textarea = this.querySelector('textarea');
+            const message = textarea.value.trim();
+            
+            if (message.length < 5) {
+                alert('❌ Please enter at least 5 characters');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('message', message);
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            fetch(`/admin/support/ticket/${ticketId}/reply`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    textarea.value = '';
+                    alert('✅ Reply sent successfully!');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('❌ Error: ' + (data.message || 'An error occurred'));
+                }
+            })
+            .catch(error => {
+                alert('❌ Error: ' + error.message);
+                console.error(error);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+
+        window.updateStatus = function(status) {
+            if (!confirm(`Are you sure you want to mark this ticket as "${status}"?`)) {
+                return;
+            }
+
+            fetch(`/admin/support/ticket/${ticketId}/status/${status}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ Ticket status updated successfully!');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('❌ Error: ' + (data.message || 'An error occurred'));
+                }
+            })
+            .catch(error => {
+                alert('❌ Error: ' + error.message);
+                console.error(error);
+            });
+        };
+    })();
+</script>
+
+{% endblock %}

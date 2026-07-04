@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Register - GMB Earn{% endblock %}
+
+{% block content %}
+<div class="container-fluid min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="card shadow-lg border-0 rounded-3">
+                    <div class="card-body p-5">
+                        <!-- Header -->
+                        <div class="text-center mb-5">
+                            <h1 class="h3 fw-bold text-dark mb-2">🎯 GMB Earn</h1>
+                            <p class="text-muted mb-4">Create your account and start earning</p>
+                            <div class="progress" style="height: 3px;">
+                                <div class="progress-bar" role="progressbar" style="width: 33%" id="progressBar"></div>
+                            </div>
+                        </div>
+
+                        <!-- Registration Form -->
+                        <form id="registrationForm" method="POST" action="/register">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <!-- Full Name -->
+                            <div class="mb-3">
+                                <label class="form-label fw-500">
+                                    <i class="fas fa-user"></i> Full Name
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control form-control-lg" 
+                                    name="name" 
+                                    id="name"
+                                    placeholder="Enter your full name"
+                                    required>
+                                <small class="form-text text-muted">Must be at least 3 characters (letters only)</small>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="mb-3">
+                                <label class="form-label fw-500">
+                                    <i class="fas fa-envelope"></i> Email Address
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="email" 
+                                    class="form-control form-control-lg" 
+                                    name="email" 
+                                    id="email"
+                                    placeholder="Enter your email"
+                                    required>
+                                <small class="form-text text-muted">Enter your email</small>
+                            </div>
+
+                            <!-- Phone Number (Optional) -->
+                            <div class="mb-3">
+                                <label class="form-label fw-500">
+                                    <i class="fas fa-phone"></i> Phone Number
+                                    <span class="badge bg-info">Optional</span>
+                                </label>
+                                <input 
+                                    type="tel" 
+                                    class="form-control form-control-lg" 
+                                    name="phone" 
+                                    id="phone"
+                                    placeholder="10-digit phone number"
+                                    pattern="[0-9]{10}">
+                                <small class="form-text text-muted">10 digits (e.g., 9876543210)</small>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mb-3">
+                                <label class="form-label fw-500">
+                                    <i class="fas fa-lock"></i> Password
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    class="form-control form-control-lg" 
+                                    name="password" 
+                                    id="password"
+                                    placeholder="Minimum 8 characters"
+                                    required>
+                                <small class="form-text text-muted d-block mt-2">
+                                    ✓ At least 8 characters<br>
+                                    ✓ Uppercase letter (A-Z)<br>
+                                    ✓ Lowercase letter (a-z)<br>
+                                    ✓ Number (0-9)<br>
+                                    ✓ Special character (!@#$%^&*)
+                                </small>
+                                <div id="passwordStrength" class="mt-2"></div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="mb-4">
+                                <label class="form-label fw-500">
+                                    <i class="fas fa-lock"></i> Confirm Password
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    class="form-control form-control-lg" 
+                                    name="confirm_password" 
+                                    id="confirm_password"
+                                    placeholder="Re-enter password"
+                                    required>
+                                <div id="passwordMatch" class="mt-2"></div>
+                            </div>
+
+                            <!-- Terms & Conditions -->
+                            <div class="mb-4 form-check">
+                                <input 
+                                    type="checkbox" 
+                                    class="form-check-input" 
+                                    id="terms" 
+                                    required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to <a href="#" class="text-primary text-decoration-none">Terms & Conditions</a> 
+                                    and <a href="#" class="text-primary text-decoration-none">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <!-- Send OTP Button -->
+                            <button 
+                                type="submit" 
+                                class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-user-plus"></i> Register
+                            </button>
+                        </form>
+
+                        <!-- Footer -->
+                        <hr class="my-4">
+                        <p class="text-center text-muted">
+                            Already have an account? 
+                            <a href="/login" class="text-primary fw-bold text-decoration-none">
+                                Sign In Here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .registration-step {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-control-lg {
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .form-control-lg:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    .btn-lg {
+        padding: 0.875rem 1.5rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    #passwordStrength {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    #passwordMatch {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .form-label {
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .text-muted {
+        color: #718096 !important;
+    }
+
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1.5rem !important;
+        }
+    }
+</style>
+
+<script>
+    function validatePassword(password) {
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[!@#$%^&*]/.test(password);
+        const isLongEnough = password.length >= 8;
+
+        return hasUpper && hasLower && hasNumber && hasSpecial && isLongEnough;
+    }
+
+    // Password Strength Checker
+    document.getElementById('password')?.addEventListener('input', function() {
+        const password = this.value;
+        const strengthDiv = document.getElementById('passwordStrength');
+        
+        if (!password) {
+            strengthDiv.innerHTML = '';
+            return;
+        }
+
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[!@#$%^&*]/.test(password);
+        
+        let strength = 0;
+        if (hasUpper) strength++;
+        if (hasLower) strength++;
+        if (hasNumber) strength++;
+        if (hasSpecial) strength++;
+
+        let strengthText, strengthColor;
+        
+        if (password.length < 8) {
+            strengthText = '✗ Very Weak - Minimum 8 characters';
+            strengthColor = 'danger';
+        } else if (strength === 1) {
+            strengthText = '⚠ Weak - Add more character types';
+            strengthColor = 'danger';
+        } else if (strength === 2) {
+            strengthText = '⚠ Fair - Add special character';
+            strengthColor = 'warning';
+        } else if (strength === 3) {
+            strengthText = '✓ Good - Almost there!';
+            strengthColor = 'info';
+        } else {
+            strengthText = '✓ Strong - Perfect!';
+            strengthColor = 'success';
+        }
+
+        strengthDiv.innerHTML = `<small class="text-${strengthColor}">${strengthText}</small>`;
+    });
+
+    // Password Match Checker
+    document.getElementById('confirm_password')?.addEventListener('input', function() {
+        const password = document.getElementById('password').value;
+        const confirm = this.value;
+        const matchDiv = document.getElementById('passwordMatch');
+
+        if (!confirm) {
+            matchDiv.innerHTML = '';
+            return;
+        }
+
+        if (password === confirm) {
+            matchDiv.innerHTML = '<small class="text-success">✓ Passwords match</small>';
+        } else {
+            matchDiv.innerHTML = '<small class="text-danger">✗ Passwords do not match</small>';
+        }
+    });
+
+    function showAlert(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const form = document.getElementById('registrationForm');
+        form.parentElement.insertBefore(alertDiv, form);
+        
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Simple Form Validation (no OTP)
+    document.getElementById('registrationForm')?.addEventListener('submit', function(e) {
+        const name = this.name.value.trim();
+        const email = this.email.value.trim();
+        const phone = this.phone.value.trim();
+        const password = this.password.value;
+        const confirmPassword = this.confirm_password.value;
+        const termsChecked = document.getElementById('terms').checked;
+
+        if (!name) {
+            e.preventDefault();
+            showAlert('Please enter your name', 'error');
+            return;
+        }
+
+        if (!email) {
+            e.preventDefault();
+            showAlert('Please enter your email', 'error');
+            return;
+        }
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+            e.preventDefault();
+            showAlert('Please enter a valid email', 'error');
+            return;
+        }
+
+        if (phone && !/^[0-9]{10}$/.test(phone)) {
+            e.preventDefault();
+            showAlert('Phone must be 10 digits', 'error');
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            e.preventDefault();
+            showAlert('Password must contain uppercase, lowercase, number & special character', 'error');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            showAlert('Passwords do not match!', 'error');
+            return;
+        }
+
+        if (!termsChecked) {
+            e.preventDefault();
+            showAlert('Please agree to Terms & Conditions', 'error');
+            return;
+        }
+    });
+</script>
+{% endblock %}

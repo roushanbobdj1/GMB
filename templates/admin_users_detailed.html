@@ -1,0 +1,856 @@
+{% extends "base.html" %}
+
+{% block title %}Users Management - GMB Earn Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       VARIABLES & GENERAL
+       ============================================ */
+    :root {
+        --primary: #0d6efd;
+        --primary-light: #0dcaf0;
+        --success: #198754;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #0d6efd;
+        --light: #f8f9fa;
+        --muted: #6c757d;
+        --border: #e9ecef;
+        
+        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        --info-gradient: linear-gradient(135deg, #0dcaf0 0%, #00d4ff 100%);
+        
+        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+        
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ============================================
+       PAGE HEADER
+       ============================================ */
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .page-subtitle {
+        color: var(--muted);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    /* ============================================
+       FILTER & SEARCH
+       ============================================ */
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        min-width: 250px;
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        font-weight: 500;
+        transition: all var(--transition-base);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        outline: none;
+    }
+
+    .search-input::placeholder {
+        color: #adb5bd;
+    }
+
+    /* ============================================
+       TABLE CARD
+       ============================================ */
+    .table-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+    }
+
+    .card-header-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0;
+    }
+
+    .card-header-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ============================================
+       TABLE RESPONSIVE
+       ============================================ */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .table-header th {
+        padding: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .table-body td {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+    .table-body tr {
+        transition: all var(--transition-base);
+    }
+
+    .table-body tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .table-body tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* ============================================
+       TABLE CONTENT
+       ============================================ */
+    .user-id {
+        font-weight: 800;
+        color: var(--primary);
+        font-size: 1rem;
+    }
+
+    .user-name {
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    .user-email {
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    .user-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    /* ============================================
+       BADGES
+       ============================================ */
+    .badge {
+        display: inline-block;
+        padding: 0.5rem 0.875rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .badge-success {
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
+        color: #0f5132;
+    }
+
+    .badge-info {
+        background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%);
+        color: #0d6efd;
+    }
+
+    .badge-primary {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
+        color: #0d6efd;
+    }
+
+    .badge-warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        color: #856404;
+    }
+
+    /* ============================================
+       ACTION BUTTON
+       ============================================ */
+    .view-button {
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        border: 2px solid var(--primary);
+        background: white;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .view-button:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .view-button:active {
+        transform: translateY(0);
+    }
+
+    /* ============================================
+       PAGINATION
+       ============================================ */
+    .pagination-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border);
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .pagination-btn {
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        background: white;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .pagination-btn:hover {
+        border-color: var(--primary);
+        background: var(--light);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* ============================================
+       LOADING STATE
+       ============================================ */
+    .loading-state {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 3rem;
+        gap: 1rem;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* ============================================
+       EMPTY STATE
+       ============================================ */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--muted);
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 1200px) {
+        .page-title {
+            font-size: 1.8rem;
+        }
+
+        .table-header th {
+            padding: 1rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .table-body td {
+            padding: 1rem 0.75rem;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .filter-section {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            min-width: unset;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .custom-table {
+            min-width: 900px;
+        }
+
+        .table-header th {
+            padding: 0.875rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .table-body td {
+            padding: 0.875rem 0.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.3rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+        }
+
+        .card-header-title {
+            font-size: 0.9rem;
+        }
+
+        .custom-table {
+            min-width: 700px;
+        }
+
+        .table-header th,
+        .table-body td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .view-button {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .pagination-section {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .pagination-info,
+        .pagination-controls {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 1.2rem;
+        }
+
+        .search-input {
+            font-size: 0.9rem;
+        }
+
+        .custom-table {
+            min-width: 600px;
+        }
+
+        .table-header th,
+        .table-body td {
+            padding: 0.6rem 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .badge {
+            padding: 0.4rem 0.65rem;
+            font-size: 0.65rem;
+        }
+
+        .view-button {
+            padding: 0.45rem 0.65rem;
+            font-size: 0.7rem;
+            gap: 0.3rem;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* Scrollbar */
+    .table-responsive::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 py-lg-5">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-users"></i> Users Management
+        </h1>
+        <p class="page-subtitle">View all users with their performance details and engagement metrics</p>
+    </div>
+
+    <div class="filter-section">
+        <input 
+            type="text" 
+            id="searchInput" 
+            class="search-input" 
+            placeholder="Search by name, email, or user ID..."
+        >
+        <button onclick="resetSearch()" class="view-button" style="border: 2px solid var(--muted); color: var(--muted);">
+            <i class="fas fa-redo"></i> Reset
+        </button>
+    </div>
+
+    <div class="table-card">
+        <div class="card-header">
+            <h5 class="card-header-title">
+                <i class="fas fa-list"></i> All Users List
+            </h5>
+        </div>
+
+        <div id="loadingState" class="loading-state" style="display: none;">
+            <div class="spinner"></div>
+            <span>Loading users...</span>
+        </div>
+
+        <div id="tableContent" style="display: none;">
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>User ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            <th>Tasks Completed</th>
+                            <th>Total Tasks</th>
+                            <th>Points Earned</th>
+                            <th>Points Redeemed</th>
+                            <th>Joined Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body" id="usersBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-section" id="paginationSection" style="display: none;">
+                <div class="pagination-info">
+                    Showing <strong id="startCount">0</strong> to <strong id="endCount">0</strong> of <strong id="totalCount">0</strong> users
+                </div>
+                <div class="pagination-controls">
+                    <button onclick="previousPage()" class="pagination-btn" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button onclick="nextPage()" class="pagination-btn" id="nextBtn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title">No Users Found</h3>
+            <p class="empty-state-text">No users match your search criteria or there are no users yet.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        const ITEMS_PER_PAGE = 15;
+        let allUsers = [];
+        let filteredUsers = [];
+        let currentPage = 1;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            setupSearchFilter();
+        });
+
+        window.loadUsers = function() {
+            const loadingState = document.getElementById('loadingState');
+            const tableContent = document.getElementById('tableContent');
+            const emptyState = document.getElementById('emptyState');
+
+            loadingState.style.display = 'flex';
+            tableContent.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            fetch('/admin/users/detailed')
+                .then(response => response.json())
+                .then(data => {
+                    allUsers = data || [];
+                    filteredUsers = [...allUsers];
+                    currentPage = 1;
+                    renderTable();
+
+                    loadingState.style.display = 'none';
+                    if (filteredUsers.length > 0) {
+                        tableContent.style.display = 'block';
+                        emptyState.style.display = 'none';
+                    } else {
+                        tableContent.style.display = 'none';
+                        emptyState.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    loadingState.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    document.querySelector('.empty-state-title').textContent = 'Error Loading Users';
+                    document.querySelector('.empty-state-text').textContent = 'An error occurred while loading users.';
+                });
+        }
+
+        function setupSearchFilter() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                filteredUsers = allUsers.filter(user => 
+                    user.id.toString().includes(query) ||
+                    user.name.toLowerCase().includes(query) ||
+                    user.email.toLowerCase().includes(query)
+                );
+                currentPage = 1;
+                renderTable();
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('usersBody');
+            const emptyState = document.getElementById('emptyState');
+            const tableContent = document.getElementById('tableContent');
+
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '';
+                tableContent.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            tableContent.style.display = 'block';
+            emptyState.style.display = 'none';
+
+            const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = startIdx + ITEMS_PER_PAGE;
+            const paginatedUsers = filteredUsers.slice(startIdx, endIdx);
+
+            tbody.innerHTML = paginatedUsers.map(user => `
+                <tr style="${user.is_blocked ? 'background-color: #fff5f5;' : ''}">
+                    <td><span class="user-id">#${user.id}</span></td>
+                    <td>
+                        <span class="user-name">${user.name}</span>
+                        ${user.is_blocked ? '<span class="badge" style="background-color: #dc3545; color: white; margin-left: 5px;">Blocked</span>' : ''}
+                    </td>
+                    <td>
+                        <div class="user-cell">
+                            <span>${user.email}</span>
+                        </div>
+                    </td>
+                    <td>${user.mobile || '—'}</td>
+                    <td><span class="badge badge-success">${user.tasks_completed || 0}</span></td>
+                    <td><span class="badge badge-info">${user.total_tasks || 0}</span></td>
+                    <td><span class="badge badge-primary">${user.points_earned || 0}</span></td>
+                    <td><span class="badge badge-warning">${user.points_redeemed || 0}</span></td>
+                    <td><small>${user.created_at}</small></td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="view-button" onclick="viewUserDetails(${user.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            
+                            <button class="view-button" style="border-color: var(--${user.is_blocked ? 'success' : 'warning'}); color: var(--${user.is_blocked ? 'success' : 'warning'});" onclick="toggleBlock(${user.id}, '${user.name.replace(/'/g, "\\'")}', ${user.is_blocked})" title="${user.is_blocked ? 'Unblock User' : 'Block User'}">
+                                <i class="fas fa-${user.is_blocked ? 'unlock' : 'ban'}"></i>
+                            </button>
+
+                            <button class="view-button" style="border-color: var(--danger); color: var(--danger);" onclick="deleteUser(${user.id}, '${user.name.replace(/'/g, "\\'")}')" title="Delete User">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const paginationSection = document.getElementById('paginationSection');
+            const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
+            if (filteredUsers.length <= ITEMS_PER_PAGE) {
+                paginationSection.style.display = 'none';
+                return;
+            }
+
+            paginationSection.style.display = 'flex';
+
+            const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredUsers.length);
+
+            document.getElementById('startCount').textContent = startIdx + 1;
+            document.getElementById('endCount').textContent = endIdx;
+            document.getElementById('totalCount').textContent = filteredUsers.length;
+
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        window.nextPage = function() {
+            const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        window.previousPage = function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        window.resetSearch = function() {
+            document.getElementById('searchInput').value = '';
+            filteredUsers = [...allUsers];
+            currentPage = 1;
+            renderTable();
+        };
+
+        window.viewUserDetails = function(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                const summary = `
+👤 User Details
+━━━━━━━━━━━━━━━━━━
+Name: ${user.name}
+Email: ${user.email}
+Mobile: ${user.mobile || 'Not provided'}
+Member Since: ${user.created_at}
+Status: ${user.is_blocked ? 'BLOCKED ⛔' : 'ACTIVE ✅'}
+
+📊 Performance
+━━━━━━━━━━━━━━━━━━
+Tasks Completed: ${user.tasks_completed || 0}
+Total Tasks: ${user.total_tasks || 0}
+Points Earned: ${user.points_earned || 0}
+Points Redeemed: ${user.points_redeemed || 0}
+Balance: ${(user.points_earned || 0) - (user.points_redeemed || 0)} points
+`;
+                alert(summary);
+            }
+        };
+
+        // ✅ Block / Unblock User Function
+        window.toggleBlock = function(userId, userName, isBlocked) {
+            const actionText = isBlocked ? "UNBLOCK" : "BLOCK";
+            if (!confirm(`Are you sure you want to ${actionText} user "${userName}"?`)) {
+                return;
+            }
+
+            const csrfToken = "{{ csrf_token() }}";
+
+            fetch(`/admin/user/${userId}/toggle_block`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ ' + data.message);
+                    loadUsers(); // Table को रिफ्रेश करें
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('❌ Network Error occurred!');
+                console.error('Block Error:', error);
+            });
+        };
+
+        // ✅ Delete User Function
+        window.deleteUser = function(userId, userName) {
+            if (!confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE user "${userName}" (ID: #${userId})?\n\nThis will also delete all their tasks, wallet balance, and history. This action cannot be undone!`)) {
+                return;
+            }
+
+            const csrfToken = "{{ csrf_token() }}";
+
+            fetch(`/admin/user/${userId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('✅ ' + data.message);
+                    loadUsers(); // Table को बिना पेज रिफ्रेश किए अपडेट करें
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('❌ Network Error occurred!');
+                console.error('Delete Error:', error);
+            });
+        };
+    })();
+</script>
+
+{% endblock %}

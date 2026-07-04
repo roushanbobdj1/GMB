@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard Control - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lb-admin-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        padding: 1.75rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .lb-admin-card h5 {
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .3rem .8rem;
+        border-radius: var(--radius-full);
+        font-weight: 700;
+        font-size: .8rem;
+    }
+
+    .status-pill.on { background: rgba(25,135,84,0.15); color: #198754; }
+    .status-pill.off { background: rgba(220,53,69,0.15); color: #dc3545; }
+
+    .form-switch .form-check-input { width: 3em; height: 1.5em; cursor: pointer; }
+
+    .preview-row {
+        display: flex;
+        align-items: center;
+        padding: .7rem 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .preview-row:last-child { border-bottom: none; }
+
+    .preview-rank { width: 40px; font-weight: 700; color: var(--muted); }
+    .preview-name { flex: 1; font-weight: 600; }
+    .preview-score { font-weight: 700; color: var(--primary); margin-right: 1rem; }
+
+    .btn-exclude-toggle { font-size: .75rem; padding: .2rem .6rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h2 class="fw-bold mb-0"><i class="fas fa-trophy text-warning"></i> Leaderboard Control Panel</h2>
+        <span class="status-pill {{ 'on' if settings.is_active else 'off' }}">
+            <i class="fas fa-circle"></i> {{ 'ACTIVE' if settings.is_active else 'DISABLED' }}
+        </span>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="lb-admin-card">
+                <h5><i class="fas fa-sliders-h"></i> Settings — Full Admin Control</h5>
+                <form method="POST" action="{{ url_for('admin_leaderboard_settings') }}">
+
+                    <div class="d-flex flex-wrap gap-4 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_active"
+                                name="is_active" {% if settings.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="is_active">Leaderboard Enabled</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="show_on_dashboard"
+                                name="show_on_dashboard" {% if settings.show_on_dashboard %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="show_on_dashboard">Show Widget on User Dashboard</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="mask_names"
+                                name="mask_names" {% if settings.mask_names %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="mask_names">Mask User Names (Privacy)</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title</label>
+                        <input type="text" class="form-control" name="title" value="{{ settings.title }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Subtitle</label>
+                        <input type="text" class="form-control" name="subtitle" value="{{ settings.subtitle }}">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ranking Basis</label>
+                            <select class="form-select" name="ranking_basis">
+                                <option value="approved_tasks" {% if settings.ranking_basis == 'approved_tasks' %}selected{% endif %}>Approved Reviews Count</option>
+                                <option value="points" {% if settings.ranking_basis == 'points' %}selected{% endif %}>Points Earned</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Top Users to Show</label>
+                            <input type="number" class="form-control" name="top_limit" min="3" max="100"
+                                value="{{ settings.top_limit }}">
+                        </div>
+                    </div>
+
+                    <label class="form-label fw-semibold">Prizes / Rewards (optional)</label>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control mb-2" name="prize_1st" placeholder="🥇 1st Prize"
+                                value="{{ settings.prize_1st }}">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control mb-2" name="prize_2nd" placeholder="🥈 2nd Prize"
+                                value="{{ settings.prize_2nd }}">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control mb-2" name="prize_3rd" placeholder="🥉 3rd Prize"
+                                value="{{ settings.prize_3rd }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </form>
+            </div>
+
+            <div class="lb-admin-card">
+                <h5><i class="fas fa-redo"></i> Reset Ranking Period</h5>
+                <p class="text-muted mb-2">
+                    Current period start: <strong>{{ settings.period_start.strftime('%d-%m-%Y %H:%M') if settings.period_start else 'N/A' }}</strong><br>
+                    Last reset: {{ settings.last_reset_at.strftime('%d-%m-%Y %H:%M') if settings.last_reset_at else 'Never' }}
+                </p>
+                <form method="POST" action="{{ url_for('admin_leaderboard_reset') }}"
+                    onsubmit="return confirm('Leaderboard reset karne se naya ranking period shuru hoga (purana data safe rahega, sirf ranking count naye sirey se hogi). Continue?');">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="fas fa-redo"></i> Reset Leaderboard Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="lb-admin-card">
+                <h5><i class="fas fa-eye"></i> Live Preview</h5>
+                {% if rows %}
+                {% for row in rows %}
+                <div class="preview-row">
+                    <div class="preview-rank">#{{ row.rank }}</div>
+                    <div class="preview-name">{{ row.display_name }}</div>
+                    <div class="preview-score">{{ row.score }}</div>
+                    <button class="btn btn-sm btn-outline-secondary btn-exclude-toggle"
+                        onclick="toggleExclude({{ row.user_id }}, this)">
+                        Exclude
+                    </button>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">Abhi koi ranking data nahi hai.</p>
+                {% endif %}
+            </div>
+
+            {% if excluded_users %}
+            <div class="lb-admin-card">
+                <h5><i class="fas fa-user-slash"></i> Excluded Users</h5>
+                {% for excl in excluded_users %}
+                <div class="preview-row">
+                    <div class="preview-name">{{ excl.user.name if excl.user else 'User #' ~ excl.user_id }}</div>
+                    <button class="btn btn-sm btn-outline-success btn-exclude-toggle"
+                        onclick="toggleExclude({{ excl.user_id }}, this)">
+                        Include Back
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleExclude(userId, btn) {
+        fetch(`/admin/leaderboard/exclude/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Something went wrong');
+            }
+        })
+        .catch(() => alert('Network error, please try again.'));
+    }
+</script>
+{% endblock %}

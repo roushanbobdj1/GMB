@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        color: white; padding: 24px 32px; border-radius: 16px; margin-bottom: 24px;
+        display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center;
+    }
+    .header-stats { display: flex; gap: 14px; flex-wrap: wrap; }
+    .stat-pill {
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px; padding: 10px 18px; min-width: 100px; text-align: center;
+    }
+    .stat-pill .stat-num { font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
+    .stat-pill .stat-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 0.04em; }
+
+    .card { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+
+    .toolbar { gap: 12px; }
+    .toolbar .form-control, .toolbar .form-select { border-radius: 10px; }
+
+    .table thead th {
+        padding: 14px 16px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+        color: #6c757d; border: none; background: #f8f9fa; cursor: pointer; user-select: none; white-space: nowrap;
+    }
+    .table thead th.sortable:hover { color: #2d3748; }
+    .table thead th .sort-icon { font-size: 0.65rem; opacity: 0.4; margin-left: 4px; }
+    .table thead th.sort-active .sort-icon { opacity: 1; }
+    .table tbody td { padding: 14px 16px; vertical-align: middle; }
+    .table tbody tr { transition: background 0.15s; }
+    .table tbody tr:hover { background: #f9fafb; }
+
+    .avatar-circle {
+        width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; color: #fff; font-size: 0.95rem; flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .user-cell { display: flex; align-items: center; gap: 12px; }
+    .user-name { font-weight: 600; color: #2d3748; }
+    .user-email { color: #718096; font-size: 0.85rem; }
+    .user-mobile { color: #a0aec0; font-size: 0.78rem; }
+
+    .badge-status { padding: 0.45rem 0.9rem; border-radius: 50px; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.02em; }
+    .badge-status.active { background: #d1fae5; color: #065f46; }
+    .badge-status.blocked { background: #fee2e2; color: #991b1b; }
+
+    .btn-action {
+        padding: 0.4rem 0.75rem; font-size: 0.8rem; border-radius: 8px;
+        display: inline-flex; align-items: center; gap: 6px; transition: 0.15s;
+    }
+    .btn-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .empty-state { padding: 60px 20px; text-align: center; color: #a0aec0; }
+    .empty-state i { font-size: 2.2rem; margin-bottom: 12px; display: block; }
+
+    .toast-stack { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+    .toast-item {
+        min-width: 260px; max-width: 340px; padding: 14px 16px; border-radius: 12px; color: #fff;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; align-items: flex-start; gap: 10px;
+        animation: slideIn 0.25s ease-out; font-size: 0.9rem;
+    }
+    .toast-item.success { background: #16a34a; }
+    .toast-item.error { background: #dc2626; }
+    @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .spinner-sm {
+        width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+        border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
+    .pagination-bar .page-info { color: #718096; font-size: 0.85rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set total_users = users|length %}
+{% set blocked_users = users|selectattr('is_blocked')|list|length %}
+{% set active_users = total_users - blocked_users %}
+
+<div class="container-fluid px-4 py-4">
+
+    <div class="page-header">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="fas fa-users-cog me-2"></i> User Management</h3>
+            <p class="mb-0 opacity-75 small">Manage user access and account status</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat-pill">
+                <div class="stat-num">{{ total_users }}</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-pill">
+                <div class="stat-num text-success">{{ active_users }}</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-pill">
+                <div class="stat-num text-danger">{{ blocked_users }}</div>
+                <div class="stat-label">Blocked</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap toolbar">
+            <h5 class="fw-bold mb-0">Registered Users</h5>
+            <div class="d-flex flex-wrap toolbar">
+                <select id="statusFilter" class="form-select form-select-sm" style="width:150px;" onchange="applyFilters()">
+                    <option value="all">All Status</option>
+                    <option value="active">Active only</option>
+                    <option value="blocked">Blocked only</option>
+                </select>
+                <input type="text" id="searchInput" class="form-control form-control-sm" style="width:220px;"
+                       placeholder="Search name or email..." oninput="applyFilters()">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="usersTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-key="id" onclick="sortBy('id')">User ID <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="sortable" data-key="name" onclick="sortBy('name')">User Details <i class="fas fa-sort sort-icon"></i></th>
+                        <th>Mobile</th>
+                        <th class="sortable" data-key="created_at" onclick="sortBy('created_at')">Joined <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="sortable" data-key="is_blocked" onclick="sortBy('is_blocked')">Status <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for user in users %}
+                    <tr class="user-row"
+                        data-id="{{ user.id }}"
+                        data-name="{{ user.name|e }}"
+                        data-email="{{ user.email|e }}"
+                        data-blocked="{{ 'true' if user.is_blocked else 'false' }}"
+                        data-created="{{ user.created_at.isoformat() if user.created_at else '' }}">
+                        <td><span class="badge bg-light text-dark border">#{{ user.id }}</span></td>
+                        <td>
+                            <div class="user-cell">
+                                <div class="avatar-circle">{{ user.name[0]|upper if user.name else '?' }}</div>
+                                <div>
+                                    <div class="user-name">{{ user.name }}</div>
+                                    <div class="user-email">{{ user.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="user-mobile">{{ user.mobile if user.mobile else '—' }}</td>
+                        <td class="text-muted small">{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</td>
+                        <td>
+                            {% if user.is_blocked %}
+                                <span class="badge-status blocked"><i class="fas fa-ban me-1"></i>Blocked</span>
+                            {% else %}
+                                <span class="badge-status active"><i class="fas fa-check-circle me-1"></i>Active</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button type="button"
+                                    onclick="confirmAction('toggle', {{ user.id }}, '{{ user.name|e }}', {{ 'true' if user.is_blocked else 'false' }})"
+                                    class="btn btn-sm btn-{{ 'success' if user.is_blocked else 'warning' }} btn-action">
+                                <i class="fas fa-{{ 'unlock' if user.is_blocked else 'ban' }}"></i>
+                                {{ 'Unblock' if user.is_blocked else 'Block' }}
+                            </button>
+                            <button type="button"
+                                    onclick="confirmAction('delete', {{ user.id }}, '{{ user.name|e }}', {{ 'true' if user.is_blocked else 'false' }})"
+                                    class="btn btn-sm btn-outline-danger btn-action">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if total_users == 0 %}
+            <div class="empty-state">
+                <i class="fas fa-user-slash"></i>
+                No registered users yet.
+            </div>
+            {% endif %}
+
+            <div class="empty-state d-none" id="noResultsState">
+                <i class="fas fa-search"></i>
+                No users match your search / filter.
+            </div>
+        </div>
+
+        <div class="pagination-bar" id="paginationBar">
+            <div class="page-info" id="pageInfo"></div>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary" id="prevPageBtn" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="nextPageBtn" onclick="changePage(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="confirmModalTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="confirmModalBody">Are you sure?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn" id="confirmModalActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+    const CSRF_TOKEN = "{{ csrf_token() }}";
+
+    // ---------- Toast helper ----------
+    function showToast(message, type) {
+        const stack = document.getElementById('toastStack');
+        const el = document.createElement('div');
+        el.className = `toast-item ${type === 'success' ? 'success' : 'error'}`;
+        el.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i><span>${message}</span>`;
+        stack.appendChild(el);
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.3s';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 300);
+        }, 3500);
+    }
+
+    // ---------- Confirm modal wiring ----------
+    let confirmModalInstance = null;
+    function getModal() {
+        if (!confirmModalInstance) {
+            confirmModalInstance = new bootstrap.Modal(document.getElementById('confirmModal'));
+        }
+        return confirmModalInstance;
+    }
+
+    function confirmAction(action, userId, userName, isBlocked) {
+        const titleEl = document.getElementById('confirmModalTitle');
+        const bodyEl = document.getElementById('confirmModalBody');
+        const btn = document.getElementById('confirmModalActionBtn');
+
+        if (action === 'toggle') {
+            titleEl.textContent = isBlocked ? 'Unblock User' : 'Block User';
+            bodyEl.textContent = `${isBlocked ? 'Unblock' : 'Block'} "${userName}"? ${isBlocked ? 'They will regain access.' : 'They will lose access immediately.'}`;
+            btn.className = `btn btn-${isBlocked ? 'success' : 'warning'}`;
+            btn.textContent = isBlocked ? 'Unblock' : 'Block';
+            btn.onclick = () => performAction('toggle', userId, btn);
+        } else {
+            titleEl.textContent = 'Delete User';
+            bodyEl.textContent = `Permanently delete "${userName}"? This action cannot be undone.`;
+            btn.className = 'btn btn-danger';
+            btn.textContent = 'Delete Permanently';
+            btn.onclick = () => performAction('delete', userId, btn);
+        }
+        getModal().show();
+    }
+
+    function performAction(action, userId, btn) {
+        const url = action === 'toggle'
+            ? `/admin/user/${userId}/toggle_block`
+            : `/admin/user/${userId}/delete`;
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-sm"></span> Processing...`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN }
+        })
+        .then(res => res.json().catch(() => ({ status: 'error', message: 'Unexpected server response.' })))
+        .then(data => {
+            if (data.status === 'success') {
+                getModal().hide();
+                showToast(data.message || 'Done.', 'success');
+                setTimeout(() => location.reload(), 700);
+            } else {
+                showToast(data.message || 'Something went wrong.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        })
+        .catch(() => {
+            showToast('Network error. Please try again.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+    }
+
+    // ---------- Search / filter / sort / pagination ----------
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+    let sortKey = 'id';
+    let sortDir = 1;
+
+    function getRows() { return Array.from(document.querySelectorAll('#tableBody tr.user-row')); }
+
+    function applyFilters() {
+        currentPage = 1;
+        render();
+    }
+
+    function sortBy(key) {
+        if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+        document.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sort-active'));
+        const activeTh = document.querySelector(`th[data-key="${key}"]`);
+        if (activeTh) activeTh.classList.add('sort-active');
+        render();
+    }
+
+    function render() {
+        const search = document.getElementById('searchInput').value.trim().toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        let rows = getRows();
+
+        let filtered = rows.filter(r => {
+            const name = r.dataset.name.toLowerCase();
+            const email = r.dataset.email.toLowerCase();
+            const matchesSearch = !search || name.includes(search) || email.includes(search);
+            const isBlocked = r.dataset.blocked === 'true';
+            const matchesStatus = status === 'all' || (status === 'blocked') === isBlocked;
+            return matchesSearch && matchesStatus;
+        });
+
+        filtered.sort((a, b) => {
+            let av, bv;
+            if (sortKey === 'id') { av = parseInt(a.dataset.id); bv = parseInt(b.dataset.id); }
+            else if (sortKey === 'name') { av = a.dataset.name.toLowerCase(); bv = b.dataset.name.toLowerCase(); }
+            else if (sortKey === 'created_at') { av = a.dataset.created; bv = b.dataset.created; }
+            else if (sortKey === 'is_blocked') { av = a.dataset.blocked; bv = b.dataset.blocked; }
+            if (av < bv) return -1 * sortDir;
+            if (av > bv) return 1 * sortDir;
+            return 0;
+        });
+
+        rows.forEach(r => r.style.display = 'none');
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageRows = filtered.slice(start, start + PAGE_SIZE);
+        pageRows.forEach(r => r.style.display = '');
+
+        document.getElementById('noResultsState').classList.toggle('d-none', filtered.length !== 0);
+
+        const infoEl = document.getElementById('pageInfo');
+        if (filtered.length === 0) {
+            infoEl.textContent = '';
+        } else {
+            infoEl.textContent = `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length}`;
+        }
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+
+        document.getElementById('paginationBar').classList.toggle('d-none', filtered.length === 0);
+    }
+
+    function changePage(delta) {
+        currentPage += delta;
+        render();
+    }
+
+    document.addEventListener('DOMContentLoaded', render);
+</script>
+{% endblock %}

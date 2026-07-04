@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}Wallet - GMB Earn{% endblock %}
+
+{% block content %}
+<div class="container-fluid pt-5">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold text-dark mb-1">
+                        <i class="fas fa-wallet text-primary"></i> My Wallet
+                    </h1>
+                    <p class="text-muted mb-0">Manage your points and redeem rewards</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">Last updated: <span id="lastUpdate">Just now</span></small>
+                </div>
+            </div>
+            <hr class="my-3 border-light">
+        </div>
+    </div>
+
+    <!-- Wallet Overview Cards -->
+    <div class="row mb-5">
+        <!-- Total Points Card -->
+        <div class="col-md-4 mb-4">
+            <div class="stat-card border-start border-5 border-primary">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 fw-500">Total Points</p>
+                        <h2 class="fw-bold text-dark mb-0" id="walletTotalPoints">{{ wallet.total_points if wallet else 0 }}</h2>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-star text-primary fa-lg"></i>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">Earned from all campaigns</small>
+            </div>
+        </div>
+
+        <!-- Available Points Card -->
+        <div class="col-md-4 mb-4">
+            <div class="stat-card border-start border-5 border-success">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 fw-500">Available Points</p>
+                        <h2 class="fw-bold text-dark mb-0" id="walletAvailablePoints">{{ wallet.available_points if wallet else 0 }}</h2>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    </div>
+                </div>
+                <small class="text-success mt-2 d-block"><i class="fas fa-arrow-up"></i> Ready to redeem</small>
+            </div>
+        </div>
+
+        <!-- Redeemed Points Card -->
+        <div class="col-md-4 mb-4">
+            <div class="stat-card border-start border-5 border-warning">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 fw-500">Redeemed Points</p>
+                        <h2 class="fw-bold text-dark mb-0">{{ wallet.redeemed_points if wallet else 0 }}</h2>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-money-bill-wave text-warning fa-lg"></i>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">Total amount redeemed</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row mb-5">
+        <!-- Redeem Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-4">
+                    <h5 class="card-title fw-bold text-dark mb-0">
+                        <i class="fas fa-money-bill-wave text-primary"></i> Redeem Points
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Minimum 500 points required -->
+                    {% if wallet and wallet.available_points >= 500 %}
+                        <form method="POST" action="/redeem" id="redeemForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <!-- Points Input -->
+                            <div class="mb-4">
+                                <label class="form-label fw-600 text-dark mb-2">
+                                    <i class="fas fa-coins text-warning"></i> Points to Redeem
+                                </label>
+                                <div class="input-group">
+                                    <input
+                                        type="number"
+                                        class="form-control form-control-lg"
+                                        name="points"
+                                        min="500"
+                                        max="{{ wallet.available_points if wallet else 0 }}"
+                                        placeholder="Enter points (minimum 500)"
+                                        id="pointsInput"
+                                        required
+                                        onchange="updateConversion()"
+                                        oninput="updateConversion()"
+                                    >
+                                    <span class="input-group-text bg-light">
+                                        <strong>Max: {{ wallet.available_points if wallet else 0 }}</strong>
+                                    </span>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-info-circle"></i> Minimum redemption is 500 points
+                                </small>
+                            </div>
+
+                            <!-- Conversion Info: 1 Point = ₹1 -->
+                            <div class="alert alert-info border-0 mb-4">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted"><strong>Conversion Rate:</strong></small>
+                                        <h6 class="fw-bold text-primary mb-0">1 Point = ₹1</h6>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted"><strong>You Will Get:</strong></small>
+                                        <h6 class="fw-bold text-success mb-0" id="rupeeValue">₹0</h6>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="mb-4">
+                                <label class="form-label fw-600 text-dark mb-2">
+                                    <i class="fas fa-credit-card text-primary"></i> Payment Method <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select form-select-lg" name="payment_method" required>
+                                    <option value="" selected>-- Select Payment Method --</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Paytm">Paytm</option>
+                                    <option value="Phone Pay">Phone Pay</option>
+                                    <option value="Google Pay">Google Pay</option>
+                                </select>
+                                <small class="text-muted d-block mt-2">How do you want to receive the payment?</small>
+                            </div>
+
+                            <!-- Payment Details -->
+                            <div class="mb-4">
+                                <label class="form-label fw-600 text-dark mb-2">
+                                    <i class="fas fa-user-check text-primary"></i> Payment Details <span class="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-lg"
+                                    name="payment_details"
+                                    placeholder="UPI ID / Phone Number / Account Number"
+                                    required
+                                >
+                                <small class="text-muted d-block mt-2">
+                                    <strong>Format:</strong> UPI ID (user@bank), Phone (10 digits)
+                                </small>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-600">
+                                <i class="fas fa-check-circle"></i> Request Redeem
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="fas fa-lock text-muted fa-3x opacity-50"></i>
+                            </div>
+                            <h6 class="text-muted fw-600">Insufficient Points</h6>
+                            <p class="text-muted small mb-3">
+                                You need at least <strong>500 points</strong> to redeem.
+                                <br>
+                                Current: <strong>{{ wallet.available_points if wallet else 0 }} points (₹{{ wallet.available_points if wallet else 0 }})</strong>
+                            </p>
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ (wallet.available_points / 500 * 100) if wallet and wallet.available_points else 0 }}%"></div>
+                            </div>
+                            <small class="text-muted">Need {{ 500 - (wallet.available_points if wallet else 0) }} more points to redeem</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Redeem Status Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-4">
+                    <h5 class="card-title fw-bold text-dark mb-0">
+                        <i class="fas fa-history text-info"></i> Redeem Requests
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if redeem_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-600 text-dark">Points</th>
+                                        <th class="fw-600 text-dark">Amount (₹)</th>
+                                        <th class="fw-600 text-dark">Status</th>
+                                        <th class="fw-600 text-dark">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in redeem_requests %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-warning bg-opacity-20 text-dark fw-600">
+                                                {{ req.points }} Pts
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">₹{{ req.points }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if req.status == 'In Process' %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-hourglass-half"></i> Processing
+                                                </span>
+                                            {% elif req.status == 'Completed' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle"></i> Completed
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Failed
+                                                </span>
+                                                {% if req.rejection_reason %}
+                                                    <br>
+                                                    <small class="text-danger d-block mt-1">
+                                                        <i class="fas fa-comment-dots"></i> {{ req.rejection_reason }}
+                                                    </small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ req.requested_at.strftime('%d-%m-%Y %H:%M') }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox text-muted fa-3x opacity-50"></i>
+                            </div>
+                            <p class="text-muted mb-0">No redeem requests yet</p>
+                            <small class="text-muted">Your redeem requests will appear here</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-4">
+                    <h5 class="card-title fw-bold text-dark mb-0">
+                        <i class="fas fa-exchange-alt text-success"></i> Transaction History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="fw-600 text-dark">Type</th>
+                                        <th class="fw-600 text-dark">Points</th>
+                                        <th class="fw-600 text-dark">Amount (₹)</th>
+                                        <th class="fw-600 text-dark">Date & Time</th>
+                                        <th class="fw-600 text-dark">Reference ID</th>
+                                        <th class="fw-600 text-dark">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for txn in transactions %}
+                                    <tr>
+                                        <td>
+                                            {% if txn.transaction_type == 'Earn' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-arrow-up"></i> Earn
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-arrow-down"></i> Redeem
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %}">
+                                                {% if txn.transaction_type == 'Earn' %}
+                                                    +{{ txn.points }}
+                                                {% else %}
+                                                    -{{ txn.points }}
+                                                {% endif %}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %}">
+                                                {% if txn.transaction_type == 'Earn' %}
+                                                    +₹{{ txn.points }}
+                                                {% else %}
+                                                    -₹{{ txn.points }}
+                                                {% endif %}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ txn.transaction_date.strftime('%d-%m-%Y %H:%M') }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <code class="text-muted small">{{ txn.reference_id }}</code>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {% if txn.transaction_type == 'Earn' %}
+                                                    Task Completion
+                                                {% else %}
+                                                    Payout Request
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox text-muted fa-3x opacity-50"></i>
+                            </div>
+                            <p class="text-muted mb-0">No transactions yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .form-control-lg,
+    .form-select-lg {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        font-size: 15px;
+        padding: 0.85rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control-lg:focus,
+    .form-select-lg:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+
+    .input-group-text {
+        border: 2px solid #e9ecef;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 0 0 8px;
+        border-right: none;
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #e9ecef !important;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .bg-opacity-10 {
+        opacity: 0.1;
+    }
+
+    code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .opacity-50 {
+        opacity: 0.5;
+    }
+
+    .alert-info {
+        background-color: #cfe2ff;
+        color: #084298;
+        border: none;
+        border-radius: 8px;
+    }
+
+    @media (max-width: 768px) {
+        .stat-card {
+            margin-bottom: 1rem;
+        }
+
+        .table {
+            font-size: 13px;
+        }
+
+        .card-body {
+            padding: 1.5rem !important;
+        }
+    }
+</style>
+
+<script>
+    // Update rupee conversion in real-time
+    function updateConversion() {
+        const pointsInput = document.getElementById('pointsInput');
+        const rupeeValue = document.getElementById('rupeeValue');
+        const points = parseInt(pointsInput.value) || 0;
+        const rupees = points; // 1 Point = ₹1
+        rupeeValue.textContent = '₹' + rupees.toLocaleString();
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const lastUpdateElement = document.getElementById('lastUpdate');
+        const now = new Date();
+        lastUpdateElement.textContent = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Points input validation
+        const pointsInput = document.getElementById('pointsInput');
+        if (pointsInput) {
+            pointsInput.addEventListener('input', function() {
+                const maxPoints = parseInt(this.max);
+                const currentPoints = parseInt(this.value) || 0;
+
+                // Enforce minimum 500
+                if (currentPoints < 500 && currentPoints > 0) {
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.style.borderColor = '#e9ecef';
+                }
+
+                if (currentPoints > maxPoints) {
+                    this.value = maxPoints;
+                }
+
+                updateConversion();
+            });
+        }
+
+        // Form submission validation
+        const redeemForm = document.getElementById('redeemForm');
+        if (redeemForm) {
+            redeemForm.addEventListener('submit', function(e) {
+                const points = parseInt(document.getElementById('pointsInput').value) || 0;
+                const paymentMethod = document.querySelector('select[name="payment_method"]').value;
+                const paymentDetails = document.querySelector('input[name="payment_details"]').value;
+
+                if (points < 500) {
+                    e.preventDefault();
+                    alert('Minimum 500 points required to redeem.');
+                    return false;
+                }
+
+                if (!paymentMethod) {
+                    e.preventDefault();
+                    alert('Please select a payment method.');
+                    return false;
+                }
+
+                if (!paymentDetails) {
+                    e.preventDefault();
+                    alert('Please enter payment details.');
+                    return false;
+                }
+            });
+        }
+
+        // Initial conversion update
+        updateConversion();
+    });
+</script>
+
+{% endblock %}

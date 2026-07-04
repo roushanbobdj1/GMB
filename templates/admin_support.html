@@ -1,0 +1,733 @@
+{% extends "base.html" %}
+
+{% block title %}Support Management - GMB Earn Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       VARIABLES & GENERAL
+       ============================================ */
+    :root {
+        --primary: #0d6efd;
+        --primary-light: #0dcaf0;
+        --success: #198754;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #0d6efd;
+        --light: #f8f9fa;
+        --muted: #6c757d;
+        --border: #e9ecef;
+        
+        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        --info-gradient: linear-gradient(135deg, #0dcaf0 0%, #00d4ff 100%);
+        
+        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+        
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ============================================
+       PAGE HEADER
+       ============================================ */
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .page-subtitle {
+        color: var(--muted);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    /* ============================================
+       STAT CARDS
+       ============================================ */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.75rem;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        text-align: center;
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--primary-gradient);
+    }
+
+    .stat-card.danger::before {
+        background: var(--danger-gradient);
+    }
+
+    .stat-card.warning::before {
+        background: var(--warning-gradient);
+    }
+
+    .stat-card.success::before {
+        background: var(--success-gradient);
+    }
+
+    .stat-card.info::before {
+        background: var(--info-gradient);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card.danger .stat-value {
+        background: var(--danger-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-card.warning .stat-value {
+        background: var(--warning-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-card.success .stat-value {
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-card.info .stat-value {
+        background: var(--info-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--muted);
+        font-weight: 600;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* ============================================
+       TABLE CARD
+       ============================================ */
+    .table-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem;
+    }
+
+    .card-header-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0;
+    }
+
+    .card-header-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ============================================
+       TABLE
+       ============================================ */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .table-header th {
+        padding: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+    }
+
+    .table-body td {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border);
+        color: #2d3748;
+    }
+
+    .table-body tr {
+        transition: all var(--transition-base);
+    }
+
+    .table-body tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .table-body tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* ============================================
+       TABLE CONTENT
+       ============================================ */
+    .ticket-id {
+        font-weight: 800;
+        color: var(--primary);
+        font-size: 1rem;
+    }
+
+    .user-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .user-name {
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    .user-email {
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    .subject-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    .replies-count {
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ============================================
+       BADGES
+       ============================================ */
+    .badge {
+        display: inline-block;
+        padding: 0.5rem 0.875rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .badge-category {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
+        color: #0d6efd;
+    }
+
+    .badge-priority-urgent {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
+        color: #842029;
+    }
+
+    .badge-priority-high {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        color: #856404;
+    }
+
+    .badge-priority-normal {
+        background: linear-gradient(135deg, rgba(108, 117, 125, 0.12) 0%, rgba(134, 142, 150, 0.12) 100%);
+        color: #495057;
+    }
+
+    .badge-status-open {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
+        color: #842029;
+    }
+
+    .badge-status-progress {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        color: #856404;
+    }
+
+    .badge-status-closed {
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
+        color: #0f5132;
+    }
+
+    /* ============================================
+       ACTION BUTTON
+       ============================================ */
+    .view-button {
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        border: 2px solid var(--primary);
+        background: white;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .view-button:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* ============================================
+       EMPTY STATE
+       ============================================ */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--muted);
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 1200px) {
+        .page-title {
+            font-size: 1.8rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .subject-cell {
+            max-width: 150px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .table-header th {
+            padding: 1rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .table-body td {
+            padding: 1rem 0.75rem;
+        }
+
+        .subject-cell {
+            max-width: 120px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.3rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .custom-table {
+            min-width: 800px;
+        }
+
+        .table-header th {
+            padding: 0.875rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .table-body td {
+            padding: 0.875rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+        }
+
+        .subject-cell {
+            max-width: 100px;
+        }
+
+        .view-button {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .card-header {
+            padding: 1rem;
+        }
+
+        .card-header-title {
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-title {
+            font-size: 1.2rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+        }
+
+        .custom-table {
+            min-width: 600px;
+        }
+
+        .table-header th,
+        .table-body td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+        }
+
+        .subject-cell {
+            max-width: 80px;
+        }
+
+        .badge {
+            padding: 0.4rem 0.65rem;
+            font-size: 0.65rem;
+        }
+    }
+
+    /* Dark Theme Support */
+    [data-theme="dark"] .table-card,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .card-header {
+        background: #2d3748;
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .card-header {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+    }
+
+    [data-theme="dark"] .page-title,
+    [data-theme="dark"] .card-header-title,
+    [data-theme="dark"] .table-header th,
+    [data-theme="dark"] .table-body td,
+    [data-theme="dark"] .user-name,
+    [data-theme="dark"] .subject-cell,
+    [data-theme="dark"] .stat-label {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .page-subtitle,
+    [data-theme="dark"] .user-email {
+        color: #a0aec0;
+    }
+
+    [data-theme="dark"] .table-body tr:hover {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+    }
+
+    [data-theme="dark"] .table-header {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .table-body td {
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .view-button {
+        background: #374151;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    [data-theme="dark"] .view-button:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Scrollbar */
+    .table-responsive::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 py-lg-5">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-headset"></i> Support Management
+        </h1>
+        <p class="page-subtitle">Manage and respond to user support tickets</p>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <!-- Open Tickets -->
+        <div class="stat-card danger">
+            <div class="stat-value">{{ open_tickets }}</div>
+            <p class="stat-label">Open Tickets</p>
+        </div>
+
+        <!-- In Progress -->
+        <div class="stat-card warning">
+            <div class="stat-value">{{ in_progress }}</div>
+            <p class="stat-label">In Progress</p>
+        </div>
+
+        <!-- Closed Tickets -->
+        <div class="stat-card success">
+            <div class="stat-value">{{ closed_tickets }}</div>
+            <p class="stat-label">Closed Tickets</p>
+        </div>
+
+        <!-- Total Tickets -->
+        <div class="stat-card info">
+            <div class="stat-value">{{ tickets|length }}</div>
+            <p class="stat-label">Total Tickets</p>
+        </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="table-card">
+        <!-- Header -->
+        <div class="card-header">
+            <h5 class="card-header-title">
+                <i class="fas fa-list"></i> All Support Tickets
+            </h5>
+        </div>
+
+        <!-- Table -->
+        <div class="card-body p-0">
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>User</th>
+                            <th>Subject</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Replies</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body">
+                        {% for ticket in tickets %}
+                        <tr>
+                            <!-- Ticket ID -->
+                            <td>
+                                <span class="ticket-id">#{{ ticket.id }}</span>
+                            </td>
+
+                            <!-- User -->
+                            <td>
+                                <div class="user-cell">
+                                    <span class="user-name">{{ ticket.user.name }}</span>
+                                    <span class="user-email">{{ ticket.user.email }}</span>
+                                </div>
+                            </td>
+
+                            <!-- Subject -->
+                            <td>
+                                <span class="subject-cell" title="{{ ticket.subject }}">{{ ticket.subject }}</span>
+                            </td>
+
+                            <!-- Category -->
+                            <td>
+                                <span class="badge badge-category">{{ ticket.category }}</span>
+                            </td>
+
+                            <!-- Priority -->
+                            <td>
+                                <span class="badge {% if ticket.priority == 'Urgent' %}badge-priority-urgent{% elif ticket.priority == 'High' %}badge-priority-high{% else %}badge-priority-normal{% endif %}">
+                                    {{ ticket.priority }}
+                                </span>
+                            </td>
+
+                            <!-- Status -->
+                            <td>
+                                <span class="badge {% if ticket.status == 'Open' %}badge-status-open{% elif ticket.status == 'In Progress' %}badge-status-progress{% else %}badge-status-closed{% endif %}">
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+
+                            <!-- Replies -->
+                            <td>
+                                <span class="replies-count">{{ ticket.replies|length }}</span>
+                            </td>
+
+                            <!-- Created -->
+                            <td>
+                                <small>{{ ticket.created_at.strftime('%d-%m-%Y') }}</small>
+                            </td>
+
+                            <!-- Action -->
+                            <td>
+                                <a href="/admin/support/ticket/{{ ticket.id }}" class="view-button">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">No Support Tickets</h3>
+                <p class="empty-state-text">All support tickets have been resolved or there are no tickets yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // Auto-refresh support tickets every 30 seconds
+        setInterval(() => {
+            // Uncomment to enable auto-refresh
+            // location.reload();
+        }, 30000);
+    })();
+</script>
+
+{% endblock %}

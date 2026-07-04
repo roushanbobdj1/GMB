@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Center - GMB Earn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #f0f4f8, #e8edf2);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* ── Page Header ── */
+        .page-header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            padding: 26px 32px;
+            border-radius: 18px;
+            margin-bottom: 28px;
+        }
+
+        .page-header p { color: rgba(255,255,255,0.6); margin: 0; font-size: .9rem; }
+
+        /* ── Summary Chips ── */
+        .stat-chip {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: .82rem;
+            font-weight: 600;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Cards ── */
+        .pro-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .pro-card-header {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pro-card-header h5 { margin: 0; font-weight: 700; font-size: 1rem; }
+
+        .pro-card-header .header-icon {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .95rem;
+        }
+
+        /* ── Form Inputs ── */
+        .form-label {
+            font-weight: 600;
+            font-size: .83rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e8e8e8;
+            font-size: .9rem;
+            padding: 10px 14px;
+            transition: border .25s, box-shadow .25s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #0f3460;
+            box-shadow: 0 0 0 4px rgba(15,52,96,.1);
+        }
+
+        textarea.form-control { resize: none; }
+
+        .hint-text {
+            font-size: .75rem;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        /* Priority Radio Buttons */
+        .priority-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .priority-btn input { display: none; }
+
+        .priority-btn label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 2px solid #e8e8e8;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            color: #555;
+            width: 100%;
+        }
+
+        .priority-btn input:checked + label {
+            border-color: currentColor;
+            background: rgba(0,0,0,0.04);
+        }
+
+        .priority-btn.low    label { color: #6c757d; }
+        .priority-btn.normal label { color: #0d6efd; }
+        .priority-btn.high   label { color: #fd7e14; }
+        .priority-btn.urgent label { color: #dc3545; }
+
+        .priority-btn.low    input:checked + label { background: #f8f9fa; border-color: #6c757d; }
+        .priority-btn.normal input:checked + label { background: #e8f0ff; border-color: #0d6efd; }
+        .priority-btn.high   input:checked + label { background: #fff3e8; border-color: #fd7e14; }
+        .priority-btn.urgent input:checked + label { background: #fff0f0; border-color: #dc3545; }
+
+        /* Submit Button */
+        .btn-submit {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            height: 50px;
+            font-weight: 700;
+            font-size: .95rem;
+            width: 100%;
+            transition: transform .2s, box-shadow .2s, opacity .2s;
+            letter-spacing: .4px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15,52,96,.3);
+            opacity: .92;
+            color: white;
+        }
+
+        /* ── Table ── */
+        .tickets-table thead tr {
+            background: linear-gradient(135deg, #f8f9fa, #f0f2f5);
+        }
+
+        .tickets-table thead th {
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #555;
+            padding: 14px 16px;
+            border: none;
+        }
+
+        .tickets-table tbody td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            font-size: .88rem;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .tickets-table tbody tr {
+            transition: background .2s;
+        }
+
+        .tickets-table tbody tr:hover {
+            background: #f0f5ff;
+        }
+
+        /* Ticket ID */
+        .ticket-id {
+            background: #e8edf5;
+            color: #0f3460;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: .8rem;
+        }
+
+        /* Badges */
+        .badge-pro {
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .badge-open     { background: #fff0f0; color: #dc3545; }
+        .badge-progress { background: #fff8e8; color: #fd7e14; }
+        .badge-closed   { background: #f0fff4; color: #28a745; }
+        
+        .badge-urgent   { background: #fff0f0; color: #dc3545; }
+        .badge-high     { background: #fff3e8; color: #fd7e14; }
+        .badge-normal   { background: #e8f0ff; color: #0d6efd; }
+        .badge-low      { background: #f8f9fa; color: #6c757d; }
+        .badge-cat      { background: #f0f0ff; color: #6f42c1; }
+
+        /* View Button */
+        .btn-view {
+            background: transparent;
+            border: 2px solid #0f3460;
+            color: #0f3460;
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: .8rem;
+            font-weight: 600;
+            transition: all .2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view:hover {
+            background: #0f3460;
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-icon-wrap {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #f0f4f8, #e8edf2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+        }
+
+        /* Search Bar */
+        .search-input {
+            border-radius: 50px;
+            border: 2px solid #e8e8e8;
+            padding: 9px 18px 9px 40px;
+            font-size: .88rem;
+            transition: border .25s;
+            width: 220px;
+        }
+
+        .search-input:focus {
+            border-color: #0f3460;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .search-wrap { position: relative; }
+        .search-wrap i {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: #aaa; font-size: .85rem;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 5px 14px;
+            border-radius: 50px;
+            border: 2px solid #e8e8e8;
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            background: white;
+            transition: all .2s;
+        }
+
+        .filter-tab.active, .filter-tab:hover {
+            background: #0f3460;
+            border-color: #0f3460;
+            color: white;
+        }
+
+        /* Char Counter */
+        .char-counter {
+            font-size: .75rem;
+            color: #aaa;
+            text-align: right;
+            margin-top: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .page-header { padding: 20px; }
+            .pro-card-header { padding: 16px 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid px-4 py-4">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% set open_count = tickets|selectattr('status', 'equalto', 'Open')|list|length %}
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="fas fa-headset me-2 text-info"></i> Support Center
+            </h3>
+            <p>Get help with your issues and questions — we respond within 24 hours</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="stat-chip"><i class="fas fa-ticket-alt"></i> {{ open_count }} Open</span>
+            <span class="stat-chip"><i class="fas fa-clock"></i> Avg. 24h Response</span>
+            <a href="{{ url_for('user_dashboard') }}" class="btn btn-sm btn-light rounded-pill ms-2 fw-bold" style="padding: 6px 16px;">
+                <i class="fas fa-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-4">
+            <div class="pro-card card h-100">
+                <div class="pro-card-header">
+                    <div class="header-icon"><i class="fas fa-plus"></i></div>
+                    <h5>Create New Ticket</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form id="ticketForm" action="{{ url_for('create_support_ticket') }}" method="POST">
+                        
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-heading me-1 text-secondary"></i> Subject *
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                id="subjectInput"
+                                name="subject"
+                                placeholder="Brief issue description..."
+                                required
+                                minlength="5"
+                            >
+                            <div class="hint-text">Min 5 characters</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-tag me-1 text-secondary"></i> Category *
+                            </label>
+                            <select class="form-select" name="category" required>
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="task_help">🗂️ Task Help</option>
+                                <option value="payment">💳 Payment Issue</option>
+                                <option value="account">👤 Account Issues</option>
+                                <option value="redeem">🎁 Redeem Problem</option>
+                                <option value="other">📌 Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-flag me-1 text-secondary"></i> Priority *
+                            </label>
+                            <div class="priority-group">
+                                <div class="priority-btn low">
+                                    <input type="radio" name="priority" id="p-low" value="Low">
+                                    <label for="p-low"><i class="fas fa-arrow-down"></i> Low</label>
+                                </div>
+                                <div class="priority-btn normal">
+                                    <input type="radio" name="priority" id="p-normal" value="Normal" checked>
+                                    <label for="p-normal"><i class="fas fa-minus"></i> Normal</label>
+                                </div>
+                                <div class="priority-btn high">
+                                    <input type="radio" name="priority" id="p-high" value="High">
+                                    <label for="p-high"><i class="fas fa-arrow-up"></i> High</label>
+                                </div>
+                                <div class="priority-btn urgent">
+                                    <input type="radio" name="priority" id="p-urgent" value="Urgent">
+                                    <label for="p-urgent"><i class="fas fa-bolt"></i> Urgent</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-comment-alt me-1 text-secondary"></i> Message *
+                            </label>
+                            <textarea
+                                class="form-control"
+                                name="message"
+                                id="messageInput"
+                                rows="5"
+                                placeholder="Describe your issue in detail..."
+                                required
+                                minlength="10"
+                                maxlength="1000"
+                                oninput="updateCounter()"
+                            ></textarea>
+                            <div class="d-flex justify-content-between">
+                                <div class="hint-text">Min 10 characters</div>
+                                <div class="char-counter"><span id="charCount">0</span>/1000</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="submitBtn">
+                            <i class="fas fa-paper-plane me-2"></i> Submit Ticket
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="pro-card card h-100">
+                <div class="pro-card-header justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="header-icon"><i class="fas fa-list"></i></div>
+                        <h5>My Tickets</h5>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <div class="search-wrap">
+                            <i class="fas fa-search"></i>
+                            <input
+                                type="text"
+                                class="search-input"
+                                placeholder="Search tickets..."
+                                onkeyup="filterTickets(this.value)"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-4 pt-3 pb-2 border-bottom bg-white">
+                    <div class="filter-tabs">
+                        <span class="filter-tab active" onclick="setFilter('all', this)">All</span>
+                        <span class="filter-tab" onclick="setFilter('open', this)">🔴 Open</span>
+                        <span class="filter-tab" onclick="setFilter('in progress', this)">🟡 In Progress</span>
+                        <span class="filter-tab" onclick="setFilter('closed', this)">🟢 Closed</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table tickets-table mb-0" id="ticketsTable">
+                            <thead>
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>Subject</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Created</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticketBody">
+                                {% for ticket in tickets %}
+                                <tr data-status="{{ ticket.status|lower }}">
+                                    <td><span class="ticket-id">#{{ ticket.id }}</span></td>
+                                    
+                                    <td class="fw-semibold">
+                                        {{ ticket.subject[:25] }}{% if ticket.subject|length > 25 %}...{% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        <span class="badge-pro badge-cat">
+                                            {% if ticket.category == 'task_help' %}🗂️ Task Help
+                                            {% elif ticket.category == 'payment' %}💳 Payment
+                                            {% elif ticket.category == 'account' %}👤 Account
+                                            {% elif ticket.category == 'redeem' %}🎁 Redeem
+                                            {% else %}📌 Other{% endif %}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% if ticket.status == 'Open' %}
+                                            <span class="badge-pro badge-open">● Open</span>
+                                        {% elif ticket.status == 'In Progress' %}
+                                            <span class="badge-pro badge-progress">● In Progress</span>
+                                        {% else %}
+                                            <span class="badge-pro badge-closed">● Closed</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        {% if ticket.priority == 'Low' %}
+                                            <span class="badge-pro badge-low">↓ Low</span>
+                                        {% elif ticket.priority == 'Normal' %}
+                                            <span class="badge-pro badge-normal">– Normal</span>
+                                        {% elif ticket.priority == 'High' %}
+                                            <span class="badge-pro badge-high">↑ High</span>
+                                        {% else %}
+                                            <span class="badge-pro badge-urgent">⚡ Urgent</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td><small class="text-muted">{{ ticket.created_at.strftime('%d-%m-%Y') }}</small></td>
+                                    
+                                    <td>
+                                        <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" class="btn-view">
+                                            <i class="fas fa-eye me-1"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state {% if tickets %}d-none{% endif %}" id="emptyState">
+                        <div class="empty-icon-wrap">
+                            <i class="fas fa-inbox text-muted fa-2x"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark">No tickets found</h6>
+                        <p class="text-muted small">Try a different filter or create a new ticket.</p>
+                    </div>
+
+                    <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            Showing <strong id="visibleCount">{{ tickets|length }}</strong> tickets
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1 text-success"></i> All data is encrypted
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let currentFilter = 'all';
+
+    function updateCounter() {
+        const len = document.getElementById('messageInput').value.length;
+        document.getElementById('charCount').textContent = len;
+    }
+
+    // Handled normally by the browser submit via action="", just update styling
+    document.getElementById('ticketForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
+        btn.disabled = true;
+    });
+
+    function filterTickets(query) {
+        const rows = document.querySelectorAll('#ticketBody tr');
+        let count = 0;
+        query = query.toLowerCase();
+
+        rows.forEach(row => {
+            const text   = row.innerText.toLowerCase();
+            const status = row.getAttribute('data-status');
+            const matchQ = text.includes(query);
+            const matchF = currentFilter === 'all' || status === currentFilter;
+
+            if (matchQ && matchF) { 
+                row.style.setProperty('display', 'table-row', 'important'); 
+                count++; 
+            } else { 
+                row.style.setProperty('display', 'none', 'important'); 
+            }
+        });
+
+        document.getElementById('visibleCount').textContent = count;
+        
+        const emptyState = document.getElementById('emptyState');
+        if(count > 0) {
+            emptyState.classList.add('d-none');
+        } else {
+            emptyState.classList.remove('d-none');
+        }
+    }
+
+    function setFilter(filter, el) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        filterTickets(document.querySelector('.search-input').value);
+    }
+</script>
+</body>
+</html>

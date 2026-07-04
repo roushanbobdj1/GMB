@@ -1,0 +1,1159 @@
+{% extends "base.html" %}
+
+{% block title %}Home - GMB Review Earning Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================
+       VARIABLES & GENERAL
+       ============================================ */
+    :root {
+        --primary: #0d6efd;
+        --primary-light: #0dcaf0;
+        --success: #198754;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #0d6efd;
+        --light: #f8f9fa;
+        --muted: #6c757d;
+        --border: #e9ecef;
+        
+        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        
+        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+        --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+        
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ============================================
+       HERO SECTION
+       ============================================ */
+    .hero-section {
+        /* ✅ Reduced top padding from 4rem to 1rem */
+        padding: 1rem 0 4rem 0; 
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(13, 110, 253, 0.08) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(20px); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        animation: fadeInLeft 0.8s ease-out;
+    }
+
+    @keyframes fadeInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.5rem;
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
+        color: #0d6efd;
+        border-radius: 24px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 1.75rem;
+        border: 2px solid rgba(13, 110, 253, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+    }
+
+    .hero-badge i {
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+        color: #2d3748;
+    }
+
+    .hero-title .google-icon {
+        background: linear-gradient(135deg, #ea4335 0%, #fbbc04 33%, #34a853 66%, #4285f4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-title .highlight {
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 2.5rem;
+        line-height: 1.7;
+        font-weight: 500;
+    }
+
+    /* Key Points */
+    .key-points {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .key-point {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+        transition: all var(--transition-base);
+    }
+
+    .key-point:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .key-point-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--success-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        font-weight: 700;
+    }
+
+    .key-point-content h6 {
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+        font-size: 0.95rem;
+    }
+
+    .key-point-content p {
+        color: #6c757d;
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* Hero CTA Buttons */
+    .hero-cta-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 3rem;
+    }
+
+    .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.1rem 2.2rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1rem;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        border: none;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .cta-button-primary {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 16px rgba(13, 110, 253, 0.3);
+    }
+
+    .cta-button-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .cta-button-secondary {
+        background: white;
+        color: #0d6efd;
+        border: 2px solid #0d6efd;
+    }
+
+    .cta-button-secondary:hover {
+        background: #f8f9fa;
+        transform: translateY(-3px);
+        color: #0d6efd;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Hero Stats */
+    .hero-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .hero-stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 2rem 1.5rem;
+        box-shadow: var(--shadow-md);
+        text-align: center;
+        transition: all var(--transition-base);
+        border: 1px solid var(--border);
+        animation: slideInUp 0.6s ease-out backwards;
+    }
+
+    .hero-stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .hero-stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .hero-stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .hero-stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-stat-card:hover {
+        transform: translateY(-12px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon-wrapper {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1rem;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* ============================================
+       FEATURES SECTION
+       ============================================ */
+    .features-section {
+        padding: 5rem 0;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.5rem;
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
+        color: #0d6efd;
+        border-radius: 24px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+        border: 2px solid rgba(13, 110, 253, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #2d3748;
+        margin-bottom: 0.75rem;
+    }
+
+    .section-subtitle {
+        font-size: 1.1rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        background: white;
+        border-radius: 14px;
+        padding: 2.5rem 1.75rem;
+        box-shadow: var(--shadow-md);
+        text-align: center;
+        transition: all var(--transition-base);
+        border: 1px solid var(--border);
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--primary-gradient);
+        opacity: 0;
+        transition: opacity var(--transition-base);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-12px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .feature-card:hover::before {
+        opacity: 1;
+    }
+
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2rem;
+        transition: transform var(--transition-base);
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .feature-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1rem;
+    }
+
+    .feature-text {
+        font-size: 0.95rem;
+        color: #6c757d;
+        line-height: 1.6;
+    }
+
+    /* ============================================
+       HOW IT WORKS SECTION
+       ============================================ */
+    .how-it-works-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 16px;
+        padding: 4rem 2rem;
+        margin: 5rem 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .how-it-works-section::before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        left: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(13, 110, 253, 0.06) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-card {
+        background: white;
+        border-radius: 14px;
+        padding: 2.5rem 1.75rem;
+        box-shadow: var(--shadow-md);
+        text-align: center;
+        transition: all var(--transition-base);
+        border: 1px solid var(--border);
+        position: relative;
+    }
+
+    .step-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 28px;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+
+    .step-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1rem;
+    }
+
+    .step-text {
+        font-size: 0.95rem;
+        color: #6c757d;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .step-icon {
+        font-size: 2.5rem;
+        opacity: 0.1;
+    }
+
+    /* ============================================
+       FAQ SECTION
+       ============================================ */
+    .faq-section {
+        padding: 5rem 0;
+    }
+
+    .faq-container {
+        max-width: 800px;
+        margin: 3rem auto 0;
+    }
+
+    .accordion-item {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        transition: all var(--transition-base);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .accordion-item:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .accordion-button {
+        background: white;
+        border: none;
+        padding: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1rem;
+        text-align: left;
+        transition: all var(--transition-base);
+    }
+
+    .accordion-button:not(.collapsed) {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #0d6efd;
+        box-shadow: none;
+    }
+
+    .accordion-button::after {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230d6efd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        transform: scale(1.2);
+    }
+
+    .accordion-button i {
+        margin-right: 0.75rem;
+        color: #0d6efd;
+    }
+
+    .accordion-body {
+        background: white;
+        padding: 1.5rem;
+        color: #6c757d;
+        border-top: 1px solid var(--border);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        font-weight: 500;
+    }
+
+    /* ============================================
+       FINAL CTA SECTION
+       ============================================ */
+    .final-cta-section {
+        background: var(--primary-gradient);
+        border-radius: 16px;
+        padding: 4rem 2rem;
+        margin: 5rem 0;
+        text-align: center;
+        color: white;
+        box-shadow: 0 12px 32px rgba(13, 110, 253, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .final-cta-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .final-cta-content {
+        position: relative;
+        z-index: 1;
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .final-cta-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+    }
+
+    .final-cta-text {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+        font-weight: 500;
+    }
+
+    .final-cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.1rem 2.5rem;
+        background: white;
+        color: #0d6efd;
+        border-radius: 10px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all var(--transition-base);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .final-cta-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+    /* ============================================
+       RESPONSIVE DESIGN
+       ============================================ */
+    @media (max-width: 992px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+
+        .key-points {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 1rem 0 2rem 0; /* Reduced mobile padding */
+        }
+
+        .hero-title {
+            font-size: 1.8rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+
+        .hero-cta-buttons {
+            flex-direction: column;
+        }
+
+        .cta-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hero-stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+        }
+
+        .feature-card {
+            padding: 2rem 1.5rem;
+        }
+
+        .how-it-works-section {
+            padding: 2rem 1rem;
+        }
+
+        .steps-grid {
+            gap: 1.5rem;
+        }
+
+        .step-card {
+            padding: 1.75rem 1.25rem;
+        }
+
+        .final-cta-section {
+            padding: 2rem 1rem;
+        }
+
+        .final-cta-title {
+            font-size: 1.5rem;
+        }
+
+        .final-cta-text {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-title {
+            font-size: 1.5rem;
+        }
+
+        .hero-badge,
+        .section-badge {
+            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .key-points {
+            gap: 1rem;
+        }
+
+        .key-point {
+            padding: 1rem;
+        }
+
+        .hero-stat-card {
+            padding: 1.5rem 1rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+        }
+
+        .feature-text,
+        .step-text {
+            font-size: 0.9rem;
+        }
+
+        .final-cta-title {
+            font-size: 1.3rem;
+        }
+
+        .final-cta-text {
+            font-size: 0.95rem;
+        }
+
+        .final-cta-button {
+            padding: 0.9rem 2rem;
+            font-size: 0.95rem;
+        }
+    }
+
+    /* Dark Theme Support */
+    [data-theme="dark"] .hero-section,
+    [data-theme="dark"] .how-it-works-section {
+        background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%);
+    }
+
+    [data-theme="dark"] .hero-title,
+    [data-theme="dark"] .section-title,
+    [data-theme="dark"] .feature-title,
+    [data-theme="dark"] .step-title,
+    [data-theme="dark"] .accordion-button,
+    [data-theme="dark"] .key-point-content h6 {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .hero-subtitle,
+    [data-theme="dark"] .section-subtitle,
+    [data-theme="dark"] .feature-text,
+    [data-theme="dark"] .step-text,
+    [data-theme="dark"] .key-point-content p,
+    [data-theme="dark"] .stat-label,
+    [data-theme="dark"] .accordion-body {
+        color: #a0aec0;
+    }
+
+    [data-theme="dark"] .key-point,
+    [data-theme="dark"] .hero-stat-card,
+    [data-theme="dark"] .feature-card,
+    [data-theme="dark"] .step-card,
+    [data-theme="dark"] .accordion-item {
+        background: #2d3748;
+        border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .accordion-button:not(.collapsed) {
+        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="hero-section">
+        <div class="row align-items-center g-5 pt-3 pb-5">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <i class="fas fa-star"></i>
+                        Trusted by 1,000+ Users India
+                    </div>
+
+                    <h1 class="hero-title">
+                        <span class="google-icon">
+                            <i class="fab fa-google"></i> Write Google Reviews
+                        </span>
+                        <span class="highlight">Earn Real Money!</span>
+                    </h1>
+
+                    <p class="hero-subtitle">
+                        Complete simple tasks daily and earn points. Convert your points into real money with our fast, transparent, and secure platform.
+                    </p>
+
+                    <div class="key-points">
+                        <div class="key-point">
+                            <div class="key-point-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="key-point-content">
+                                <h6>No Registration Fee</h6>
+                                <p>Completely Free</p>
+                            </div>
+                        </div>
+                        <div class="key-point">
+                            <div class="key-point-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="key-point-content">
+                                <h6>Instant Payouts</h6>
+                                <p>Transfer Within 7 Days</p>
+                            </div>
+                        </div>
+                        <div class="key-point">
+                            <div class="key-point-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="key-point-content">
+                                <h6>Real Money</h6>
+                                <p>UPI, Paytm, Bank Transfer</p>
+                            </div>
+                        </div>
+                        <div class="key-point">
+                            <div class="key-point-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="key-point-content">
+                                <h6>100% Safe & Secure</h6>
+                                <p>SSL Encrypted Platform</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-cta-buttons">
+                        <a href="/register" class="cta-button cta-button-primary">
+                            <i class="fas fa-rocket"></i> Get Started Free
+                        </a>
+                        <a href="/login" class="cta-button cta-button-secondary">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-stats-grid">
+                    <div class="hero-stat-card">
+                        <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%); color: #0d6efd;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value">1,000+</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="hero-stat-card">
+                        <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%); color: #198754;">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-value">50K+</div>
+                        <div class="stat-label">Points Distributed</div>
+                    </div>
+                    <div class="hero-stat-card">
+                        <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%); color: #ffc107;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-value">5,000+</div>
+                        <div class="stat-label">Tasks Completed</div>
+                    </div>
+                    <div class="hero-stat-card">
+                        <div class="stat-icon-wrapper" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%); color: #0dcaf0;">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-value">₹50L+</div>
+                        <div class="stat-label">Total Paid Out</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="section-header">
+            <div class="section-badge">
+                <i class="fas fa-lightbulb"></i> Our Features
+            </div>
+            <h2 class="section-title">Why Choose Us?</h2>
+            <p class="section-subtitle">Everything is simple, transparent, and secure</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%); color: #0d6efd;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h5 class="feature-title">Simple Tasks</h5>
+                    <p class="feature-text">
+                        Write straightforward Google reviews and earn points. No complicated processes—just easy tasks anyone can do.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%); color: #198754;">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h5 class="feature-title">Instant Rewards</h5>
+                    <p class="feature-text">
+                        Upon task approval, points are immediately credited. No delays—instant rewards for your effort.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%); color: #ffc107;">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h5 class="feature-title">Fast Payouts</h5>
+                    <p class="feature-text">
+                        Money transfers to your bank account or Paytm within 7 days. Reliable and hassle-free.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%); color: #0dcaf0;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h5 class="feature-title">100% Safe</h5>
+                    <p class="feature-text">
+                        Your data is secure with SSL encryption and industry-standard security protocols.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%); color: #dc3545;">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h5 class="feature-title">24/7 Support</h5>
+                    <p class="feature-text">
+                        Round-the-clock customer support. Quick response times and dedicated assistance always.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.12) 0%, rgba(156, 39, 176, 0.12) 100%); color: #6f42c1;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5 class="feature-title">Transparent</h5>
+                    <p class="feature-text">
+                        Complete transparency in all transactions. No hidden charges or surprise fees.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="how-it-works-section">
+        <div class="section-header">
+            <div class="section-badge">
+                <i class="fas fa-list-check"></i> Simple Process
+            </div>
+            <h2 class="section-title" style="color: #2d3748;">How It Works</h2>
+            <p class="section-subtitle" style="color: #6c757d;">Start earning money in 4 simple steps</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h5 class="step-title">Register</h5>
+                <p class="step-text">
+                    Create your free account using your email. No verification fees or complicated procedures.
+                </p>
+                <div class="step-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h5 class="step-title">Browse Tasks</h5>
+                <p class="step-text">
+                    Explore available tasks on your dashboard. Freedom to choose what interests you most.
+                </p>
+                <div class="step-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h5 class="step-title">Complete Review</h5>
+                <p class="step-text">
+                    Write an honest Google review and take a screenshot. Simple and straightforward.
+                </p>
+                <div class="step-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <h5 class="step-title">Earn Money</h5>
+                <p class="step-text">
+                    After approval, withdraw your earnings to your account instantly.
+                </p>
+                <div class="step-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="faq-section">
+        <div class="section-header">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <p class="section-subtitle">Clearing common doubts and concerns</p>
+        </div>
+
+        <div class="faq-container">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="true">
+                            <i class="fas fa-question-circle"></i> Is this platform legitimate?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Absolutely! Our platform is completely legitimate with thousands of verified users. We've built our reputation on transparency, security, and timely payouts. All transactions are tracked and verified.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            <i class="fas fa-question-circle"></i> How much money can I earn?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Each review earns 100 points (₹100). You can complete multiple tasks daily. Many users earn ₹500-2000+ per day depending on effort. There's no limit to your earning potential!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            <i class="fas fa-question-circle"></i> How does payout work?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Choose your payment method: UPI, Paytm, or bank transfer. Minimum ₹100 required. Money transfers within 7 days. No hidden charges—what you earn is what you get.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            <i class="fas fa-question-circle"></i> What if my review is rejected?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            If a review doesn't meet standards, it may be rejected with no penalty. You simply don't earn from that task. Try another task and keep earning!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                            <i class="fas fa-question-circle"></i> Age requirement?
+                        </button>
+                    </h2>
+                    <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            You must be 18+ years old. Valid phone number and email are required for verification and security. This is a legal requirement for payments.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                            <i class="fas fa-question-circle"></i> Multiple accounts allowed?
+                        </button>
+                    </h2>
+                    <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            No, using multiple accounts is against our terms and can result in suspension. One account per person only. We monitor for fraud to maintain platform integrity.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="final-cta-section">
+        <div class="final-cta-content">
+            <h2 class="final-cta-title">Ready to Start Earning?</h2>
+            <p class="final-cta-text">Join thousands earning real money. Register today and start your journey!</p>
+            <a href="/register" class="final-cta-button">
+                <i class="fas fa-rocket"></i> Begin Your Journey Now
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

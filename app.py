@@ -1,0 +1,1794 @@
+from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify, send_file, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+import os
+from flask_apscheduler import APScheduler
+from flask_socketio import SocketIO, emit, join_room
+# Optional: enables local .env file support.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from config import Config
+from models import *
+from datetime import datetime, timedelta, timezone
+import logging
+import secrets
+from werkzeug.utils import secure_filename
+from functools import wraps
+import uuid
+import hashlib
+import re
+import random
+import bcrypt
+from flask_mail import Mail, Message
+from sqlalchemy.exc import SQLAlchemyError
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from PIL import Image, UnidentifiedImageError
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+app.config.from_object(Config)
+
+mail = Mail(app)
+
+db.init_app(app)
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
+
+# ✅ REAL-TIME LAYER (WebSockets) — works for both Admin side and Student side
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+
+@app.context_processor
+def inject_nav_user_info():
+    """Makes current user's name, available points and unread notification
+    count available to every template (used in the top navbar)."""
+    data = {'nav_user': None, 'nav_available_points': 0, 'nav_unread_count': 0}
+    try:
+        user_id = session.get('user_id')
+        if user_id:
+            user = db.session.get(User, user_id)
+            if user:
+                data['nav_user'] = user
+                wallet = Wallet.query.filter_by(user_id=user_id).first()
+                data['nav_available_points'] = wallet.available_points if wallet else 0
+                data['nav_unread_count'] = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    except Exception as e:
+        logger.warning(f"nav context processor error: {e}")
+    return data
+
+
+def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
+    """Create a Notification row + push it live to that user's browser instantly."""
+    try:
+        notif = Notification(
+            user_id=user_id,
+            message=message,
+            notification_type=notification_type,
+            related_id=related_id,
+            is_read=False
+        )
+        db.session.add(notif)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.error("Failed to persist notification for user %s", user_id)
+
+    payload = {
+        'message': message,
+        'type': notification_type,
+        'related_id': related_id,
+        'created_at': datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')
+    }
+    if extra:
+        payload.update(extra)
+    socketio.emit('new_notification', payload, room=f'user_{user_id}')
+
+
+def notify_admins(event, data):
+    """Push a live event to every connected admin (used for new tasks/tickets/redeems)."""
+    socketio.emit(event, data, room='admin_room')
+
+
+def broadcast_leaderboard_update():
+    """Tell every connected browser (students + admins) that ranks/points changed,
+    so any open leaderboard page can refresh itself live without a manual reload."""
+    socketio.emit('leaderboard_updated', {})
+
+
+@socketio.on('connect')
+def ws_connect():
+    # Put every connecting browser tab into the correct real-time room
+    if session.get('user_id'):
+        join_room(f"user_{session['user_id']}")
+    if session.get('admin_id'):
+        join_room('admin_room')
+
+
+@socketio.on('join_ticket')
+def ws_join_ticket(data):
+    # Lets both the student and the admin watch the same support ticket live
+    ticket_id = data.get('ticket_id') if isinstance(data, dict) else None
+    if not ticket_id:
+        return
+    ticket = db.session.get(SupportTicket, int(ticket_id))
+    if not ticket:
+        return
+    is_owner = session.get('user_id') and ticket.user_id == session.get('user_id')
+    is_admin = bool(session.get('admin_id'))
+    if is_owner or is_admin:
+        join_room(f"ticket_{ticket_id}")
+
+# ✅ CSRF PROTECTION
+csrf = CSRFProtect(app)
+
+# ✅ RATE LIMITING
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["1000 per day", "200 per hour"],
+    storage_uri=app.config.get('RATELIMIT_STORAGE_URI', 'memory://'),
+)
+
+# ✅ FIX 3: Startup Crash fixed by using a safe fallback for ADMIN_PASSWORD
+admin_password_str = app.config.get('ADMIN_PASSWORD', 'default_admin_password')
+_ADMIN_PASSWORD_HASH = bcrypt.hashpw(admin_password_str.encode('utf-8'), bcrypt.gensalt())
+
+def check_admin_password(candidate: str) -> bool:
+    try:
+        return bcrypt.checkpw(candidate.encode('utf-8'), _ADMIN_PASSWORD_HASH)
+    except Exception:
+        return False
+
+
+# ✅ VALIDATION FUNCTIONS
+def is_valid_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        return False, "Invalid email format"
+    return True, "Valid email"
+
+def is_valid_password(password):
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain lowercase letter"
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain number"
+    if not re.search(r'[!@#$%^&*]', password):
+        return False, "Password must contain special character (!@#$%^&*)"
+    return True, "Password is strong"
+
+def is_valid_name(name):
+    if len(name.strip()) < 3:
+        return False, "Name must be at least 3 characters"
+    if not re.match(r'^[a-zA-Z\s]+$', name):
+        return False, "Name can only contain letters and spaces"
+    return True, "Name is valid"
+
+def is_valid_phone(phone):
+    if not phone or len(phone) == 0:
+        return True, "Phone is optional"
+    if not re.match(r'^[0-9]{10}$', phone):
+        return False, "Phone must be 10 digits"
+    return True, "Phone is valid"
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def is_valid_image_content(file_storage):
+    try:
+        file_storage.stream.seek(0)
+        img = Image.open(file_storage.stream)
+        img.verify()  
+        file_storage.stream.seek(0)
+        img2 = Image.open(file_storage.stream)
+        fmt = (img2.format or '').lower()
+        file_storage.stream.seek(0)
+        allowed_formats = {'png', 'jpeg', 'jpg', 'gif'}
+        return fmt in allowed_formats
+    except (UnidentifiedImageError, OSError, ValueError, Exception):
+        return False
+
+# ✅ Ghost Session Bug Fixed
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('❌ Please login first!', 'error')
+            return redirect(url_for('user_login'))
+            
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            session.clear() 
+            flash('❌ Account deleted or session expired. Please login again.', 'error')
+            return redirect(url_for('user_login'))
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            flash('❌ Admin login required!', 'error')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+with app.app_context():
+    db.create_all()
+
+    # ✅ Lightweight auto-migration: add newly introduced columns to already
+    # existing databases without needing a manual migration tool.
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        existing_cols = [c['name'] for c in inspector.get_columns('task_submissions')]
+        if 'screenshot_hash' not in existing_cols:
+            with db.engine.connect() as conn:
+                conn.execute(text('ALTER TABLE task_submissions ADD COLUMN screenshot_hash VARCHAR(64)'))
+                conn.commit()
+            logger.info("✅ Added missing column 'screenshot_hash' to task_submissions table.")
+    except Exception as _mig_err:
+        logger.warning(f"Auto-migration check skipped/failed: {_mig_err}")
+
+# ============ USER ROUTES ============
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/register")
+def user_register():
+    return render_template("register.html")
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.form
+    email = data.get('email')
+    password = data.get('password')
+    name = data.get('name')
+    phone = data.get('phone', '')
+
+    if not email or not password or not name:
+        flash("❌ All fields required!", "error")
+        return redirect(url_for('user_register'))
+
+    email = email.strip().lower()
+    name = name.strip()
+    phone = (phone or '').strip()
+
+    valid, msg = is_valid_email(email)
+    if not valid:
+        flash(f"❌ {msg}", "error")
+        return redirect(url_for('user_register'))
+
+    valid, msg = is_valid_name(name)
+    if not valid:
+        flash(f"❌ {msg}", "error")
+        return redirect(url_for('user_register'))
+
+    valid, msg = is_valid_password(password)
+    if not valid:
+        flash(f"❌ {msg}", "error")
+        return redirect(url_for('user_register'))
+
+    valid, msg = is_valid_phone(phone)
+    if not valid:
+        flash(f"❌ {msg}", "error")
+        return redirect(url_for('user_register'))
+
+    if User.query.filter_by(email=email).first():
+        flash("❌ Email already exists!", "error")
+        return redirect(url_for('user_register'))
+
+    user = User(email=email, name=name, mobile=phone)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+
+    wallet = Wallet(
+        user_id=user.id,
+        total_points=0,
+        available_points=0,
+        redeemed_points=0
+    )
+    db.session.add(wallet)
+    db.session.commit()
+
+    try:
+        active_campaigns = Campaign.query.filter_by(status='Active').all()
+        tasks_assigned_count = 0
+
+        for campaign in active_campaigns:
+            task = Task.query.filter_by(campaign_id=campaign.id, user_id=None, status='Pending_Assignment').first()
+            
+            if task:
+                task.user_id = user.id
+                task.status = 'Assigned'
+                task.assigned_date = datetime.now(timezone.utc)
+
+                assignment = UserCampaignTaskAssignment(
+                    user_id=user.id,
+                    campaign_id=campaign.id,
+                    task_id=task.id,
+                    status='Assigned',
+                    assigned_at=datetime.now(timezone.utc)
+                )
+                db.session.add(assignment)
+                tasks_assigned_count += 1
+                
+                progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
+                if progress:
+                    progress.total_tasks_assigned += 1
+                    progress.users_count_assigned += 1
+                    progress.updated_at = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        if tasks_assigned_count > 0:
+            notification = Notification(
+                user_id=user.id,
+                message=f'🎉 Welcome! You have {tasks_assigned_count} task(s) to complete and earn points! 💰',
+                notification_type='auto_assigned',
+                is_read=False
+            )
+            db.session.add(notification)
+            db.session.commit()
+            
+    except Exception as e:
+        logger.error(f"Error auto-assigning tasks: {str(e)}")
+        db.session.rollback()
+
+    flash("✅ Registration successful! Tasks assigned to you! 🎉", "success")
+    return redirect(url_for('user_login'))
+
+
+@app.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
+def user_login():
+    if request.method == "POST":
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        
+        if not email or not password:
+            flash('❌ Email and password required!', 'error')
+            return render_template("login.html")
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            if getattr(user, 'is_blocked', False):
+                flash('❌ Your account has been blocked by Admin. Contact support.', 'error')
+                return render_template("login.html")
+
+            session['user_id'] = user.id
+            session['user_email'] = user.email
+            session['user_name'] = user.name
+            session.permanent = True
+            flash('✅ Login successful!', 'success')
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('❌ Invalid email or password!', 'error')
+    
+    return render_template("login.html")
+
+
+@app.route("/dashboard")
+@login_required
+def user_dashboard():
+    user = db.session.get(User, session.get('user_id'))
+    
+    if not user:
+        session.clear()
+        flash('❌ Session expired or user not found. Please login again.', 'error')
+        return redirect(url_for('user_login'))
+        
+    wallet = Wallet.query.filter_by(user_id=user.id).first()
+    tasks = Task.query.filter_by(user_id=user.id).all()
+
+    # ✅ FIX: Only show campaigns that are actually assigned to this user
+    # (previously every Active campaign was shown to every user, regardless
+    # of whether the campaign had any task allocated to them).
+    campaigns = (
+        Campaign.query
+        .join(Task, Task.campaign_id == Campaign.id)
+        .filter(Task.user_id == user.id, Campaign.status == 'Active')
+        .distinct()
+        .all()
+    )
+
+    total_tasks = len(tasks)
+    completed_tasks = len([t for t in tasks if t.status == 'Approved'])
+    pending_tasks = len([t for t in tasks if t.status == 'Submitted'])
+    
+    return render_template("dashboard.html",
+                         user=user,
+                         wallet=wallet,
+                         total_tasks=total_tasks,
+                         completed_tasks=completed_tasks,
+                         pending_tasks=pending_tasks,
+                         campaigns=campaigns)
+
+@app.route("/tasks")
+@login_required
+def view_tasks():
+    user_id = session.get('user_id')
+    tasks = Task.query.filter_by(user_id=user_id).all()
+    return render_template("tasks.html", tasks=tasks)
+
+@app.route("/submit_task/<int:task_id>", methods=["POST"])
+@login_required
+def submit_task(task_id):
+    user_id = session['user_id']
+    task = db.session.get(Task, task_id)
+    
+    if not task or task.user_id != user_id:
+        flash('❌ Invalid task!', 'error')
+        return redirect(url_for('view_tasks'))
+    
+    if 'screenshot' not in request.files:
+        flash('❌ Please upload screenshot!', 'error')
+        return redirect(url_for('view_tasks'))
+    
+    file = request.files['screenshot']
+
+    if file and allowed_file(file.filename) and is_valid_image_content(file):
+        # ✅ FIX: Detect duplicate/reused screenshots. Compute a SHA-256 hash
+        # of the uploaded file's bytes and check whether this exact image
+        # has already been submitted before (by this same user), so a
+        # student can't keep submitting the same screenshot for multiple tasks.
+        file.stream.seek(0)
+        file_bytes = file.read()
+        screenshot_hash = hashlib.sha256(file_bytes).hexdigest()
+        file.stream.seek(0)
+
+        duplicate = (
+            TaskSubmission.query
+            .join(Task, Task.id == TaskSubmission.task_id)
+            .filter(Task.user_id == user_id, TaskSubmission.screenshot_hash == screenshot_hash)
+            .first()
+        )
+        if duplicate:
+            flash('❌ This screenshot has already been submitted before! Please upload a new, unique screenshot for this task.', 'error')
+            return redirect(url_for('view_tasks'))
+
+        filename = secure_filename(str(uuid.uuid4()) + '_' + file.filename)
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+            f.write(file_bytes)
+
+        submission = TaskSubmission(
+            task_id=task_id,
+            screenshot_url=filename,
+            screenshot_hash=screenshot_hash,
+            review_text_submitted=request.form.get('review_text')
+        )
+        db.session.add(submission)
+        
+        task.status = 'Submitted'
+        task.submission_date = datetime.now(timezone.utc)
+        
+        assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task_id).first()
+        if assignment:
+            assignment.status = 'Submitted'
+        
+        db.session.commit()
+
+        user = db.session.get(User, user_id)
+        notify_admins('new_task_submission', {
+            'message': f'📩 New task submission from {user.name if user else "a student"} (Task #{task_id})',
+            'task_id': task_id,
+            'submission_id': submission.id
+        })
+
+        flash('✅ Task submitted successfully!', 'success')
+        return redirect(url_for('view_tasks'))
+    else:
+        flash('❌ Invalid file format! Use a genuine PNG, JPG, JPEG or GIF image.', 'error')
+        return redirect(url_for('view_tasks'))
+
+
+@app.route("/wallet")
+@login_required
+def wallet():
+    user_id = session['user_id']
+    wallet = Wallet.query.filter_by(user_id=user_id).first()
+
+    if not wallet:
+        wallet = Wallet(user_id=user_id, total_points=0, available_points=0, redeemed_points=0)
+        db.session.add(wallet)
+        db.session.commit()
+
+    transactions = WalletTransaction.query.filter_by(wallet_id=wallet.id).all()
+    redeem_requests = RedeemRequest.query.filter_by(user_id=user_id).all()
+
+    return render_template("wallet.html",
+                         wallet=wallet,
+                         transactions=transactions,
+                         redeem_requests=redeem_requests)
+
+
+@app.route("/redeem", methods=["POST"])
+@login_required
+def redeem_points():
+    user_id = session['user_id']
+
+    try:
+        points = int(request.form.get('points', 0))
+    except ValueError:
+        flash('❌ Invalid points amount!', 'error')
+        return redirect(url_for('wallet'))
+
+    payment_method = request.form.get('payment_method', '').strip()
+    payment_details = request.form.get('payment_details', '').strip()
+
+    wallet = Wallet.query.filter_by(user_id=user_id).first()
+    if not wallet:
+        flash('❌ Wallet not found!', 'error')
+        return redirect(url_for('wallet'))
+
+    if points < 500:
+        flash('❌ Minimum 500 points required to redeem! (500 Points = ₹500)', 'error')
+        return redirect(url_for('wallet'))
+
+    if points > wallet.available_points:
+        flash('❌ Insufficient points!', 'error')
+        return redirect(url_for('wallet'))
+
+    if not payment_method or not payment_details:
+        flash('❌ Payment method and details are required!', 'error')
+        return redirect(url_for('wallet'))
+
+    redeem_req = RedeemRequest(
+        user_id=user_id,
+        points=points,
+        payment_method=payment_method,
+        payment_details=payment_details,
+        status='In Process'
+    )
+    db.session.add(redeem_req)
+
+    wallet.available_points -= points
+    wallet.redeemed_points += points
+
+    transaction = WalletTransaction(
+        wallet_id=wallet.id,
+        transaction_type='Redeem',
+        points=points,
+        reference_id=f"REDEEM_{uuid.uuid4()}"
+    )
+    db.session.add(transaction)
+    db.session.commit()
+
+    user = db.session.get(User, user_id)
+    notify_admins('new_redeem_request', {
+        'message': f'💰 New redeem request from {user.name if user else "a student"} for {points} points',
+        'redeem_id': redeem_req.id
+    })
+
+    flash('✅ Redeem request submitted! 1 Point = ₹1 | Conversion Rate: 1:1', 'success')
+    return redirect(url_for('wallet'))
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash('✅ Logout successful!', 'success')
+    return redirect(url_for('index'))
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.clear()
+    flash('✅ Admin logout successful!', 'success')
+    return redirect(url_for('index'))
+
+# ============ NOTIFICATION ROUTES ============
+
+@app.route('/api/notifications')
+@login_required
+def get_notifications():
+    user_id = session['user_id']
+    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+    unread_count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    
+    notifications_data = []
+    for notif in notifications:
+        notifications_data.append({
+            'id': notif.id,
+            'message': notif.message,
+            'type': notif.notification_type,
+            'is_read': notif.is_read,
+            'created_at': notif.created_at.strftime('%d-%m-%Y %H:%M'),
+            'related_id': notif.related_id
+        })
+    
+    return jsonify({
+        'notifications': notifications_data,
+        'unread_count': unread_count
+    })
+
+# ✅ FIX 1: Excluded from CSRF for JS fetch calls to work
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
+@csrf.exempt
+@login_required
+def mark_notification_read(notif_id):
+    notification = db.session.get(Notification, notif_id)
+    if not notification or notification.user_id != session['user_id']:
+        return jsonify({'status': 'error', 'message': 'Notification not found'}), 404
+    
+    notification.is_read = True
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': 'Marked as read'})
+
+@app.route('/notifications')
+@login_required
+def view_notifications():
+    user_id = session['user_id']
+    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+    return render_template('notifications.html', notifications=notifications)
+
+# ============ SUPPORT TICKET ROUTES ============
+
+@app.route('/support')
+@login_required
+def support_page():
+    user_id = session['user_id']
+    tickets = SupportTicket.query.filter_by(user_id=user_id).order_by(SupportTicket.created_at.desc()).all()
+    return render_template('support.html', tickets=tickets)
+
+@app.route('/support/create', methods=['POST'])
+@login_required
+def create_support_ticket():
+    user_id = session['user_id']
+    subject = request.form.get('subject', '').strip()
+    message = request.form.get('message', '').strip()
+    category = request.form.get('category', 'other').strip()
+    priority = request.form.get('priority', 'Normal').strip()
+    
+    if not subject or not message:
+        flash('❌ Subject and message are required!', 'error')
+        return redirect(url_for('support_page'))
+    
+    if len(subject) < 5 or len(message) < 10:
+        flash('❌ Check length of subject/message!', 'error')
+        return redirect(url_for('support_page'))
+    
+    ticket = SupportTicket(
+        user_id=user_id, subject=subject, message=message,
+        category=category, priority=priority, status='Open'
+    )
+    db.session.add(ticket)
+    db.session.commit()
+    
+    admin_notification = Notification(
+        user_id=None,
+        message=f'New support ticket from {db.session.get(User, user_id).name}: {subject}',
+        notification_type='support',
+        related_id=ticket.id,
+        is_read=False
+    )
+    db.session.add(admin_notification)
+    db.session.commit()
+
+    notify_admins('new_support_ticket', {
+        'message': f'🎫 New support ticket: {subject}',
+        'ticket_id': ticket.id
+    })
+
+    flash('✅ Support ticket created successfully!', 'success')
+    return redirect(url_for('support_page'))
+
+@app.route('/support/ticket/<int:ticket_id>')
+@login_required
+def view_ticket(ticket_id):
+    ticket = db.session.get(SupportTicket, ticket_id)
+    if not ticket or ticket.user_id != session['user_id']:
+        flash('❌ Ticket not found!', 'error')
+        return redirect(url_for('support_page'))
+    return render_template('support_ticket.html', ticket=ticket)
+
+# ✅ FIX 1: Added csrf.exempt for JS fetch call
+@app.route('/support/ticket/<int:ticket_id>/reply', methods=['POST'])
+@csrf.exempt
+@login_required
+def reply_ticket(ticket_id):
+    user_id = session['user_id']
+    ticket = db.session.get(SupportTicket, ticket_id)
+    
+    if not ticket or ticket.user_id != user_id:
+        return jsonify({'status': 'error', 'message': 'Ticket not found'}), 404
+    if ticket.status == 'Closed':
+        return jsonify({'status': 'error', 'message': 'Ticket is closed'}), 400
+    
+    message = request.form.get('message', '').strip()
+    if not message or len(message) < 5:
+        return jsonify({'status': 'error', 'message': 'Message must be at least 5 characters'}), 400
+    
+    reply = SupportReply(
+        ticket_id=ticket_id, user_id=user_id, message=message, is_admin_reply=False
+    )
+    db.session.add(reply)
+    ticket.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    reply_data = {
+        'id': reply.id, 'message': reply.message,
+        'created_at': reply.created_at.strftime('%d-%m-%Y %H:%M'),
+        'user_name': db.session.get(User, user_id).name,
+        'is_admin': False,
+        'ticket_id': ticket_id
+    }
+    socketio.emit('ticket_reply', reply_data, room=f'ticket_{ticket_id}')
+    notify_admins('ticket_activity', {'ticket_id': ticket_id, 'message': f'💬 New reply on ticket #{ticket_id}'})
+
+    return jsonify({
+        'status': 'success', 'message': 'Reply added successfully',
+        'reply': reply_data
+    })
+
+
+# ============ ADMIN ROUTES ============
+
+@app.route("/admin/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
+def admin_login():
+    if request.method == "POST":
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        
+        if not email or not password:
+            flash('❌ Email and password required!', 'error')
+            return render_template("admin_login.html")
+        
+        if email == app.config['ADMIN_EMAIL'] and check_admin_password(password):
+            session['admin_id'] = 1
+            session['admin_email'] = email
+            flash('✅ Admin login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('❌ Invalid admin credentials!', 'error')
+    
+    return render_template("admin_login.html")
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    total_users = User.query.count()
+    total_campaigns = Campaign.query.count()
+    active_campaigns = Campaign.query.filter_by(status='Active').count()
+    pending_tasks = TaskSubmission.query.filter_by(verification_status='Pending').count()
+    pending_redeems = RedeemRequest.query.filter_by(status='In Process').count()
+    pending_support = SupportTicket.query.filter(SupportTicket.status.in_(['Open', 'In Progress'])).count()
+    
+    return render_template("admin_dashboard.html",
+                         total_users=total_users,
+                         total_campaigns=total_campaigns,
+                         active_campaigns=active_campaigns,
+                         pending_tasks=pending_tasks,
+                         pending_redeems=pending_redeems,
+                         pending_support=pending_support)
+
+
+
+@app.route("/admin/create_campaign", methods=["GET", "POST"])
+@admin_required
+def create_campaign():
+    if request.method == "POST":
+        name = request.form.get('name', '').strip()
+        gmb_link = request.form.get('gmb_link', '').strip()
+        
+        try:
+            total_reviews = int(request.form.get('total_reviews', 0))
+            points_per_review = int(request.form.get('points_per_review', 0))
+            duration_months = int(request.form.get('duration_months', 1))
+        except ValueError:
+            flash('❌ Invalid values! All numeric fields must be numbers.', 'error')
+            return render_template("admin_create_campaign.html")
+        
+        if not name or not gmb_link or total_reviews <= 0 or points_per_review <= 0 or duration_months <= 0:
+            flash('❌ Check all required fields.', 'error')
+            return render_template("admin_create_campaign.html")
+        
+        review_texts = request.form.get('review_texts', '').split('\n')
+        review_texts = [t.strip() for t in review_texts if t.strip()]
+        if not review_texts:
+            flash('❌ At least one review text is required!', 'error')
+            return render_template("admin_create_campaign.html")
+        
+        start_date = datetime.now().date()
+        end_date = start_date + timedelta(days=30*duration_months)
+        
+        campaign = Campaign(
+            name=name, gmb_link=gmb_link, total_reviews_required=total_reviews,
+            points_per_review=points_per_review, start_date=start_date,
+            end_date=end_date, duration_months=duration_months,
+            status='Active', created_by=session['admin_id']
+        )
+        db.session.add(campaign)
+        db.session.commit()
+        
+        for review_text in review_texts:
+            text_obj = CampaignReviewText(campaign_id=campaign.id, review_text=review_text)
+            db.session.add(text_obj)
+        db.session.commit()
+        
+        notify_admins('new_campaign', {
+            'message': f'📢 New campaign created: {campaign.name}',
+            'campaign_id': campaign.id
+        })
+
+        flash('✅ Campaign created successfully! Now allocate tasks.', 'success')
+        return redirect(url_for('admin_campaigns'))
+    
+    return render_template("admin_create_campaign.html")
+
+
+@app.route("/admin/campaigns")
+@admin_required
+def admin_campaigns():
+    campaigns = Campaign.query.all()
+    return render_template("admin_campaigns.html", campaigns=campaigns)
+
+
+@app.route("/admin/campaign/<int:campaign_id>/<action>")
+@admin_required
+def campaign_action(campaign_id, action):
+    campaign = db.session.get(Campaign, campaign_id)
+    if not campaign:
+        flash('❌ Campaign not found!', 'error')
+        return redirect(url_for('admin_campaigns'))
+    
+    if action == 'pause': campaign.status = 'Paused'
+    elif action == 'resume': campaign.status = 'Active'
+    elif action == 'stop': campaign.status = 'Stopped'
+    else:
+        flash('❌ Invalid action!', 'error')
+        return redirect(url_for('admin_campaigns'))
+    
+    db.session.commit()
+    notify_admins('campaign_updated', {
+        'message': f'Campaign "{campaign.name}" {action}ed',
+        'campaign_id': campaign.id,
+        'action': action
+    })
+    flash(f'✅ Campaign {action}ed successfully!', 'success')
+    return redirect(url_for('admin_campaigns'))
+
+
+@app.route("/admin/campaign/<int:campaign_id>/delete", methods=["POST"])
+@admin_required
+def delete_campaign(campaign_id):
+    campaign = db.session.get(Campaign, campaign_id)
+    if not campaign:
+        flash('❌ Campaign not found!', 'error')
+        return redirect(url_for('admin_campaigns'))
+
+    # ✅ Sirf wahi admin delete kar sake jisne campaign banaya tha
+    if campaign.created_by != session.get('admin_id'):
+        flash('❌ You can only delete campaigns you created!', 'error')
+        return redirect(url_for('admin_campaigns'))
+
+    campaign_name = campaign.name
+
+    # ✅ FIX: Delete se PEHLE har user ka task-history permanently save karo
+    # (User.total_tasks_assigned field), taaki campaign delete hone ke baad
+    # bhi "kitne task kiye" ka record na mite.
+    campaign_tasks = Task.query.filter_by(campaign_id=campaign.id).all()
+    tasks_by_user = {}
+    for t in campaign_tasks:
+        tasks_by_user[t.user_id] = tasks_by_user.get(t.user_id, 0) + 1
+
+    for user_id, count in tasks_by_user.items():
+        user = db.session.get(User, user_id)
+        if user:
+            user.total_tasks_assigned = (user.total_tasks_assigned or 0) + count
+            user.calculate_priority()
+
+    # ✅ FIX: Task records ko delete NAHI karna — sirf unka campaign link hata do.
+    # Isse task history (status, review_text, submission, screenshot) User ke
+    # "My Tasks" me hamesha ke liye surakshit rehta hai, campaign delete hone
+    # ke baad bhi.
+    Task.query.filter_by(campaign_id=campaign.id).update({'campaign_id': None})
+
+    # ✅ Related records jinke liye ORM-level cascade define nahi hai, unhe manually clean karo
+    UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).delete()
+    CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).delete()
+
+    # Baaki (review_texts, allocations) Campaign model me
+    # cascade='all, delete-orphan' se automatically delete ho jaayenge.
+    # Tasks ab cascade me nahi hain (upar fix dekhein), isliye surakshit rahenge.
+    db.session.delete(campaign)
+    db.session.commit()
+
+    notify_admins('campaign_updated', {
+        'message': f'Campaign "{campaign_name}" deleted',
+        'action': 'delete'
+    })
+
+    flash(f'✅ Campaign "{campaign_name}" deleted successfully! User task history preserved.', 'success')
+    return redirect(url_for('admin_campaigns'))
+
+
+@app.route("/admin/verify_tasks")
+@admin_required
+def verify_tasks():
+    submissions = TaskSubmission.query.filter_by(verification_status='Pending').all()
+    return render_template("admin_verify_tasks.html", submissions=submissions)
+
+# ✅ FIX 1 & 5: csrf.exempt for fetch and Try-Except wrap for DB transactions
+@app.route("/admin/task/<int:submission_id>/<action>", methods=["POST"])
+@csrf.exempt
+@admin_required
+def task_verify_action(submission_id, action):
+    submission = db.session.get(TaskSubmission, submission_id)
+    if not submission:
+        return jsonify({'status': 'error', 'message': 'Submission not found'}), 404
+    
+    task = submission.task
+    user = task.user
+
+    try:
+        if action == 'approve':
+            submission.verification_status = 'Approved'
+            submission.verified_date = datetime.now(timezone.utc)
+            submission.verified_by = session.get('admin_id')
+            task.status = 'Approved'
+
+            wallet = Wallet.query.filter_by(user_id=user.id).first()
+            if not wallet:
+                wallet = Wallet(user_id=user.id, total_points=0, available_points=0, redeemed_points=0)
+                db.session.add(wallet)
+                db.session.flush() 
+
+            points = task.campaign.points_per_review
+            wallet.total_points += points
+            wallet.available_points += points
+
+            transaction = WalletTransaction(
+                wallet_id=wallet.id, transaction_type='Earn',
+                points=points, reference_id=f"TASK_{task.id}"
+            )
+            db.session.add(transaction)
+
+            assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task.id).first()
+            if assignment:
+                assignment.status = 'Approved'
+                assignment.completed_at = datetime.now(timezone.utc)
+
+            progress = CampaignAllocationProgress.query.filter_by(campaign_id=task.campaign_id).first()
+            if progress:
+                progress.total_tasks_completed += 1
+                progress.users_count_completed += 1
+                if progress.total_tasks_created == progress.total_tasks_completed:
+                    progress.is_fully_allocated = True
+
+            message = f'✅ Task approved! +{points} points credited.'
+
+        elif action == 'reject':
+            submission.verification_status = 'Rejected'
+            task.status = 'Rejected'
+            assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task.id).first()
+            if assignment:
+                assignment.status = 'Rejected'
+            message = '❌ Task rejected!'
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
+
+        db.session.commit()
+
+        extra_data = {'action': action, 'task_id': task.id, 'submission_id': submission.id}
+        if action == 'approve':
+            extra_data['points_awarded'] = points
+            extra_data['new_total_points'] = wallet.total_points
+            extra_data['new_available_points'] = wallet.available_points
+
+        notify_user(
+            user.id, message,
+            notification_type='task_approved' if action == 'approve' else 'task_rejected',
+            related_id=task.id,
+            extra=extra_data
+        )
+
+        # Live-update admin's own verify-tasks / dashboard tabs (multi-admin friendly)
+        notify_admins('task_verified', {
+            'message': f'Task #{task.id} {action}d',
+            'task_id': task.id,
+            'submission_id': submission.id,
+            'action': action
+        })
+
+        if action == 'approve':
+            broadcast_leaderboard_update()
+
+        return jsonify({'status': 'success', 'message': message})
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error while verifying task {submission_id}: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Database error occurred during transaction.'}), 500
+
+
+# ✅ FIX 1: csrf.exempt for Admin Actions 
+@app.route("/admin/redeem/<int:redeem_id>/<action>", methods=["POST"])
+@csrf.exempt
+@admin_required
+def process_redeem(redeem_id, action):
+    redeem_req = db.session.get(RedeemRequest, redeem_id)
+    if not redeem_req:
+        return jsonify({'status': 'error', 'message': 'Redeem request not found'}), 404
+    
+    user = redeem_req.user
+    wallet = Wallet.query.filter_by(user_id=user.id).first()
+    
+    try:
+        if action == 'approve':
+            redeem_req.status = 'Completed'
+            redeem_req.processed_at = datetime.now(timezone.utc)
+            redeem_req.processed_by = session['admin_id']
+            message = f'✅ Redeem approved! {redeem_req.points} points transferred.'
+            
+        elif action == 'reject':
+            # ✅ Admin ne jo reason likha hai use lena (JSON body se)
+            reason = ''
+            if request.is_json:
+                reason = (request.get_json(silent=True) or {}).get('reason', '').strip()
+            else:
+                reason = (request.form.get('reason') or '').strip()
+
+            redeem_req.status = 'Failed'
+            redeem_req.rejection_reason = reason if reason else None
+            if not wallet:
+                return jsonify({'status': 'error', 'message': 'Wallet not found for this user'}), 404
+                
+            wallet.available_points += redeem_req.points
+            wallet.redeemed_points -= redeem_req.points
+            
+            transaction = WalletTransaction(
+                wallet_id=wallet.id, transaction_type='Refund',
+                points=redeem_req.points, reference_id=f"REFUND_{redeem_req.id}"
+            )
+            db.session.add(transaction)
+            
+            reason_text = f" Reason: {reason}" if reason else ""
+            reject_message = f"❌ Your redeem request for {redeem_req.points} points was rejected. Points refunded to your wallet.{reason_text}"
+            message = f'❌ Redeem rejected! Points refunded.'
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
+        
+        db.session.commit()
+
+        if action == 'approve':
+            notify_user(
+                user.id,
+                f"🎉 Your redeem request for {redeem_req.points} points has been approved and processed!",
+                notification_type='redeem_approved', related_id=redeem_req.id,
+                extra={'points': redeem_req.points}
+            )
+        else:
+            notify_user(
+                user.id, reject_message, notification_type='redeem_rejected', related_id=redeem_req.id,
+                extra={'points': redeem_req.points, 'reason': redeem_req.rejection_reason}
+            )
+
+        # Live-update other admin tabs watching the redeem requests list
+        notify_admins('redeem_processed', {
+            'message': f'Redeem request #{redeem_req.id} {action}d',
+            'redeem_id': redeem_req.id,
+            'action': action
+        })
+
+        return jsonify({'status': 'success', 'message': message})
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
+
+
+@app.route("/admin/redeems")
+@admin_required
+def admin_redeems():
+    redeems = RedeemRequest.query.all()
+    return render_template("redeem_requests.html", redeems=redeems)
+
+
+@app.route('/admin/list/users')
+@admin_required
+def users_list():
+    users = User.query.all()
+    return render_template("users_list.html", users=users)
+
+
+@app.route('/admin/users/detailed')
+@admin_required
+def admin_users_detailed():
+    users = User.query.all()
+    user_data = []
+    
+    for user in users:
+        tasks = Task.query.filter_by(user_id=user.id).all()
+        wallet = Wallet.query.filter_by(user_id=user.id).first()
+        
+        user_data.append({
+            'id': user.id, 
+            'name': user.name, 
+            'email': user.email, 
+            'mobile': user.mobile,
+            'tasks_completed': len([t for t in tasks if t.status == 'Approved']), 
+            'total_tasks': len(tasks),
+            'points_earned': wallet.total_points if wallet else 0,
+            'points_redeemed': wallet.redeemed_points if wallet else 0,
+            'created_at': user.created_at.strftime('%d-%m-%Y'),
+            'is_blocked': getattr(user, 'is_blocked', False) 
+        })
+        
+    return jsonify(user_data)
+
+
+@app.route("/admin/list/<type>")
+@admin_required
+def admin_list(type):
+    if type == "users":
+        return render_template("partials/users.html", users=User.query.all())
+    elif type == "campaigns":
+        return render_template("partials/campaigns.html", campaigns=Campaign.query.all())
+    elif type == "tasks":
+        return render_template("partials/tasks.html", tasks=TaskSubmission.query.filter_by(verification_status='Pending').all())
+    elif type == "redeem_requests":
+        return render_template("redeem_requests.html", redeems=RedeemRequest.query.all())
+    return "Invalid Type"
+
+# ✅ FIX 1 & 2: Added csrf.exempt & Fixed ValueError on empty strings
+from sqlalchemy import func, and_
+
+@app.route("/admin/allocate_tasks/<int:campaign_id>", methods=["POST"])
+@csrf.exempt
+@admin_required
+def allocate_tasks(campaign_id):
+    try:
+        total_tasks_needed = int(request.form.get('total_tasks', 0))
+        if total_tasks_needed <= 0:
+            return jsonify({'status': 'error', 'message': f'Invalid task count: {total_tasks_needed}'}), 400
+
+        # Row-level lock on campaign to prevent concurrent conflicts
+        campaign = db.session.query(Campaign).with_for_update().filter_by(id=campaign_id).first()
+        if not campaign:
+            return jsonify({'status': 'error', 'message': 'Campaign not found'}), 404
+
+        now = datetime.now(timezone.utc)
+        
+        # PRO OPTIMIZATION: Subquery to exclude users who already have a task for this specific campaign
+        assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).filter_by(campaign_id=campaign_id)
+
+        # ✅ FIX: Fair distribution across campaigns.
+        # Earlier this query used `.limit(total_tasks_needed)` with NO ordering,
+        # so the database always returned the same first N users (usually the
+        # lowest user IDs) for every new campaign. Example bug reported:
+        # 10 users total -> Campaign 1 assigns tasks to users 1-5 -> Campaign 2
+        # (again asking for 5 tasks) kept re-assigning users 1-5 instead of
+        # giving users 6-10 a turn, because nothing ordered candidates by how
+        # many tasks they'd already received.
+        #
+        # Fix: find all eligible users (monthly cap not exceeded, not already
+        # assigned in *this* campaign, not blocked), then rank them by their
+        # TOTAL lifetime task count (fewest tasks first) so whoever has
+        # received the least work so far gets priority for the new campaign.
+        # This guarantees the 5 users left out of Campaign 1 are the first
+        # ones picked for Campaign 2, and so on, so tasks spread evenly.
+        eligible_query = db.session.query(User.id).\
+            outerjoin(Task, and_(
+                Task.user_id == User.id,
+                func.extract('month', Task.assigned_date) == now.month,
+                func.extract('year', Task.assigned_date) == now.year
+            )).\
+            filter(User.id.notin_(assigned_subquery)).\
+            filter(User.is_blocked == False).\
+            group_by(User.id).\
+            having(func.count(Task.id) < 14)
+
+        all_eligible_ids = [row[0] for row in eligible_query.all()]
+
+        if not all_eligible_ids:
+            return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
+
+        # Lifetime task count per eligible user (all campaigns, all time) —
+        # this is the "fairness score". Lower score = higher priority.
+        live_counts = dict(
+            db.session.query(Task.user_id, func.count(Task.id))
+            .filter(Task.user_id.in_(all_eligible_ids))
+            .group_by(Task.user_id)
+            .all()
+        )
+
+        eligible_users = User.query.filter(User.id.in_(all_eligible_ids)).all()
+        fairness_score = {
+            u.id: (u.total_tasks_assigned or 0) + live_counts.get(u.id, 0)
+            for u in eligible_users
+        }
+
+        # Shuffle first so that users with an equal (tied) score are not
+        # always ordered the same way (e.g. always by ID), then do a stable
+        # sort by fairness score ascending — fewest tasks so far comes first.
+        random.shuffle(all_eligible_ids)
+        all_eligible_ids.sort(key=lambda uid: fairness_score.get(uid, 0))
+
+        candidate_ids = all_eligible_ids[:total_tasks_needed]
+
+        if not candidate_ids:
+            return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
+
+        # Batch Operations
+        review_texts = [r.review_text for r in CampaignReviewText.query.filter_by(campaign_id=campaign_id).all()]
+        if not review_texts:
+            return jsonify({'status': 'error', 'message': 'No review texts available'}), 400
+
+        tasks_to_insert = []
+        assignments_to_insert = []
+        notifications_to_insert = []
+
+        for user_id in candidate_ids:
+            # Create Task object
+            new_task = Task(
+                campaign_id=campaign_id,
+                user_id=user_id,
+                review_text=random.choice(review_texts),
+                gmb_link=campaign.gmb_link,
+                status='Assigned',
+                assigned_date=now
+            )
+            tasks_to_insert.append(new_task)
+        
+        # ✅ FIX: bulk_save_objects() insert ke baad Task.id wapas nahi deta
+        # (jab tak return_defaults=True na ho), isliye UserCampaignTaskAssignment
+        # me task_id hamesha NULL save ho raha tha. add_all() + flush() se
+        # har Task ka real DB id turant Python object me mil jaata hai.
+        db.session.add_all(tasks_to_insert)
+        db.session.flush()  # Sync to get IDs
+
+        for task in tasks_to_insert:
+            assignments_to_insert.append(UserCampaignTaskAssignment(
+                user_id=task.user_id, campaign_id=campaign_id, task_id=task.id, status='Assigned'))
+            notifications_to_insert.append(Notification(
+                user_id=task.user_id, message=f'🎉 New task assigned for campaign: {campaign.name}', notification_type='task_assigned'))
+
+        db.session.add_all(assignments_to_insert)
+        db.session.add_all(notifications_to_insert)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': f'✅ Successfully assigned {len(candidate_ids)} tasks!'})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"Allocation Error for Campaign {campaign_id}: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'System error'}), 500
+
+@app.route('/admin/support')
+@admin_required
+def admin_support():
+    tickets = SupportTicket.query.order_by(SupportTicket.created_at.desc()).all()
+    return render_template('admin_support.html', tickets=tickets,
+                           open_tickets=len([t for t in tickets if t.status == 'Open']),
+                           in_progress=len([t for t in tickets if t.status == 'In Progress']),
+                           closed_tickets=len([t for t in tickets if t.status == 'Closed']))
+
+@app.route('/admin/support/ticket/<int:ticket_id>')
+@admin_required
+def admin_view_ticket(ticket_id):
+    ticket = db.session.get(SupportTicket, ticket_id)
+    if not ticket:
+        flash('❌ Ticket not found!', 'error')
+        return redirect(url_for('admin_support'))
+    
+    if ticket.status == 'Open':
+        ticket.status = 'In Progress'
+        db.session.commit()
+    return render_template('admin_support_ticket.html', ticket=ticket)
+
+# ✅ FIX 1: csrf.exempt 
+@app.route('/admin/support/ticket/<int:ticket_id>/reply', methods=['POST'])
+@csrf.exempt
+@admin_required
+def admin_reply_ticket(ticket_id):
+    ticket = db.session.get(SupportTicket, ticket_id)
+    if not ticket:
+        return jsonify({'status': 'error', 'message': 'Ticket not found'}), 404
+    
+    message = request.form.get('message', '').strip()
+    if len(message) < 5:
+        return jsonify({'status': 'error', 'message': 'Message too short'}), 400
+    
+    reply = SupportReply(
+        ticket_id=ticket_id,
+        user_id=None, 
+        message=message,
+        is_admin_reply=True
+    )
+    db.session.add(reply)
+    ticket.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    reply_data = {
+        'id': reply.id, 'message': reply.message,
+        'created_at': reply.created_at.strftime('%d-%m-%Y %H:%M'),
+        'user_name': 'Admin', 'is_admin': True, 'ticket_id': ticket_id
+    }
+    socketio.emit('ticket_reply', reply_data, room=f'ticket_{ticket_id}')
+    notify_user(
+        ticket.user.id, f'💬 Admin replied to your support ticket: {ticket.subject}',
+        notification_type='support', related_id=ticket.id
+    )
+
+    return jsonify({
+        'status': 'success', 'message': 'Reply sent successfully',
+        'reply': reply_data
+    })
+
+# ✅ FIX 1: csrf.exempt 
+@app.route('/admin/support/ticket/<int:ticket_id>/status/<status>', methods=['POST'])
+@csrf.exempt
+@admin_required
+def update_ticket_status(ticket_id, status):
+    ticket = db.session.get(SupportTicket, ticket_id)
+    if not ticket or status not in ['Open', 'In Progress', 'Closed']:
+        return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
+    
+    ticket.status = status
+    if status == 'Closed': ticket.closed_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    notify_user(
+        ticket.user_id, f'Your support ticket "{ticket.subject}" is now {status}',
+        notification_type='support', related_id=ticket.id
+    )
+    socketio.emit('ticket_status_changed', {'ticket_id': ticket.id, 'status': status}, room=f'ticket_{ticket.id}')
+
+    return jsonify({'status': 'success', 'message': f'Ticket status updated to {status}'})
+
+
+@app.route('/offline.html')
+def offline(): return render_template('offline.html')
+
+@app.route('/static/manifest.json')
+def serve_manifest(): return send_file('static/manifest.json', mimetype='application/manifest+json')
+
+# ✅ FIX 1: csrf.exempt 
+@app.route('/api/sync-pending-tasks', methods=['POST'])
+@csrf.exempt
+@login_required
+def sync_pending_tasks():
+    pending = TaskSubmission.query.filter_by(verification_status='Pending').all()
+    return jsonify({'status': 'success', 'synced_tasks': len(pending), 'message': 'Tasks synced successfully'})
+
+@app.route('/uploads/<filename>')
+def serve_uploads(filename):
+    return send_from_directory(os.path.join(os.getcwd(), app.config.get('UPLOAD_FOLDER', 'uploads')), filename)
+
+@app.route("/admin/campaign_allocation_dashboard")
+@admin_required
+def campaign_allocation_dashboard():
+    campaigns_progress = CampaignAllocationProgress.query.all()
+    dashboard_data = []
+    
+    for progress in campaigns_progress:
+        campaign = db.session.get(Campaign, progress.campaign_id)
+        if not campaign: continue
+        
+        assigned_pct = (progress.total_tasks_assigned / progress.total_tasks_created * 100) if progress.total_tasks_created > 0 else 0
+        completed_pct = (progress.total_tasks_completed / progress.total_tasks_created * 100) if progress.total_tasks_created > 0 else 0
+        days_remaining = (progress.campaign_deadline - datetime.now(timezone.utc)).days
+        
+        if progress.is_fully_allocated and progress.total_tasks_completed == progress.total_tasks_created:
+            status, status_color = '✅ Campaign Completed', 'success'
+        elif progress.total_tasks_assigned == progress.total_tasks_created:
+            status, status_color = '✅ All Tasks Assigned', 'success'
+        else:
+            status, status_color = f'⏳ {progress.total_tasks_created - progress.total_tasks_assigned} tasks waiting', 'warning'
+        
+        dashboard_data.append({
+            'campaign_id': campaign.id, 'campaign_name': campaign.name,
+            'total_tasks': progress.total_tasks_created, 'assigned': progress.total_tasks_assigned,
+            'completed': progress.total_tasks_completed, 'pending': progress.total_tasks_created - progress.total_tasks_assigned,
+            'assigned_pct': round(assigned_pct, 2), 'completed_pct': round(completed_pct, 2),
+            'users_assigned': progress.users_count_assigned, 'users_needed': progress.users_count_planned,
+            'deadline': progress.campaign_deadline.strftime('%d-%m-%Y'), 'days_remaining': days_remaining,
+            'status': status, 'status_color': status_color
+        })
+    return render_template('admin_allocation_dashboard.html', campaigns=dashboard_data)
+
+
+# ==================== FORGOT PASSWORD ====================
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "GET": return render_template('forgot_password.html')
+    
+    email = request.form.get('email', '').strip().lower()
+    if not email:
+        flash('❌ Please enter email!', 'error')
+        return render_template('forgot_password.html')
+    
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('✅ If email exists, reset link sent!', 'success')
+        return render_template('forgot_password.html')
+    
+    try:
+        PasswordResetToken.query.filter_by(user_id=user.id, is_used=False).delete()
+        
+        reset_token = secrets.token_urlsafe(32)
+        token = PasswordResetToken(
+            user_id=user.id, email=email, reset_token=reset_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        db.session.add(token)
+        db.session.commit()
+        
+        reset_link = f"{request.host_url}reset_password/{reset_token}"
+        msg = Message(
+            subject='🔐 Reset Your Password - GMB Earn',
+            recipients=[email],
+            html=f'<p>Reset password link: <a href="{reset_link}">{reset_link}</a></p>'
+        )
+        mail.send(msg)
+        flash('✅ Reset link sent to your email!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        print(f"🔥 EMAIL ERROR: {str(e)}")  # Yeh terminal me error dikhayega
+        flash('❌ Error occurred while sending email!', 'error')
+    
+    return render_template('forgot_password.html')
+
+@app.route("/admin/analytics")
+@admin_required
+def admin_analytics():
+    approved_tasks = Task.query.filter_by(status='Approved').count()
+    rejected_tasks = Task.query.filter_by(status='Rejected').count()
+    pending_tasks = TaskSubmission.query.filter_by(verification_status='Pending').count()
+    
+    total_earned = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Earn').scalar() or 0
+    total_redeemed = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Redeem').scalar() or 0
+    total_refunded = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Refund').scalar() or 0
+    
+    today = datetime.now(timezone.utc).date()
+    dates = []
+    user_counts = []
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        count = User.query.filter(db.func.date(User.created_at) == target_date).count()
+        dates.append(target_date.strftime('%d %b'))
+        user_counts.append(count)
+        
+    top_campaigns = CampaignAllocationProgress.query.order_by(CampaignAllocationProgress.total_tasks_completed.desc()).limit(5).all()
+    campaign_names = []
+    campaign_completions = []
+    
+    for progress in top_campaigns:
+        if progress.campaign:
+            campaign_names.append(progress.campaign.name[:15] + '..') 
+            campaign_completions.append(progress.total_tasks_completed)
+            
+    return render_template("admin_analytics.html", 
+                         approved_tasks=approved_tasks,
+                         rejected_tasks=rejected_tasks,
+                         pending_tasks=pending_tasks,
+                         total_earned=total_earned,
+                         total_redeemed=total_redeemed,
+                         total_refunded=total_refunded,
+                         dates=dates,
+                         user_counts=user_counts,
+                         campaign_names=campaign_names,
+                         campaign_completions=campaign_completions)
+
+# ✅ FIX 1: csrf.exempt 
+@app.route("/admin/user/<int:user_id>/delete", methods=["POST"])
+@csrf.exempt
+@admin_required
+def delete_user(user_id):
+    user = db.session.get(User, user_id)
+    
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'User {user.name} deleted successfully!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting user: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to delete user due to a database error.'}), 500
+    
+# ✅ FIX 1: csrf.exempt 
+@app.route("/admin/user/<int:user_id>/toggle_block", methods=["POST"])
+@csrf.exempt
+@admin_required
+def toggle_block_user(user_id):
+    user = db.session.get(User, user_id)
+    
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        
+    try:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+        
+        action = "Blocked" if user.is_blocked else "Unblocked"
+        return jsonify({'status': 'success', 'message': f'User {user.name} has been {action} successfully!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling block for user: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
+
+# ============ LEADERBOARD (Professional, Admin-controlled) ============
+
+def _compute_leaderboard(settings, limit=None):
+    """Settings ke hisaab se ranked leaderboard data return karta hai."""
+    excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
+    period_start = settings.period_start or datetime.utcnow()
+
+    rows = []
+
+    if settings.ranking_basis == 'points':
+        earn_rows = (
+            db.session.query(Wallet.user_id, db.func.sum(WalletTransaction.points).label('score'))
+            .join(WalletTransaction, WalletTransaction.wallet_id == Wallet.id)
+            .filter(WalletTransaction.transaction_type == 'Earn')
+            .filter(WalletTransaction.transaction_date >= period_start)
+            .group_by(Wallet.user_id)
+            .all()
+        )
+        score_map = {uid: (score or 0) for uid, score in earn_rows}
+    else:
+        task_rows = (
+            db.session.query(Task.user_id, db.func.count(Task.id).label('score'))
+            .filter(Task.status == 'Approved')
+            .filter(Task.submission_date.isnot(None))
+            .filter(Task.submission_date >= period_start)
+            .group_by(Task.user_id)
+            .all()
+        )
+        score_map = {uid: (score or 0) for uid, score in task_rows}
+
+    if not score_map:
+        return []
+
+    # ✅ Always compute lifetime total points earned and total tasks completed
+    # for every user, so the leaderboard can show these stats professionally
+    # regardless of which metric is used to rank.
+    all_time_points_rows = (
+        db.session.query(Wallet.user_id, db.func.sum(WalletTransaction.points).label('total'))
+        .join(WalletTransaction, WalletTransaction.wallet_id == Wallet.id)
+        .filter(WalletTransaction.transaction_type == 'Earn')
+        .group_by(Wallet.user_id)
+        .all()
+    )
+    total_points_map = {uid: (total or 0) for uid, total in all_time_points_rows}
+
+    all_time_task_rows = (
+        db.session.query(Task.user_id, db.func.count(Task.id).label('total'))
+        .filter(Task.status == 'Approved')
+        .group_by(Task.user_id)
+        .all()
+    )
+    total_tasks_map = {uid: (total or 0) for uid, total in all_time_task_rows}
+
+    users = User.query.filter(User.id.in_(score_map.keys())).all()
+    for user in users:
+        if user.id in excluded_ids or user.is_blocked:
+            continue
+        rows.append({
+            'user_id': user.id,
+            'name': user.name or 'User',
+            'score': score_map.get(user.id, 0),
+            'total_points': total_points_map.get(user.id, 0),
+            'total_tasks_completed': total_tasks_map.get(user.id, 0)
+        })
+
+    rows.sort(key=lambda r: r['score'], reverse=True)
+
+    for idx, row in enumerate(rows, start=1):
+        row['rank'] = idx
+
+    if limit:
+        rows = rows[:limit]
+
+    if settings.mask_names:
+        for row in rows:
+            n = row['name'].strip()
+            if len(n) <= 2:
+                row['display_name'] = n[0] + '*' if n else 'User'
+            else:
+                row['display_name'] = n[0] + '*' * (len(n) - 2) + n[-1]
+    else:
+        for row in rows:
+            row['display_name'] = row['name']
+
+    return rows
+
+
+@app.route("/leaderboard")
+@login_required
+def leaderboard():
+    settings = LeaderboardSettings.get_settings()
+
+    if not settings.is_active:
+        flash('ℹ️ Leaderboard is currently disabled by admin.', 'info')
+        return redirect(url_for('user_dashboard'))
+
+    rows = _compute_leaderboard(settings, limit=settings.top_limit)
+    current_user_id = session.get('user_id')
+    my_rank_row = next((r for r in rows if r['user_id'] == current_user_id), None)
+
+    return render_template(
+        "leaderboard.html",
+        settings=settings,
+        rows=rows,
+        my_rank_row=my_rank_row
+    )
+
+
+@app.route("/admin/leaderboard")
+@admin_required
+def admin_leaderboard():
+    settings = LeaderboardSettings.get_settings()
+    rows = _compute_leaderboard(settings, limit=settings.top_limit)
+    excluded_users = LeaderboardExclusion.query.all()
+    return render_template(
+        "admin_leaderboard.html",
+        settings=settings,
+        rows=rows,
+        excluded_users=excluded_users
+    )
+
+
+@app.route("/admin/leaderboard/settings", methods=["POST"])
+@csrf.exempt
+@admin_required
+def admin_leaderboard_settings():
+    settings = LeaderboardSettings.get_settings()
+    data = request.form
+
+    settings.is_active = data.get('is_active') == 'on'
+    settings.show_on_dashboard = data.get('show_on_dashboard') == 'on'
+    settings.mask_names = data.get('mask_names') == 'on'
+
+    settings.title = (data.get('title') or settings.title).strip()
+    settings.subtitle = (data.get('subtitle') or settings.subtitle).strip()
+
+    ranking_basis = data.get('ranking_basis')
+    if ranking_basis in ('approved_tasks', 'points'):
+        settings.ranking_basis = ranking_basis
+
+    try:
+        top_limit = int(data.get('top_limit', settings.top_limit))
+        settings.top_limit = max(3, min(top_limit, 100))
+    except (TypeError, ValueError):
+        pass
+
+    settings.prize_1st = (data.get('prize_1st') or '').strip()
+    settings.prize_2nd = (data.get('prize_2nd') or '').strip()
+    settings.prize_3rd = (data.get('prize_3rd') or '').strip()
+
+    try:
+        db.session.commit()
+        flash('✅ Leaderboard settings updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating leaderboard settings: {str(e)}")
+        flash('❌ Failed to update leaderboard settings.', 'error')
+
+    return redirect(url_for('admin_leaderboard'))
+
+
+@app.route("/admin/leaderboard/reset", methods=["POST"])
+@csrf.exempt
+@admin_required
+def admin_leaderboard_reset():
+    settings = LeaderboardSettings.get_settings()
+    try:
+        settings.period_start = datetime.utcnow()
+        settings.last_reset_at = datetime.utcnow()
+        settings.last_reset_by = session.get('admin_id')
+        db.session.commit()
+        flash('✅ Leaderboard has been reset! New ranking period started.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error resetting leaderboard: {str(e)}")
+        flash('❌ Failed to reset leaderboard.', 'error')
+    return redirect(url_for('admin_leaderboard'))
+
+
+@app.route("/admin/leaderboard/exclude/<int:user_id>", methods=["POST"])
+@csrf.exempt
+@admin_required
+def admin_leaderboard_exclude(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    try:
+        existing = LeaderboardExclusion.query.filter_by(user_id=user_id).first()
+        if existing:
+            db.session.delete(existing)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': f'{user.name} included back in leaderboard.', 'excluded': False})
+        else:
+            reason = request.form.get('reason', '')
+            excl = LeaderboardExclusion(user_id=user_id, excluded_by=session.get('admin_id'), reason=reason)
+            db.session.add(excl)
+            db.session.commit()
+            return jsonify({'status': 'success', 'message': f'{user.name} excluded from leaderboard.', 'excluded': True})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling leaderboard exclusion: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
+
+
+@app.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    token_record = PasswordResetToken.query.filter_by(reset_token=token, is_used=False).first()
+    
+    if not token_record or token_record.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+        flash('❌ Invalid or expired reset link!', 'error')
+        return redirect(url_for('forgot_password'))
+        
+    if request.method == "GET":
+        return render_template('reset_password.html', token=token)
+    
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    
+    if not new_password or new_password != confirm_password or len(new_password) < 8:
+        flash('❌ Passwords must match and be at least 8 characters!', 'error')
+        return render_template('reset_password.html', token=token)
+    
+    try:
+        user = db.session.get(User, token_record.user_id)
+        user.set_password(new_password)
+        token_record.is_used = True
+        db.session.add(user)
+        db.session.add(token_record)
+        db.session.commit()
+        
+        try:
+            mail.send(Message(subject='✅ Password Changed', recipients=[user.email], body='Your password was changed.'))
+        except: pass
+        
+        flash('✅ Password reset successfully! Login now.', 'success')
+        return redirect(url_for('user_login'))
+    except Exception:
+        db.session.rollback()
+        flash('❌ Error resetting password!', 'error')
+        return render_template('reset_password.html', token=token)
+    
+# ============ AUTOMATED BACKGROUND JOBS ============
+
+@scheduler.task('cron', id='monthly_reset', day=1, hour=0, minute=0)
+def monthly_task_reset():
+    with app.app_context():
+        logger.info("Monthly task reset started...")
+        # Yahan apna logic likhein
+        db.session.commit()
+        logger.info("Monthly task reset finished!")
+
+@scheduler.task('cron', id='increment_month', day=1, hour=0, minute=0)
+def increment_allocation_month():
+    with app.app_context():
+        # Har task ka allocation month +1 kar do
+        Task.query.update({'allocation_month': Task.allocation_month + 1})
+        db.session.commit()
+        logger.info("Monthly allocation month incremented!")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
