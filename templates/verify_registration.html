@@ -1,0 +1,718 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Registration - GMB Earn{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vr-primary: #198754;
+        --vr-primary-light: #20c997;
+        --vr-primary-soft: #ecfdf3;
+        --vr-text: #1f2937;
+        --vr-muted: #6b7280;
+        --vr-border: #e5e7eb;
+        --vr-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        --vr-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        --vr-transition: 220ms ease;
+    }
+
+    /* =========================
+       PAGE
+    ========================== */
+
+    .registration-verify-page {
+        min-height: calc(100vh - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        position: relative;
+        overflow: hidden;
+
+        background:
+            radial-gradient(
+                circle at 8% 12%,
+                rgba(25, 135, 84, 0.08),
+                transparent 28%
+            ),
+            radial-gradient(
+                circle at 92% 88%,
+                rgba(32, 201, 151, 0.09),
+                transparent 30%
+            ),
+            linear-gradient(
+                135deg,
+                #f7fffb 0%,
+                #f1f5f9 100%
+            );
+    }
+
+    .registration-verify-page::before,
+    .registration-verify-page::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .registration-verify-page::before {
+        width: 300px;
+        height: 300px;
+        top: -150px;
+        left: -120px;
+        background: rgba(25, 135, 84, 0.05);
+    }
+
+    .registration-verify-page::after {
+        width: 360px;
+        height: 360px;
+        right: -170px;
+        bottom: -180px;
+        background: rgba(32, 201, 151, 0.06);
+    }
+
+    /* =========================
+       WRAPPER
+    ========================== */
+
+    .registration-verify-wrapper {
+        width: 100%;
+        max-width: 460px;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* =========================
+       ALERTS
+    ========================== */
+
+    .registration-alerts {
+        margin-bottom: 18px;
+    }
+
+    .registration-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.5;
+
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+
+        animation: registrationAlertIn 0.35s ease both;
+    }
+
+    .registration-alert i {
+        margin-top: 2px;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .registration-alert-success {
+        color: #0f5132;
+        background: #ecfdf3;
+        border: 1px solid #bbf7d0;
+    }
+
+    .registration-alert-danger {
+        color: #842029;
+        background: #fff1f2;
+        border: 1px solid #fecdd3;
+    }
+
+    @keyframes registrationAlertIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* =========================
+       CARD
+    ========================== */
+
+    .registration-verify-card {
+        position: relative;
+        overflow: hidden;
+
+        background: #ffffff;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 24px;
+
+        box-shadow: var(--vr-shadow);
+    }
+
+    .registration-verify-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--vr-gradient);
+    }
+
+    /* =========================
+       HEADER
+    ========================== */
+
+    .registration-verify-header {
+        padding: 38px 34px 30px;
+
+        text-align: center;
+
+        background:
+            linear-gradient(
+                180deg,
+                rgba(248, 250, 252, 0.96) 0%,
+                #ffffff 100%
+            );
+
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .registration-verify-icon {
+        width: 78px;
+        height: 78px;
+
+        margin: 0 auto 20px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        position: relative;
+
+        border-radius: 22px;
+        background: var(--vr-gradient);
+
+        box-shadow:
+            0 12px 30px rgba(25, 135, 84, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .registration-verify-icon::after {
+        content: "";
+
+        position: absolute;
+        inset: -7px;
+
+        border-radius: 27px;
+        border: 1px solid rgba(25, 135, 84, 0.13);
+    }
+
+    .registration-verify-icon i {
+        color: #ffffff;
+        font-size: 31px;
+    }
+
+    .registration-verify-title {
+        margin: 0 0 8px;
+
+        color: var(--vr-text);
+
+        font-size: 27px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: -0.5px;
+    }
+
+    .registration-verify-subtitle {
+        max-width: 350px;
+        margin: 0 auto;
+
+        color: var(--vr-muted);
+
+        font-size: 14px;
+        line-height: 1.65;
+        font-weight: 500;
+    }
+
+    .registration-email {
+        display: inline-block;
+        max-width: 100%;
+
+        margin-top: 7px;
+
+        color: #374151;
+        font-weight: 750;
+
+        overflow-wrap: anywhere;
+    }
+
+    /* =========================
+       FORM
+    ========================== */
+
+    .registration-verify-form {
+        padding: 34px;
+    }
+
+    .registration-form-group {
+        margin-bottom: 22px;
+    }
+
+    .registration-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+
+        margin-bottom: 10px;
+
+        color: #374151;
+
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .registration-label-left {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .registration-label-icon {
+        width: 24px;
+        height: 24px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 7px;
+
+        color: var(--vr-primary);
+        background: var(--vr-primary-soft);
+
+        font-size: 12px;
+    }
+
+    .registration-digit-count {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    /* =========================
+       OTP INPUT
+    ========================== */
+
+    .registration-otp-wrapper {
+        position: relative;
+    }
+
+    .registration-otp-input {
+        width: 100%;
+        height: 62px;
+
+        box-sizing: border-box;
+
+        padding: 0 18px;
+
+        border: 2px solid var(--vr-border);
+        border-radius: 14px;
+
+        outline: none;
+
+        background: #ffffff;
+        color: #111827;
+
+        font-size: 25px;
+        font-weight: 800;
+
+        letter-spacing: 9px;
+        text-align: center;
+
+        transition:
+            border-color var(--vr-transition),
+            box-shadow var(--vr-transition),
+            background var(--vr-transition),
+            transform var(--vr-transition);
+    }
+
+    .registration-otp-input::placeholder {
+        color: #cbd5e1;
+        opacity: 1;
+
+        font-size: 17px;
+        font-weight: 600;
+
+        letter-spacing: 4px;
+    }
+
+    .registration-otp-input:hover {
+        border-color: #cbd5e1;
+    }
+
+    .registration-otp-input:focus {
+        border-color: var(--vr-primary);
+
+        background: #ffffff;
+
+        box-shadow:
+            0 0 0 4px rgba(25, 135, 84, 0.10),
+            0 8px 20px rgba(25, 135, 84, 0.06);
+    }
+
+    /* =========================
+       CREATE ACCOUNT BUTTON
+    ========================== */
+
+    .registration-submit {
+        width: 100%;
+        min-height: 56px;
+
+        padding: 14px 20px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+
+        border: 0;
+        border-radius: 13px;
+
+        background: var(--vr-gradient);
+        color: #ffffff;
+
+        font-size: 15px;
+        font-weight: 800;
+
+        cursor: pointer;
+
+        box-shadow:
+            0 10px 24px rgba(25, 135, 84, 0.22);
+
+        transition:
+            transform var(--vr-transition),
+            box-shadow var(--vr-transition),
+            filter var(--vr-transition);
+    }
+
+    .registration-submit:hover {
+        transform: translateY(-2px);
+
+        box-shadow:
+            0 14px 30px rgba(25, 135, 84, 0.28);
+
+        filter: brightness(1.02);
+    }
+
+    .registration-submit:active {
+        transform: translateY(0);
+
+        box-shadow:
+            0 7px 18px rgba(25, 135, 84, 0.20);
+    }
+
+    .registration-submit:focus-visible {
+        outline: 3px solid rgba(25, 135, 84, 0.18);
+        outline-offset: 3px;
+    }
+
+    .registration-submit i {
+        font-size: 16px;
+    }
+
+    /* =========================
+       SECURITY NOTE
+    ========================== */
+
+    .registration-security-note {
+        margin-top: 22px;
+
+        padding: 13px 14px;
+
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+
+        border: 1px solid #eef2f7;
+        border-radius: 11px;
+
+        background: #f8fafc;
+        color: #64748b;
+
+        font-size: 12px;
+        line-height: 1.55;
+        font-weight: 500;
+    }
+
+    .registration-security-note i {
+        margin-top: 2px;
+
+        color: var(--vr-primary);
+        font-size: 14px;
+
+        flex-shrink: 0;
+    }
+
+    /* =========================
+       MOBILE
+    ========================== */
+
+    @media (max-width: 575px) {
+
+        .registration-verify-page {
+            min-height: calc(100vh - 60px);
+            padding: 24px 14px;
+        }
+
+        .registration-verify-card {
+            border-radius: 20px;
+        }
+
+        .registration-verify-header {
+            padding: 32px 22px 25px;
+        }
+
+        .registration-verify-form {
+            padding: 26px 20px 24px;
+        }
+
+        .registration-verify-icon {
+            width: 70px;
+            height: 70px;
+
+            border-radius: 19px;
+
+            margin-bottom: 17px;
+        }
+
+        .registration-verify-icon i {
+            font-size: 27px;
+        }
+
+        .registration-verify-title {
+            font-size: 24px;
+        }
+
+        .registration-otp-input {
+            height: 58px;
+
+            font-size: 22px;
+            letter-spacing: 7px;
+        }
+    }
+
+    @media (max-width: 360px) {
+
+        .registration-verify-header {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .registration-verify-form {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .registration-otp-input {
+            letter-spacing: 5px;
+        }
+    }
+
+    /* =========================
+       REDUCED MOTION
+    ========================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .registration-alert,
+        .registration-submit,
+        .registration-otp-input {
+            animation: none;
+            transition: none;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="registration-verify-page">
+
+    <div class="registration-verify-wrapper">
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+
+                <div class="registration-alerts">
+
+                    {% for category, message in messages %}
+
+                        <div class="registration-alert {% if category == 'error' %}registration-alert-danger{% else %}registration-alert-success{% endif %}">
+
+                            <i class="fas fa-{% if category == 'error' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
+
+                            <span>{{ message }}</span>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+        {% endwith %}
+
+
+        <!-- Registration Verification Card -->
+        <div class="registration-verify-card">
+
+            <!-- Header -->
+            <div class="registration-verify-header">
+
+                <div class="registration-verify-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+
+                <h1 class="registration-verify-title">
+                    Almost Done!
+                </h1>
+
+                <p class="registration-verify-subtitle">
+                    We've sent a 6-digit verification code to
+                    <br>
+                    <strong class="registration-email">{{ email }}</strong>
+                </p>
+
+            </div>
+
+
+            <!-- Form -->
+            <div class="registration-verify-form">
+
+                <form method="POST">
+
+                    <!-- CSRF -->
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+
+                    <div class="registration-form-group">
+
+                        <label
+                            for="otp"
+                            class="registration-label"
+                        >
+
+                            <span class="registration-label-left">
+
+                                <span class="registration-label-icon">
+                                    <i class="fas fa-key"></i>
+                                </span>
+
+                                <span>
+                                    Verification Code
+                                </span>
+
+                            </span>
+
+                            <span class="registration-digit-count">
+                                6 digits
+                            </span>
+
+                        </label>
+
+
+                        <div class="registration-otp-wrapper">
+
+                            <input
+                                type="text"
+                                id="otp"
+                                class="registration-otp-input"
+                                name="otp"
+                                placeholder="••••••"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                required
+                                aria-label="6-digit registration verification code"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Create Account -->
+                    <button
+                        type="submit"
+                        class="registration-submit"
+                    >
+                        <i class="fas fa-user-plus"></i>
+                        <span>Create Account</span>
+                    </button>
+
+
+                    <!-- Security Information -->
+                    <div class="registration-security-note">
+
+                        <i class="fas fa-shield-alt"></i>
+
+                        <span>
+                            Your verification code is private. Never share
+                            this code with anyone.
+                        </span>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const otpInput = document.getElementById("otp");
+
+        if (!otpInput) {
+            return;
+        }
+
+        /*
+         * Allow numbers only.
+         * This does not change the backend field name or form behaviour.
+         */
+        otpInput.addEventListener("input", function () {
+            this.value = this.value
+                .replace(/\D/g, "")
+                .slice(0, 6);
+        });
+
+        /*
+         * Automatically focus the OTP field
+         * for faster verification.
+         */
+        otpInput.focus();
+
+    });
+</script>
+
+{% endblock %}
