@@ -52,16 +52,17 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_recycle": 300,    # Har 5 minute (300 sec) mein connection refresh karega
 }
 
-mail = Mail(app)
-# Mail Server Settings (overrideable via Config/env)
-app.config.setdefault('MAIL_SERVER', 'smtp.gmail.com')
-app.config.setdefault('MAIL_PORT', 587)
-app.config.setdefault('MAIL_USE_TLS', True)
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465                      # 587 ko 465 karein
+app.config['MAIL_USE_TLS'] = False                 # TLS ko False karein
+app.config['MAIL_USE_SSL'] = True                  # SSL ko True karein
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_APP_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
 
-# Database & Scheduler
+mail = Mail(app)
+
 db.init_app(app)
 scheduler = APScheduler()
 scheduler.init_app(app)
