@@ -494,6 +494,12 @@
     [data-theme="dark"] .btn-login-secondary:hover {
         background: #4b5563;
     }
+    
+    /* Hover effect styling for forgot password */
+    .forgot-password-link:hover {
+        color: var(--primary-light) !important;
+        text-decoration: underline !important;
+    }
 </style>
 {% endblock %}
 
@@ -566,6 +572,15 @@
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                        
+                        <!-- NAYA ADD KIYA GAYA FORGOT PASSWORD LINK -->
+                        <div style="text-align: right; margin-top: 10px;">
+                            <a href="/forgot_password" class="forgot-password-link" style="font-size: 0.9rem; font-weight: 600; color: var(--primary); text-decoration: none; transition: all var(--transition-fast);">
+                                Forgot Password?
+                            </a>
+                        </div>
+                        <!-- --------------------------------------- -->
+                        
                     </div>
 
                     <!-- Login Buttons -->
