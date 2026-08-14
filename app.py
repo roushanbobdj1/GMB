@@ -47,7 +47,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Mail
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,  # Query chalane se pehle connection test karega
+    "pool_recycle": 300,    # Har 5 minute (300 sec) mein connection refresh karega
+}
+
 mail = Mail(app)
 # Mail Server Settings (overrideable via Config/env)
 app.config.setdefault('MAIL_SERVER', 'smtp.gmail.com')
