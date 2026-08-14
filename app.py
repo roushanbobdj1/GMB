@@ -1,4 +1,4 @@
-# Combined and cleaned app.py (merged from your provided snippets)
+# Combined and cleaned app.py
 import os
 import re
 import uuid
@@ -47,16 +47,17 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Database pooling settings to prevent drop connections
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    "pool_pre_ping": True,  # Query chalane se pehle connection test karega
-    "pool_recycle": 300,    # Har 5 minute (300 sec) mein connection refresh karega
+    "pool_pre_ping": True,  
+    "pool_recycle": 300,    
 }
 
-
+# Real Email Settings (Active)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465                      # 587 ko 465 karein
-app.config['MAIL_USE_TLS'] = False                 # TLS ko False karein
-app.config['MAIL_USE_SSL'] = True                  # SSL ko True karein
+app.config['MAIL_PORT'] = 465                      
+app.config['MAIL_USE_TLS'] = False                 
+app.config['MAIL_USE_SSL'] = True                  
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_APP_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
@@ -101,8 +102,6 @@ def check_admin_password(candidate: str) -> bool:
 
 @app.context_processor
 def inject_nav_user_info():
-    """Makes current user's name, available points and unread notification
-    count available to every template (used in the top navbar)."""
     data = {'nav_user': None, 'nav_available_points': 0, 'nav_unread_count': 0}
     try:
         user_id = session.get('user_id')
@@ -119,7 +118,6 @@ def inject_nav_user_info():
 
 
 def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
-    """Create a Notification row + push it live to that user's browser instantly."""
     try:
         notif = Notification(
             user_id=user_id,
@@ -146,18 +144,15 @@ def notify_user(user_id, message, notification_type='general', related_id=None, 
 
 
 def notify_admins(event, data):
-    """Push a live event to every connected admin (used for new tasks/tickets/redeems)."""
     socketio.emit(event, data, room='admin_room')
 
 
 def broadcast_leaderboard_update():
-    """Tell every connected browser (students + admins) that ranks/points changed."""
     socketio.emit('leaderboard_updated', {})
 
 
 @socketio.on('connect')
 def ws_connect():
-    # Put every connecting browser tab into the correct real-time room
     if session.get('user_id'):
         join_room(f"user_{session['user_id']}")
     if session.get('admin_id'):
@@ -166,7 +161,6 @@ def ws_connect():
 
 @socketio.on('join_ticket')
 def ws_join_ticket(data):
-    # Lets both the student and the admin watch the same support ticket live
     ticket_id = data.get('ticket_id') if isinstance(data, dict) else None
     if not ticket_id:
         return
@@ -198,7 +192,6 @@ def is_valid_image_content(file_storage):
         return False
 
 
-# Validation helpers
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(pattern, email):
@@ -240,18 +233,14 @@ def is_valid_phone(phone):
 
 @app.before_request
 def check_if_blocked():
-    # Agar user logged in hai
     if 'user_id' in session:
         user = db.session.get(User, session['user_id'])
         if not user:
-            # Ghost session: user was deleted
             session.clear()
             flash('❌ Account deleted or session expired. Please login again.', 'error')
             return redirect(url_for('user_login'))
 
-        # Agar user mil gaya aur wo blocked hai
         if user and getattr(user, 'is_blocked', False):
-            # Sirf in routes ko allow karna hai taaki user support team se baat kar sake ya logout ho sake
             allowed_routes = [
                 'support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket',
                 'logout', 'static', 'offline', 'serve_uploads'
@@ -281,10 +270,9 @@ def admin_required(f):
     return decorated_function
 
 
-# ----------------- DB Auto-migration helper (lightweight) -----------------
+# ----------------- DB Auto-migration helper -----------------
 with app.app_context():
     db.create_all()
-    # Lightweight auto-migration for missing screenshot_hash in task_submissions
     try:
         from sqlalchemy import inspect, text
         inspector = inspect(db.engine)
@@ -351,7 +339,7 @@ def register():
         flash("❌ Email already exists!", "error")
         return redirect(url_for('user_register'))
 
-    # ✅ GENERATE OTP & SAVE TO TEMPORARY SESSION
+    # ✅ GENERATE OTP & SEND REAL EMAIL
     try:
         otp = str(random.randint(100000, 999999))
 
@@ -364,17 +352,31 @@ def register():
             'expires': (datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()
         }
 
-        # Bypass Mail Send for Render Free Tier
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+            <h2>Verify Your Email</h2>
+            <p>Hi {name}, welcome to GMB Earn!</p>
+            <p>Your 6-digit OTP to verify your email address is:</p>
+            <h1 style="color: #198754; letter-spacing: 5px;">{otp}</h1>
+            <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
+        </div>
+        """
+        
+        # REAL EMAIL SENDING ACTIVE
+        msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
+        mail.send(msg)
+
+        # Print to console as backup
         print(f"\n=========================================")
-        print(f"🚀 NEW REGISTRATION OTP FOR {email}: {otp}")
+        print(f"🚀 EMAIL SENT TO {email} | OTP: {otp}")
         print(f"=========================================\n")
 
-        flash('✅ OTP generated! Check Render Server Logs to see your OTP.', 'success')
+        flash('✅ Verification OTP sent to your email!', 'success')
         return redirect(url_for('verify_registration'))
 
     except Exception as e:
         logger.error(f"Email Error during registration: {str(e)}")
-        flash('❌ Failed to process request.', 'error')
+        flash('❌ Failed to send OTP email. Please check SMTP settings.', 'error')
         return redirect(url_for('user_register'))
 
 
@@ -397,13 +399,11 @@ def verify_registration():
 
         # ✅ OTP VERIFIED: NOW SAVE TO DATABASE & ASSIGN TASKS
         try:
-            # 1. Create New User
             user = User(email=email, name=reg_data['name'], mobile=reg_data['phone'])
             user.set_password(reg_data['password'])
             db.session.add(user)
             db.session.commit()
 
-            # 2. Create Wallet for User
             wallet = Wallet(
                 user_id=user.id,
                 total_points=0,
@@ -413,7 +413,6 @@ def verify_registration():
             db.session.add(wallet)
             db.session.commit()
 
-            # 3. Auto-Assign Tasks
             active_campaigns = Campaign.query.filter_by(status='Active').all()
             tasks_assigned_count = 0
 
@@ -461,7 +460,6 @@ def verify_registration():
                 db.session.add(notification)
                 db.session.commit()
 
-            # Clear temporary session data
             session.pop('pending_registration', None)
 
             flash("✅ Email Verified & Registration successful! Tasks assigned to you! 🎉", "success")
@@ -520,7 +518,6 @@ def user_dashboard():
     wallet = Wallet.query.filter_by(user_id=user.id).first()
     tasks = Task.query.filter_by(user_id=user.id).all()
 
-    # Only show campaigns actually assigned to this user
     campaigns = (
         Campaign.query
         .join(Task, Task.campaign_id == Campaign.id)
@@ -569,7 +566,6 @@ def submit_task(task_id):
     file = request.files['screenshot']
 
     if file and allowed_file(file.filename) and is_valid_image_content(file):
-        # Detect duplicate/reused screenshots.
         file.stream.seek(0)
         file_bytes = file.read()
         screenshot_hash = hashlib.sha256(file_bytes).hexdigest()
@@ -746,7 +742,6 @@ def get_notifications():
     })
 
 
-# Excluded from CSRF for JS fetch calls to work
 @app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
 @csrf.exempt
 @login_required
@@ -831,7 +826,6 @@ def view_ticket(ticket_id):
     return render_template('support_ticket.html', ticket=ticket)
 
 
-# Added csrf.exempt for JS fetch call
 @app.route('/support/ticket/<int:ticket_id>/reply', methods=['POST'])
 @csrf.exempt
 @login_required
@@ -1010,14 +1004,11 @@ def delete_campaign(campaign_id):
         flash('❌ Campaign not found!', 'error')
         return redirect(url_for('admin_campaigns'))
 
-    # Only creator admin can delete
     if campaign.created_by != session.get('admin_id'):
         flash('❌ You can only delete campaigns you created!', 'error')
         return redirect(url_for('admin_campaigns'))
 
     campaign_name = campaign.name
-
-    # Preserve user task-history and detach task.campaign_id
     campaign_tasks = Task.query.filter_by(campaign_id=campaign.id).all()
     tasks_by_user = {}
     for t in campaign_tasks:
@@ -1032,10 +1023,7 @@ def delete_campaign(campaign_id):
             except Exception:
                 pass
 
-    # Detach tasks from campaign (preserve task records)
     Task.query.filter_by(campaign_id=campaign.id).update({'campaign_id': None})
-
-    # Clean related records not cascade-managed
     UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).delete()
     CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).delete()
 
@@ -1058,7 +1046,6 @@ def verify_tasks():
     return render_template("admin_verify_tasks.html", submissions=submissions)
 
 
-# Admin verify/reject actions (csrf exempt for fetch)
 @app.route("/admin/task/<int:submission_id>/<action>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -1149,7 +1136,6 @@ def task_verify_action(submission_id, action):
         return jsonify({'status': 'error', 'message': 'Database error occurred during transaction.'}), 500
 
 
-# Admin process redeem (csrf exempt)
 @app.route("/admin/redeem/<int:redeem_id>/<action>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -1169,7 +1155,6 @@ def process_redeem(redeem_id, action):
             message = f'✅ Redeem approved! {redeem_req.points} points transferred.'
 
         elif action == 'reject':
-            # Admin provided reason (JSON/form)
             reason = ''
             if request.is_json:
                 reason = (request.get_json(silent=True) or {}).get('reason', '').strip()
@@ -1277,7 +1262,6 @@ def admin_list(type):
     return "Invalid Type"
 
 
-# Allocate tasks (admin) - improved fairness logic
 @app.route("/admin/allocate_tasks/<int:campaign_id>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -1287,17 +1271,13 @@ def allocate_tasks(campaign_id):
         if total_tasks_needed <= 0:
             return jsonify({'status': 'error', 'message': f'Invalid task count: {total_tasks_needed}'}), 400
 
-        # Row-level lock on campaign to prevent concurrent conflicts
         campaign = db.session.query(Campaign).with_for_update().filter_by(id=campaign_id).first()
         if not campaign:
             return jsonify({'status': 'error', 'message': 'Campaign not found'}), 404
 
         now = datetime.now(timezone.utc)
-
-        # Exclude users who already have a task for this specific campaign
         assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).filter_by(campaign_id=campaign_id)
 
-        # Eligible users: monthly cap < 14, not blocked, not already assigned in this campaign
         eligible_query = db.session.query(User.id).\
             outerjoin(Task, and_(
                 Task.user_id == User.id,
@@ -1314,7 +1294,6 @@ def allocate_tasks(campaign_id):
         if not all_eligible_ids:
             return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
 
-        # Lifetime task count per eligible user (all time)
         live_counts = dict(
             db.session.query(Task.user_id, func.count(Task.id))
             .filter(Task.user_id.in_(all_eligible_ids))
@@ -1356,7 +1335,7 @@ def allocate_tasks(campaign_id):
             tasks_to_insert.append(new_task)
 
         db.session.add_all(tasks_to_insert)
-        db.session.flush()  # Sync to get IDs
+        db.session.flush()
 
         for task in tasks_to_insert:
             assignments_to_insert.append(UserCampaignTaskAssignment(
@@ -1400,7 +1379,6 @@ def admin_view_ticket(ticket_id):
     return render_template('admin_support_ticket.html', ticket=ticket)
 
 
-# Admin reply to ticket
 @app.route('/admin/support/ticket/<int:ticket_id>/reply', methods=['POST'])
 @csrf.exempt
 @admin_required
@@ -1440,7 +1418,6 @@ def admin_reply_ticket(ticket_id):
     })
 
 
-# Update ticket status
 @app.route('/admin/support/ticket/<int:ticket_id>/status/<status>', methods=['POST'])
 @csrf.exempt
 @admin_required
@@ -1469,13 +1446,9 @@ def update_ticket_status(ticket_id, status):
 def offline():
     return render_template('offline.html')
 
-
 @app.route('/static/manifest.json')
 def serve_manifest():
     return send_file('static/manifest.json', mimetype='application/manifest+json')
-
-
-# ----------------- Misc API -----------------
 
 @app.route('/api/sync-pending-tasks', methods=['POST'])
 @csrf.exempt
@@ -1483,7 +1456,6 @@ def serve_manifest():
 def sync_pending_tasks():
     pending = TaskSubmission.query.filter_by(verification_status='Pending').all()
     return jsonify({'status': 'success', 'synced_tasks': len(pending), 'message': 'Tasks synced successfully'})
-
 
 @app.route('/uploads/<filename>')
 def serve_uploads(filename):
@@ -1541,20 +1513,16 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Security: if email wrong, don't reveal it
         flash('✅ If your email exists, OTP has been sent!', 'success')
         return render_template('forgot_password.html')
 
     try:
-        # Purane OTP delete karein
         PasswordResetToken.query.filter_by(user_id=user.id, is_used=False).delete()
-
-        # 6-Digit Random OTP Generate karein
         otp = str(random.randint(100000, 999999))
 
         token = PasswordResetToken(
             user_id=user.id, email=email, reset_token=otp,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15)  # 15 min validity
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15)
         )
         db.session.add(token)
         db.session.commit()
@@ -1568,19 +1536,26 @@ def forgot_password():
         </div>
         """
         
-        # Bypass Mail Send for Render Free Tier
+        # REAL EMAIL SENDING ACTIVE
+        msg = Message(
+            subject='🔐 Your Password Reset OTP - GMB Earn',
+            recipients=[email],
+            html=html_body
+        )
+        mail.send(msg)
+        
         print(f"\n=========================================")
-        print(f"🔐 PASSWORD RESET OTP FOR {email}: {otp}")
+        print(f"🔐 EMAIL SENT | PASSWORD RESET OTP FOR {email}: {otp}")
         print(f"=========================================\n")
         
         session['reset_email'] = email
-        flash('✅ OTP generated! Check Render Server Logs to see your OTP.', 'success')
+        flash('✅ OTP sent successfully to your email!', 'success')
         return redirect(url_for('verify_otp'))
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"🔥 EMAIL ERROR: {str(e)}")
-        flash('❌ Error occurred while processing request.', 'error')
+        flash('❌ Error occurred while sending email! Check SMTP settings.', 'error')
 
     return render_template('forgot_password.html')
 
@@ -1640,8 +1615,9 @@ def set_new_password():
             db.session.commit()
 
             try:
-                # Bypass Mail Send for Render Free Tier
-                print(f"✅ Password changed successfully for {user.email}")
+                # REAL EMAIL SENDING ACTIVE
+                mail.send(Message(subject='✅ Password Changed Successfully', recipients=[user.email], body='Your password has been successfully changed.'))
+                print(f"✅ Password success email sent to {user.email}")
             except Exception:
                 pass
 
@@ -1704,11 +1680,9 @@ def admin_analytics():
                          campaign_completions=campaign_completions)
 
 
-# Leaderboard compute utility
 def _compute_leaderboard(settings, limit=None):
     excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
     period_start = settings.period_start or datetime.utcnow()
-
     rows = []
 
     if settings.ranking_basis == 'points':
@@ -1831,7 +1805,6 @@ def admin_leaderboard_settings():
     settings.is_active = data.get('is_active') == 'on'
     settings.show_on_dashboard = data.get('show_on_dashboard') == 'on'
     settings.mask_names = data.get('mask_names') == 'on'
-
     settings.title = (data.get('title') or settings.title).strip()
     settings.subtitle = (data.get('subtitle') or settings.subtitle).strip()
 
@@ -1906,7 +1879,6 @@ def admin_leaderboard_exclude(user_id):
 
 @app.route("/admin/allocations")
 def admin_allocations():
-    # Check if admin is logged in
     if 'admin_logged_in' not in session:
         flash("Please login as admin first.", "error")
         return redirect(url_for('admin_login'))
@@ -1916,7 +1888,6 @@ def admin_allocations():
 
     for campaign in campaigns:
         progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-
         assignments = UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).all()
 
         assigned_users = []
@@ -2028,7 +1999,6 @@ def edit_profile():
 def monthly_task_reset():
     with app.app_context():
         logger.info("Monthly task reset started...")
-        # Add custom logic here
         db.session.commit()
         logger.info("Monthly task reset finished!")
 
@@ -2037,7 +2007,6 @@ def monthly_task_reset():
 def increment_allocation_month():
     with app.app_context():
         try:
-            # If Task.allocation_month exists; else this may fail on some schemas
             Task.query.update({'allocation_month': Task.allocation_month + 1})
             db.session.commit()
             logger.info("Monthly allocation month incremented!")
@@ -2053,7 +2022,6 @@ def increment_allocation_month():
 @admin_required
 def delete_user(user_id):
     user = db.session.get(User, user_id)
-
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
@@ -2061,7 +2029,6 @@ def delete_user(user_id):
         db.session.delete(user)
         db.session.commit()
         return jsonify({'status': 'success', 'message': f'User {user.name} deleted successfully!'})
-
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error deleting user: {str(e)}")
@@ -2073,17 +2040,14 @@ def delete_user(user_id):
 @admin_required
 def toggle_block_user(user_id):
     user = db.session.get(User, user_id)
-
     if not user:
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
     try:
         user.is_blocked = not user.is_blocked
         db.session.commit()
-
         action = "Blocked" if user.is_blocked else "Unblocked"
         return jsonify({'status': 'success', 'message': f'User {user.name} has been {action} successfully!'})
-
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error toggling block for user: {str(e)}")
