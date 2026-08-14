@@ -263,6 +263,13 @@ def index():
 def user_register():
     return render_template("register.html")
 
+# ==================== USER REGISTRATION (WITH OTP) ====================
+
+@app.route("/register")
+def user_register():
+    # Yeh page dikhayega
+    return render_template("register.html")
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.form
@@ -270,7 +277,6 @@ def register():
     password = data.get('password')
     name = data.get('name')
     phone = data.get('phone', '')
-
     
     if not email or not password or not name or not phone.strip():
         flash("❌ All fields including Mobile Number are required!", "error")
@@ -304,77 +310,135 @@ def register():
         flash("❌ Email already exists!", "error")
         return redirect(url_for('user_register'))
 
-    # 1. Create New User
-    user = User(email=email, name=name, mobile=phone)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-
-    # 2. Create Wallet for User
-    wallet = Wallet(
-        user_id=user.id,
-        total_points=0,
-        available_points=0,
-        redeemed_points=0
-    )
-    db.session.add(wallet)
-    db.session.commit()
-
-    # 3. Auto-Assign Tasks (FIXED LOGIC)
+    # ✅ GENERATE OTP & SAVE TO TEMPORARY SESSION
     try:
-        active_campaigns = Campaign.query.filter_by(status='Active').all()
-        tasks_assigned_count = 0
-
-        for campaign in active_campaigns:
-            progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-            
-            if progress and progress.total_tasks_assigned < progress.total_tasks_created:
-                review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
-                assigned_review = random.choice(review_texts).review_text if review_texts else "Default Review Text"
-                
-                new_task = Task(
-                    campaign_id=campaign.id,
-                    user_id=user.id,
-                    review_text=assigned_review,
-                    gmb_link=campaign.gmb_link,
-                    status='Assigned',
-                    assigned_date=datetime.now(timezone.utc)
-                )
-                db.session.add(new_task)
-                db.session.flush()
-
-                assignment = UserCampaignTaskAssignment(
-                    user_id=user.id,
-                    campaign_id=campaign.id,
-                    task_id=new_task.id,
-                    status='Assigned',
-                    assigned_at=datetime.now(timezone.utc)
-                )
-                db.session.add(assignment)
-                tasks_assigned_count += 1
-                
-                progress.total_tasks_assigned += 1
-                progress.users_count_assigned += 1
-                progress.updated_at = datetime.now(timezone.utc)
-
-        db.session.commit()
-
-        if tasks_assigned_count > 0:
-            notification = Notification(
-                user_id=user.id,
-                message=f'🎉 Welcome! You have {tasks_assigned_count} task(s) to complete and earn points! 💰',
-                notification_type='auto_assigned',
-                is_read=False
-            )
-            db.session.add(notification)
-            db.session.commit()
-            
+        otp = str(random.randint(100000, 999999))
+        
+        session['pending_registration'] = {
+            'name': name,
+            'email': email,
+            'phone': phone,
+            'password': password,
+            'otp': otp,
+            'expires': (datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()
+        }
+        
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+            <h2>Verify Your Email</h2>
+            <p>Hi {name}, welcome to GMB Earn!</p>
+            <p>Your 6-digit OTP to verify your email address is:</p>
+            <h1 style="color: #198754; letter-spacing: 5px;">{otp}</h1>
+            <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
+        </div>
+        """
+        msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
+        mail.send(msg)
+        
+        flash('✅ Verification OTP sent to your email!', 'success')
+        return redirect(url_for('verify_registration'))
+        
     except Exception as e:
-        logger.error(f"Error auto-assigning tasks: {str(e)}")
-        db.session.rollback()
+        logger.error(f"Email Error during registration: {str(e)}")
+        flash('❌ Failed to send OTP. Please check SMTP configuration.', 'error')
+        return redirect(url_for('user_register'))
 
-    flash("✅ Registration successful! Tasks assigned to you! 🎉", "success")
-    return redirect(url_for('user_login'))
+
+@app.route("/verify_registration", methods=["GET", "POST"])
+def verify_registration():
+    if 'pending_registration' not in session:
+        flash('❌ Invalid request, please register again.', 'error')
+        return redirect(url_for('user_register'))
+        
+    reg_data = session['pending_registration']
+    email = reg_data['email']
+    
+    if request.method == "POST":
+        entered_otp = request.form.get('otp', '').strip()
+        current_time = datetime.now(timezone.utc).timestamp()
+        
+        if entered_otp != reg_data['otp'] or current_time > reg_data['expires']:
+            flash('❌ Invalid or expired OTP!', 'error')
+            return render_template('verify_registration.html', email=email)
+            
+        # ✅ OTP VERIFIED: NOW SAVE TO DATABASE & ASSIGN TASKS (Aapka poora purana logic yahan hai)
+        try:
+            # 1. Create New User
+            user = User(email=email, name=reg_data['name'], mobile=reg_data['phone'])
+            user.set_password(reg_data['password'])
+            db.session.add(user)
+            db.session.commit()
+
+            # 2. Create Wallet for User
+            wallet = Wallet(
+                user_id=user.id,
+                total_points=0,
+                available_points=0,
+                redeemed_points=0
+            )
+            db.session.add(wallet)
+            db.session.commit()
+
+            # 3. Auto-Assign Tasks
+            active_campaigns = Campaign.query.filter_by(status='Active').all()
+            tasks_assigned_count = 0
+
+            for campaign in active_campaigns:
+                progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
+                
+                if progress and progress.total_tasks_assigned < progress.total_tasks_created:
+                    review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
+                    assigned_review = random.choice(review_texts).review_text if review_texts else "Default Review Text"
+                    
+                    new_task = Task(
+                        campaign_id=campaign.id,
+                        user_id=user.id,
+                        review_text=assigned_review,
+                        gmb_link=campaign.gmb_link,
+                        status='Assigned',
+                        assigned_date=datetime.now(timezone.utc)
+                    )
+                    db.session.add(new_task)
+                    db.session.flush()
+
+                    assignment = UserCampaignTaskAssignment(
+                        user_id=user.id,
+                        campaign_id=campaign.id,
+                        task_id=new_task.id,
+                        status='Assigned',
+                        assigned_at=datetime.now(timezone.utc)
+                    )
+                    db.session.add(assignment)
+                    tasks_assigned_count += 1
+                    
+                    progress.total_tasks_assigned += 1
+                    progress.users_count_assigned += 1
+                    progress.updated_at = datetime.now(timezone.utc)
+
+            db.session.commit()
+
+            if tasks_assigned_count > 0:
+                notification = Notification(
+                    user_id=user.id,
+                    message=f'🎉 Welcome! You have {tasks_assigned_count} task(s) to complete and earn points! 💰',
+                    notification_type='auto_assigned',
+                    is_read=False
+                )
+                db.session.add(notification)
+                db.session.commit()
+            
+            # Clear temporary session data
+            session.pop('pending_registration', None)
+            
+            flash("✅ Email Verified & Registration successful! Tasks assigned to you! 🎉", "success")
+            return redirect(url_for('user_login'))
+            
+        except Exception as e:
+            logger.error(f"Error finalizing registration: {str(e)}")
+            db.session.rollback()
+            flash('❌ Error saving account. Please try again.', 'error')
+            
+    return render_template('verify_registration.html', email=email)
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
