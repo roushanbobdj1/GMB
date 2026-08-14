@@ -261,13 +261,14 @@ def register():
     name = data.get('name')
     phone = data.get('phone', '')
 
-    if not email or not password or not name:
-        flash("❌ All fields required!", "error")
+    # 🚨 NAYA BADLAAV: phone.strip() check add kiya gaya hai taaki phone number compulsory ho jaye
+    if not email or not password or not name or not phone.strip():
+        flash("❌ All fields including Mobile Number are required!", "error")
         return redirect(url_for('user_register'))
 
     email = email.strip().lower()
     name = name.strip()
-    phone = (phone or '').strip()
+    phone = phone.strip()
 
     valid, msg = is_valid_email(email)
     if not valid:
@@ -293,11 +294,13 @@ def register():
         flash("❌ Email already exists!", "error")
         return redirect(url_for('user_register'))
 
+    # 1. Create New User
     user = User(email=email, name=name, mobile=phone)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
 
+    # 2. Create Wallet for User
     wallet = Wallet(
         user_id=user.id,
         total_points=0,
@@ -307,33 +310,42 @@ def register():
     db.session.add(wallet)
     db.session.commit()
 
+    # 3. Auto-Assign Tasks (FIXED LOGIC)
     try:
         active_campaigns = Campaign.query.filter_by(status='Active').all()
         tasks_assigned_count = 0
 
         for campaign in active_campaigns:
-            task = Task.query.filter_by(campaign_id=campaign.id, user_id=None, status='Pending_Assignment').first()
+            progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
             
-            if task:
-                task.user_id = user.id
-                task.status = 'Assigned'
-                task.assigned_date = datetime.now(timezone.utc)
+            if progress and progress.total_tasks_assigned < progress.total_tasks_created:
+                review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
+                assigned_review = random.choice(review_texts).review_text if review_texts else "Default Review Text"
+                
+                new_task = Task(
+                    campaign_id=campaign.id,
+                    user_id=user.id,
+                    review_text=assigned_review,
+                    gmb_link=campaign.gmb_link,
+                    status='Assigned',
+                    assigned_date=datetime.now(timezone.utc)
+                )
+                db.session.add(new_task)
+                db.session.flush()
 
                 assignment = UserCampaignTaskAssignment(
                     user_id=user.id,
                     campaign_id=campaign.id,
-                    task_id=task.id,
+                    task_id=new_task.id,
                     status='Assigned',
                     assigned_at=datetime.now(timezone.utc)
                 )
                 db.session.add(assignment)
                 tasks_assigned_count += 1
                 
-                progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-                if progress:
-                    progress.total_tasks_assigned += 1
-                    progress.users_count_assigned += 1
-                    progress.updated_at = datetime.now(timezone.utc)
+                progress.total_tasks_assigned += 1
+                progress.users_count_assigned += 1
+                progress.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -353,7 +365,6 @@ def register():
 
     flash("✅ Registration successful! Tasks assigned to you! 🎉", "success")
     return redirect(url_for('user_login'))
-
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
