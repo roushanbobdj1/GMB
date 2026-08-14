@@ -1,23 +1,319 @@
+# Combined and cleaned app.py (merged from your provided snippets)
+import os
+import re
+import uuid
+import random
+import logging
+import hashlib
+import secrets
+from datetime import datetime, timedelta, timezone
+from functools import wraps
+
+from flask import (
+    Flask, render_template, request, redirect, session, url_for, flash,
+    jsonify, send_file, send_from_directory
+)
+from werkzeug.utils import secure_filename
+from PIL import Image, UnidentifiedImageError
+
+# Optional: enables local .env file support.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from flask_sqlalchemy import SQLAlchemy
+from flask_apscheduler import APScheduler
+from flask_socketio import SocketIO, emit, join_room
+from flask_mail import Mail, Message
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+import bcrypt
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import func, and_
+
+# App config + models
+from config import Config
+from models import *  # expecting db, User, Wallet, Task, TaskSubmission, Notification, Campaign, CampaignReviewText, CampaignAllocationProgress, UserCampaignTaskAssignment, RedeemRequest, WalletTransaction, PasswordResetToken, SupportTicket, SupportReply, LeaderboardSettings, LeaderboardExclusion
+
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Flask App
+app = Flask(__name__)
+app.config.from_object(Config)
+
+# Mail
+mail = Mail(app)
+# Mail Server Settings (overrideable via Config/env)
+app.config.setdefault('MAIL_SERVER', 'smtp.gmail.com')
+app.config.setdefault('MAIL_PORT', 587)
+app.config.setdefault('MAIL_USE_TLS', True)
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_APP_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
+# Database & Scheduler
+db.init_app(app)
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+
+# Ensure upload folder exists
+os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
+
+# SocketIO (real-time)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+# CSRF protection
+csrf = CSRFProtect(app)
+
+# Rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["1000 per day", "200 per hour"],
+    storage_uri=app.config.get('RATELIMIT_STORAGE_URI', 'memory://'),
+)
+
+# Admin password hashing fallback
+admin_password_str = app.config.get('ADMIN_PASSWORD', 'default_admin_password')
+_ADMIN_PASSWORD_HASH = bcrypt.hashpw(admin_password_str.encode('utf-8'), bcrypt.gensalt())
+
+
+def check_admin_password(candidate: str) -> bool:
+    try:
+        return bcrypt.checkpw(candidate.encode('utf-8'), _ADMIN_PASSWORD_HASH)
+    except Exception:
+        return False
+
+
+# ----------------- Helpers & Utilities -----------------
+
+@app.context_processor
+def inject_nav_user_info():
+    """Makes current user's name, available points and unread notification
+    count available to every template (used in the top navbar)."""
+    data = {'nav_user': None, 'nav_available_points': 0, 'nav_unread_count': 0}
+    try:
+        user_id = session.get('user_id')
+        if user_id:
+            user = db.session.get(User, user_id)
+            if user:
+                data['nav_user'] = user
+                wallet = Wallet.query.filter_by(user_id=user_id).first()
+                data['nav_available_points'] = wallet.available_points if wallet else 0
+                data['nav_unread_count'] = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    except Exception as e:
+        logger.warning(f"nav context processor error: {e}")
+    return data
+
+
+def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
+    """Create a Notification row + push it live to that user's browser instantly."""
+    try:
+        notif = Notification(
+            user_id=user_id,
+            message=message,
+            notification_type=notification_type,
+            related_id=related_id,
+            is_read=False
+        )
+        db.session.add(notif)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.error("Failed to persist notification for user %s", user_id)
+
+    payload = {
+        'message': message,
+        'type': notification_type,
+        'related_id': related_id,
+        'created_at': datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')
+    }
+    if extra:
+        payload.update(extra)
+    socketio.emit('new_notification', payload, room=f'user_{user_id}')
+
+
+def notify_admins(event, data):
+    """Push a live event to every connected admin (used for new tasks/tickets/redeems)."""
+    socketio.emit(event, data, room='admin_room')
+
+
+def broadcast_leaderboard_update():
+    """Tell every connected browser (students + admins) that ranks/points changed."""
+    socketio.emit('leaderboard_updated', {})
+
+
+@socketio.on('connect')
+def ws_connect():
+    # Put every connecting browser tab into the correct real-time room
+    if session.get('user_id'):
+        join_room(f"user_{session['user_id']}")
+    if session.get('admin_id'):
+        join_room('admin_room')
+
+
+@socketio.on('join_ticket')
+def ws_join_ticket(data):
+    # Lets both the student and the admin watch the same support ticket live
+    ticket_id = data.get('ticket_id') if isinstance(data, dict) else None
+    if not ticket_id:
+        return
+    ticket = db.session.get(SupportTicket, int(ticket_id))
+    if not ticket:
+        return
+    is_owner = session.get('user_id') and ticket.user_id == session.get('user_id')
+    is_admin = bool(session.get('admin_id'))
+    if is_owner or is_admin:
+        join_room(f"ticket_{ticket_id}")
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif'})
+
+
+def is_valid_image_content(file_storage):
+    try:
+        file_storage.stream.seek(0)
+        img = Image.open(file_storage.stream)
+        img.verify()
+        file_storage.stream.seek(0)
+        img2 = Image.open(file_storage.stream)
+        fmt = (img2.format or '').lower()
+        file_storage.stream.seek(0)
+        allowed_formats = {'png', 'jpeg', 'jpg', 'gif'}
+        return fmt in allowed_formats
+    except (UnidentifiedImageError, OSError, ValueError, Exception):
+        return False
+
+
+# Validation helpers
+def is_valid_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        return False, "Invalid email format"
+    return True, "Valid email"
+
+
+def is_valid_password(password):
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain lowercase letter"
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain number"
+    if not re.search(r'[!@#$%^&*]', password):
+        return False, "Password must contain special character (!@#$%^&*)"
+    return True, "Password is strong"
+
+
+def is_valid_name(name):
+    if len(name.strip()) < 3:
+        return False, "Name must be at least 3 characters"
+    if not re.match(r'^[a-zA-Z\s]+$', name):
+        return False, "Name can only contain letters and spaces"
+    return True, "Name is valid"
+
+
+def is_valid_phone(phone):
+    if not phone or len(phone) == 0:
+        return False, "Phone number is required"
+    if not re.match(r'^[0-9]{10}$', phone):
+        return False, "Phone must be exactly 10 digits"
+    return True, "Phone is valid"
+
+
+# ----------------- Authentication wrappers & request hooks -----------------
+
 @app.before_request
 def check_if_blocked():
     # Agar user logged in hai
     if 'user_id' in session:
         user = db.session.get(User, session['user_id'])
-        
+        if not user:
+            # Ghost session: user was deleted
+            session.clear()
+            flash('❌ Account deleted or session expired. Please login again.', 'error')
+            return redirect(url_for('user_login'))
+
         # Agar user mil gaya aur wo blocked hai
         if user and getattr(user, 'is_blocked', False):
             # Sirf in routes ko allow karna hai taaki user support team se baat kar sake ya logout ho sake
-            allowed_routes = ['support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket', 'logout', 'static', 'offline', 'serve_uploads']
+            allowed_routes = [
+                'support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket',
+                'logout', 'static', 'offline', 'serve_uploads'
+            ]
             if request.endpoint not in allowed_routes:
                 flash('❌ Your account has been blocked by Admin. Please contact support.', 'error')
                 return redirect(url_for('support_page'))
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('❌ Please login first!', 'error')
+            return redirect(url_for('user_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_id' not in session:
+            flash('❌ Admin login required!', 'error')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ----------------- DB Auto-migration helper (lightweight) -----------------
+with app.app_context():
+    db.create_all()
+    # Lightweight auto-migration for missing screenshot_hash in task_submissions
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        if 'task_submissions' in inspector.get_table_names():
+            existing_cols = [c['name'] for c in inspector.get_columns('task_submissions')]
+            if 'screenshot_hash' not in existing_cols:
+                with db.engine.connect() as conn:
+                    conn.execute(text('ALTER TABLE task_submissions ADD COLUMN screenshot_hash VARCHAR(64)'))
+                    conn.commit()
+                logger.info("✅ Added missing column 'screenshot_hash' to task_submissions table.")
+    except Exception as _mig_err:
+        logger.warning(f"Auto-migration check skipped/failed: {_mig_err}")
+
+
+# ----------------- USER ROUTES -----------------
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/register", methods=["GET"])
+def user_register():
+    return render_template("register.html")
+
+
+@app.route("/register", methods=["POST"])
 def register():
     data = request.form
     email = data.get('email')
     password = data.get('password')
     name = data.get('name')
     phone = data.get('phone', '')
-    
+
     if not email or not password or not name or not phone.strip():
         flash("❌ All fields including Mobile Number are required!", "error")
         return redirect(url_for('user_register'))
@@ -53,7 +349,7 @@ def register():
     # ✅ GENERATE OTP & SAVE TO TEMPORARY SESSION
     try:
         otp = str(random.randint(100000, 999999))
-        
+
         session['pending_registration'] = {
             'name': name,
             'email': email,
@@ -62,7 +358,7 @@ def register():
             'otp': otp,
             'expires': (datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()
         }
-        
+
         html_body = f"""
         <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
             <h2>Verify Your Email</h2>
@@ -74,10 +370,10 @@ def register():
         """
         msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
         mail.send(msg)
-        
+
         flash('✅ Verification OTP sent to your email!', 'success')
         return redirect(url_for('verify_registration'))
-        
+
     except Exception as e:
         logger.error(f"Email Error during registration: {str(e)}")
         flash('❌ Failed to send OTP. Please check SMTP configuration.', 'error')
@@ -89,19 +385,19 @@ def verify_registration():
     if 'pending_registration' not in session:
         flash('❌ Invalid request, please register again.', 'error')
         return redirect(url_for('user_register'))
-        
+
     reg_data = session['pending_registration']
     email = reg_data['email']
-    
+
     if request.method == "POST":
         entered_otp = request.form.get('otp', '').strip()
         current_time = datetime.now(timezone.utc).timestamp()
-        
+
         if entered_otp != reg_data['otp'] or current_time > reg_data['expires']:
             flash('❌ Invalid or expired OTP!', 'error')
             return render_template('verify_registration.html', email=email)
-            
-        # ✅ OTP VERIFIED: NOW SAVE TO DATABASE & ASSIGN TASKS (Aapka poora purana logic yahan hai)
+
+        # ✅ OTP VERIFIED: NOW SAVE TO DATABASE & ASSIGN TASKS
         try:
             # 1. Create New User
             user = User(email=email, name=reg_data['name'], mobile=reg_data['phone'])
@@ -125,11 +421,11 @@ def verify_registration():
 
             for campaign in active_campaigns:
                 progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-                
+
                 if progress and progress.total_tasks_assigned < progress.total_tasks_created:
                     review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
                     assigned_review = random.choice(review_texts).review_text if review_texts else "Default Review Text"
-                    
+
                     new_task = Task(
                         campaign_id=campaign.id,
                         user_id=user.id,
@@ -150,7 +446,7 @@ def verify_registration():
                     )
                     db.session.add(assignment)
                     tasks_assigned_count += 1
-                    
+
                     progress.total_tasks_assigned += 1
                     progress.users_count_assigned += 1
                     progress.updated_at = datetime.now(timezone.utc)
@@ -166,19 +462,22 @@ def verify_registration():
                 )
                 db.session.add(notification)
                 db.session.commit()
-            
+
             # Clear temporary session data
             session.pop('pending_registration', None)
-            
+
             flash("✅ Email Verified & Registration successful! Tasks assigned to you! 🎉", "success")
             return redirect(url_for('user_login'))
-            
+
         except Exception as e:
             logger.error(f"Error finalizing registration: {str(e)}")
             db.session.rollback()
             flash('❌ Error saving account. Please try again.', 'error')
-            
+
     return render_template('verify_registration.html', email=email)
+
+
+# ----------------- LOGIN / DASHBOARD -----------------
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -186,13 +485,13 @@ def user_login():
     if request.method == "POST":
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        
+
         if not email or not password:
             flash('❌ Email and password required!', 'error')
             return render_template("login.html")
-        
+
         user = User.query.filter_by(email=email).first()
-        
+
         if user and user.check_password(password):
             if getattr(user, 'is_blocked', False):
                 flash('❌ Your account has been blocked by Admin. Contact support.', 'error')
@@ -206,7 +505,7 @@ def user_login():
             return redirect(url_for('user_dashboard'))
         else:
             flash('❌ Invalid email or password!', 'error')
-    
+
     return render_template("login.html")
 
 
@@ -214,18 +513,16 @@ def user_login():
 @login_required
 def user_dashboard():
     user = db.session.get(User, session.get('user_id'))
-    
+
     if not user:
         session.clear()
         flash('❌ Session expired or user not found. Please login again.', 'error')
         return redirect(url_for('user_login'))
-        
+
     wallet = Wallet.query.filter_by(user_id=user.id).first()
     tasks = Task.query.filter_by(user_id=user.id).all()
 
-    # ✅ FIX: Only show campaigns that are actually assigned to this user
-    # (previously every Active campaign was shown to every user, regardless
-    # of whether the campaign had any task allocated to them).
+    # Only show campaigns actually assigned to this user
     campaigns = (
         Campaign.query
         .join(Task, Task.campaign_id == Campaign.id)
@@ -237,7 +534,7 @@ def user_dashboard():
     total_tasks = len(tasks)
     completed_tasks = len([t for t in tasks if t.status == 'Approved'])
     pending_tasks = len([t for t in tasks if t.status == 'Submitted'])
-    
+
     return render_template("dashboard.html",
                          user=user,
                          wallet=wallet,
@@ -246,6 +543,9 @@ def user_dashboard():
                          pending_tasks=pending_tasks,
                          campaigns=campaigns)
 
+
+# ----------------- TASKS -----------------
+
 @app.route("/tasks")
 @login_required
 def view_tasks():
@@ -253,27 +553,25 @@ def view_tasks():
     tasks = Task.query.filter_by(user_id=user_id).all()
     return render_template("tasks.html", tasks=tasks)
 
+
 @app.route("/submit_task/<int:task_id>", methods=["POST"])
 @login_required
 def submit_task(task_id):
     user_id = session['user_id']
     task = db.session.get(Task, task_id)
-    
+
     if not task or task.user_id != user_id:
         flash('❌ Invalid task!', 'error')
         return redirect(url_for('view_tasks'))
-    
+
     if 'screenshot' not in request.files:
         flash('❌ Please upload screenshot!', 'error')
         return redirect(url_for('view_tasks'))
-    
+
     file = request.files['screenshot']
 
     if file and allowed_file(file.filename) and is_valid_image_content(file):
-        # ✅ FIX: Detect duplicate/reused screenshots. Compute a SHA-256 hash
-        # of the uploaded file's bytes and check whether this exact image
-        # has already been submitted before (by this same user), so a
-        # student can't keep submitting the same screenshot for multiple tasks.
+        # Detect duplicate/reused screenshots.
         file.stream.seek(0)
         file_bytes = file.read()
         screenshot_hash = hashlib.sha256(file_bytes).hexdigest()
@@ -300,14 +598,14 @@ def submit_task(task_id):
             review_text_submitted=request.form.get('review_text')
         )
         db.session.add(submission)
-        
+
         task.status = 'Submitted'
         task.submission_date = datetime.now(timezone.utc)
-        
+
         assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task_id).first()
         if assignment:
             assignment.status = 'Submitted'
-        
+
         db.session.commit()
 
         user = db.session.get(User, user_id)
@@ -323,6 +621,8 @@ def submit_task(task_id):
         flash('❌ Invalid file format! Use a genuine PNG, JPG, JPEG or GIF image.', 'error')
         return redirect(url_for('view_tasks'))
 
+
+# ----------------- WALLET / REDEEM -----------------
 
 @app.route("/wallet")
 @login_required
@@ -406,11 +706,14 @@ def redeem_points():
     return redirect(url_for('wallet'))
 
 
+# ----------------- AUTH / LOGOUT -----------------
+
 @app.route("/logout")
 def logout():
     session.clear()
     flash('✅ Logout successful!', 'success')
     return redirect(url_for('index'))
+
 
 @app.route("/admin/logout")
 def admin_logout():
@@ -418,7 +721,8 @@ def admin_logout():
     flash('✅ Admin logout successful!', 'success')
     return redirect(url_for('index'))
 
-# ============ NOTIFICATION ROUTES ============
+
+# ----------------- NOTIFICATIONS -----------------
 
 @app.route('/api/notifications')
 @login_required
@@ -426,7 +730,7 @@ def get_notifications():
     user_id = session['user_id']
     notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
     unread_count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
-    
+
     notifications_data = []
     for notif in notifications:
         notifications_data.append({
@@ -437,13 +741,14 @@ def get_notifications():
             'created_at': notif.created_at.strftime('%d-%m-%Y %H:%M'),
             'related_id': notif.related_id
         })
-    
+
     return jsonify({
         'notifications': notifications_data,
         'unread_count': unread_count
     })
 
-# ✅ FIX 1: Excluded from CSRF for JS fetch calls to work
+
+# Excluded from CSRF for JS fetch calls to work
 @app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
 @csrf.exempt
 @login_required
@@ -451,10 +756,11 @@ def mark_notification_read(notif_id):
     notification = db.session.get(Notification, notif_id)
     if not notification or notification.user_id != session['user_id']:
         return jsonify({'status': 'error', 'message': 'Notification not found'}), 404
-    
+
     notification.is_read = True
     db.session.commit()
     return jsonify({'status': 'success', 'message': 'Marked as read'})
+
 
 @app.route('/notifications')
 @login_required
@@ -463,7 +769,8 @@ def view_notifications():
     notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
     return render_template('notifications.html', notifications=notifications)
 
-# ============ SUPPORT TICKET ROUTES ============
+
+# ----------------- SUPPORT -----------------
 
 @app.route('/support')
 @login_required
@@ -471,6 +778,7 @@ def support_page():
     user_id = session['user_id']
     tickets = SupportTicket.query.filter_by(user_id=user_id).order_by(SupportTicket.created_at.desc()).all()
     return render_template('support.html', tickets=tickets)
+
 
 @app.route('/support/create', methods=['POST'])
 @login_required
@@ -480,22 +788,22 @@ def create_support_ticket():
     message = request.form.get('message', '').strip()
     category = request.form.get('category', 'other').strip()
     priority = request.form.get('priority', 'Normal').strip()
-    
+
     if not subject or not message:
         flash('❌ Subject and message are required!', 'error')
         return redirect(url_for('support_page'))
-    
+
     if len(subject) < 5 or len(message) < 10:
         flash('❌ Check length of subject/message!', 'error')
         return redirect(url_for('support_page'))
-    
+
     ticket = SupportTicket(
         user_id=user_id, subject=subject, message=message,
         category=category, priority=priority, status='Open'
     )
     db.session.add(ticket)
     db.session.commit()
-    
+
     admin_notification = Notification(
         user_id=None,
         message=f'New support ticket from {db.session.get(User, user_id).name}: {subject}',
@@ -514,6 +822,7 @@ def create_support_ticket():
     flash('✅ Support ticket created successfully!', 'success')
     return redirect(url_for('support_page'))
 
+
 @app.route('/support/ticket/<int:ticket_id>')
 @login_required
 def view_ticket(ticket_id):
@@ -523,23 +832,24 @@ def view_ticket(ticket_id):
         return redirect(url_for('support_page'))
     return render_template('support_ticket.html', ticket=ticket)
 
-# ✅ FIX 1: Added csrf.exempt for JS fetch call
+
+# Added csrf.exempt for JS fetch call
 @app.route('/support/ticket/<int:ticket_id>/reply', methods=['POST'])
 @csrf.exempt
 @login_required
 def reply_ticket(ticket_id):
     user_id = session['user_id']
     ticket = db.session.get(SupportTicket, ticket_id)
-    
+
     if not ticket or ticket.user_id != user_id:
         return jsonify({'status': 'error', 'message': 'Ticket not found'}), 404
     if ticket.status == 'Closed':
         return jsonify({'status': 'error', 'message': 'Ticket is closed'}), 400
-    
+
     message = request.form.get('message', '').strip()
     if not message or len(message) < 5:
         return jsonify({'status': 'error', 'message': 'Message must be at least 5 characters'}), 400
-    
+
     reply = SupportReply(
         ticket_id=ticket_id, user_id=user_id, message=message, is_admin_reply=False
     )
@@ -563,7 +873,7 @@ def reply_ticket(ticket_id):
     })
 
 
-# ============ ADMIN ROUTES ============
+# ----------------- ADMIN ROUTES -----------------
 
 @app.route("/admin/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -571,19 +881,19 @@ def admin_login():
     if request.method == "POST":
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        
+
         if not email or not password:
             flash('❌ Email and password required!', 'error')
             return render_template("admin_login.html")
-        
-        if email == app.config['ADMIN_EMAIL'] and check_admin_password(password):
+
+        if email == app.config.get('ADMIN_EMAIL') and check_admin_password(password):
             session['admin_id'] = 1
             session['admin_email'] = email
             flash('✅ Admin login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
             flash('❌ Invalid admin credentials!', 'error')
-    
+
     return render_template("admin_login.html")
 
 
@@ -596,7 +906,7 @@ def admin_dashboard():
     pending_tasks = TaskSubmission.query.filter_by(verification_status='Pending').count()
     pending_redeems = RedeemRequest.query.filter_by(status='In Process').count()
     pending_support = SupportTicket.query.filter(SupportTicket.status.in_(['Open', 'In Progress'])).count()
-    
+
     return render_template("admin_dashboard.html",
                          total_users=total_users,
                          total_campaigns=total_campaigns,
@@ -606,14 +916,13 @@ def admin_dashboard():
                          pending_support=pending_support)
 
 
-
 @app.route("/admin/create_campaign", methods=["GET", "POST"])
 @admin_required
 def create_campaign():
     if request.method == "POST":
         name = request.form.get('name', '').strip()
         gmb_link = request.form.get('gmb_link', '').strip()
-        
+
         try:
             total_reviews = int(request.form.get('total_reviews', 0))
             points_per_review = int(request.form.get('points_per_review', 0))
@@ -621,20 +930,20 @@ def create_campaign():
         except ValueError:
             flash('❌ Invalid values! All numeric fields must be numbers.', 'error')
             return render_template("admin_create_campaign.html")
-        
+
         if not name or not gmb_link or total_reviews <= 0 or points_per_review <= 0 or duration_months <= 0:
             flash('❌ Check all required fields.', 'error')
             return render_template("admin_create_campaign.html")
-        
+
         review_texts = request.form.get('review_texts', '').split('\n')
         review_texts = [t.strip() for t in review_texts if t.strip()]
         if not review_texts:
             flash('❌ At least one review text is required!', 'error')
             return render_template("admin_create_campaign.html")
-        
+
         start_date = datetime.now().date()
         end_date = start_date + timedelta(days=30*duration_months)
-        
+
         campaign = Campaign(
             name=name, gmb_link=gmb_link, total_reviews_required=total_reviews,
             points_per_review=points_per_review, start_date=start_date,
@@ -643,12 +952,12 @@ def create_campaign():
         )
         db.session.add(campaign)
         db.session.commit()
-        
+
         for review_text in review_texts:
             text_obj = CampaignReviewText(campaign_id=campaign.id, review_text=review_text)
             db.session.add(text_obj)
         db.session.commit()
-        
+
         notify_admins('new_campaign', {
             'message': f'📢 New campaign created: {campaign.name}',
             'campaign_id': campaign.id
@@ -656,7 +965,7 @@ def create_campaign():
 
         flash('✅ Campaign created successfully! Now allocate tasks.', 'success')
         return redirect(url_for('admin_campaigns'))
-    
+
     return render_template("admin_create_campaign.html")
 
 
@@ -674,14 +983,17 @@ def campaign_action(campaign_id, action):
     if not campaign:
         flash('❌ Campaign not found!', 'error')
         return redirect(url_for('admin_campaigns'))
-    
-    if action == 'pause': campaign.status = 'Paused'
-    elif action == 'resume': campaign.status = 'Active'
-    elif action == 'stop': campaign.status = 'Stopped'
+
+    if action == 'pause':
+        campaign.status = 'Paused'
+    elif action == 'resume':
+        campaign.status = 'Active'
+    elif action == 'stop':
+        campaign.status = 'Stopped'
     else:
         flash('❌ Invalid action!', 'error')
         return redirect(url_for('admin_campaigns'))
-    
+
     db.session.commit()
     notify_admins('campaign_updated', {
         'message': f'Campaign "{campaign.name}" {action}ed',
@@ -700,16 +1012,14 @@ def delete_campaign(campaign_id):
         flash('❌ Campaign not found!', 'error')
         return redirect(url_for('admin_campaigns'))
 
-    # ✅ Sirf wahi admin delete kar sake jisne campaign banaya tha
+    # Only creator admin can delete
     if campaign.created_by != session.get('admin_id'):
         flash('❌ You can only delete campaigns you created!', 'error')
         return redirect(url_for('admin_campaigns'))
 
     campaign_name = campaign.name
 
-    # ✅ FIX: Delete se PEHLE har user ka task-history permanently save karo
-    # (User.total_tasks_assigned field), taaki campaign delete hone ke baad
-    # bhi "kitne task kiye" ka record na mite.
+    # Preserve user task-history and detach task.campaign_id
     campaign_tasks = Task.query.filter_by(campaign_id=campaign.id).all()
     tasks_by_user = {}
     for t in campaign_tasks:
@@ -719,21 +1029,18 @@ def delete_campaign(campaign_id):
         user = db.session.get(User, user_id)
         if user:
             user.total_tasks_assigned = (user.total_tasks_assigned or 0) + count
-            user.calculate_priority()
+            try:
+                user.calculate_priority()
+            except Exception:
+                pass
 
-    # ✅ FIX: Task records ko delete NAHI karna — sirf unka campaign link hata do.
-    # Isse task history (status, review_text, submission, screenshot) User ke
-    # "My Tasks" me hamesha ke liye surakshit rehta hai, campaign delete hone
-    # ke baad bhi.
+    # Detach tasks from campaign (preserve task records)
     Task.query.filter_by(campaign_id=campaign.id).update({'campaign_id': None})
 
-    # ✅ Related records jinke liye ORM-level cascade define nahi hai, unhe manually clean karo
+    # Clean related records not cascade-managed
     UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).delete()
     CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).delete()
 
-    # Baaki (review_texts, allocations) Campaign model me
-    # cascade='all, delete-orphan' se automatically delete ho jaayenge.
-    # Tasks ab cascade me nahi hain (upar fix dekhein), isliye surakshit rahenge.
     db.session.delete(campaign)
     db.session.commit()
 
@@ -752,7 +1059,8 @@ def verify_tasks():
     submissions = TaskSubmission.query.filter_by(verification_status='Pending').all()
     return render_template("admin_verify_tasks.html", submissions=submissions)
 
-# ✅ FIX 1 & 5: csrf.exempt for fetch and Try-Except wrap for DB transactions
+
+# Admin verify/reject actions (csrf exempt for fetch)
 @app.route("/admin/task/<int:submission_id>/<action>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -760,9 +1068,9 @@ def task_verify_action(submission_id, action):
     submission = db.session.get(TaskSubmission, submission_id)
     if not submission:
         return jsonify({'status': 'error', 'message': 'Submission not found'}), 404
-    
+
     task = submission.task
-    user = task.user
+    user = task.user if task else None
 
     try:
         if action == 'approve':
@@ -775,7 +1083,7 @@ def task_verify_action(submission_id, action):
             if not wallet:
                 wallet = Wallet(user_id=user.id, total_points=0, available_points=0, redeemed_points=0)
                 db.session.add(wallet)
-                db.session.flush() 
+                db.session.flush()
 
             points = task.campaign.points_per_review
             wallet.total_points += points
@@ -826,7 +1134,6 @@ def task_verify_action(submission_id, action):
             extra=extra_data
         )
 
-        # Live-update admin's own verify-tasks / dashboard tabs (multi-admin friendly)
         notify_admins('task_verified', {
             'message': f'Task #{task.id} {action}d',
             'task_id': task.id,
@@ -844,7 +1151,7 @@ def task_verify_action(submission_id, action):
         return jsonify({'status': 'error', 'message': 'Database error occurred during transaction.'}), 500
 
 
-# ✅ FIX 1: csrf.exempt for Admin Actions 
+# Admin process redeem (csrf exempt)
 @app.route("/admin/redeem/<int:redeem_id>/<action>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -852,19 +1159,19 @@ def process_redeem(redeem_id, action):
     redeem_req = db.session.get(RedeemRequest, redeem_id)
     if not redeem_req:
         return jsonify({'status': 'error', 'message': 'Redeem request not found'}), 404
-    
+
     user = redeem_req.user
     wallet = Wallet.query.filter_by(user_id=user.id).first()
-    
+
     try:
         if action == 'approve':
             redeem_req.status = 'Completed'
             redeem_req.processed_at = datetime.now(timezone.utc)
             redeem_req.processed_by = session['admin_id']
             message = f'✅ Redeem approved! {redeem_req.points} points transferred.'
-            
+
         elif action == 'reject':
-            # ✅ Admin ne jo reason likha hai use lena (JSON body se)
+            # Admin provided reason (JSON/form)
             reason = ''
             if request.is_json:
                 reason = (request.get_json(silent=True) or {}).get('reason', '').strip()
@@ -875,22 +1182,22 @@ def process_redeem(redeem_id, action):
             redeem_req.rejection_reason = reason if reason else None
             if not wallet:
                 return jsonify({'status': 'error', 'message': 'Wallet not found for this user'}), 404
-                
+
             wallet.available_points += redeem_req.points
             wallet.redeemed_points -= redeem_req.points
-            
+
             transaction = WalletTransaction(
                 wallet_id=wallet.id, transaction_type='Refund',
                 points=redeem_req.points, reference_id=f"REFUND_{redeem_req.id}"
             )
             db.session.add(transaction)
-            
+
             reason_text = f" Reason: {reason}" if reason else ""
             reject_message = f"❌ Your redeem request for {redeem_req.points} points was rejected. Points refunded to your wallet.{reason_text}"
             message = f'❌ Redeem rejected! Points refunded.'
         else:
             return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
-        
+
         db.session.commit()
 
         if action == 'approve':
@@ -906,7 +1213,6 @@ def process_redeem(redeem_id, action):
                 extra={'points': redeem_req.points, 'reason': redeem_req.rejection_reason}
             )
 
-        # Live-update other admin tabs watching the redeem requests list
         notify_admins('redeem_processed', {
             'message': f'Redeem request #{redeem_req.id} {action}d',
             'redeem_id': redeem_req.id,
@@ -938,24 +1244,24 @@ def users_list():
 def admin_users_detailed():
     users = User.query.all()
     user_data = []
-    
+
     for user in users:
         tasks = Task.query.filter_by(user_id=user.id).all()
         wallet = Wallet.query.filter_by(user_id=user.id).first()
-        
+
         user_data.append({
-            'id': user.id, 
-            'name': user.name, 
-            'email': user.email, 
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
             'mobile': user.mobile,
-            'tasks_completed': len([t for t in tasks if t.status == 'Approved']), 
+            'tasks_completed': len([t for t in tasks if t.status == 'Approved']),
             'total_tasks': len(tasks),
             'points_earned': wallet.total_points if wallet else 0,
             'points_redeemed': wallet.redeemed_points if wallet else 0,
-            'created_at': user.created_at.strftime('%d-%m-%Y'),
-            'is_blocked': getattr(user, 'is_blocked', False) 
+            'created_at': user.created_at.strftime('%d-%m-%Y') if user.created_at else '',
+            'is_blocked': getattr(user, 'is_blocked', False)
         })
-        
+
     return jsonify(user_data)
 
 
@@ -972,9 +1278,8 @@ def admin_list(type):
         return render_template("redeem_requests.html", redeems=RedeemRequest.query.all())
     return "Invalid Type"
 
-# ✅ FIX 1 & 2: Added csrf.exempt & Fixed ValueError on empty strings
-from sqlalchemy import func, and_
 
+# Allocate tasks (admin) - improved fairness logic
 @app.route("/admin/allocate_tasks/<int:campaign_id>", methods=["POST"])
 @csrf.exempt
 @admin_required
@@ -990,25 +1295,11 @@ def allocate_tasks(campaign_id):
             return jsonify({'status': 'error', 'message': 'Campaign not found'}), 404
 
         now = datetime.now(timezone.utc)
-        
-        # PRO OPTIMIZATION: Subquery to exclude users who already have a task for this specific campaign
+
+        # Exclude users who already have a task for this specific campaign
         assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).filter_by(campaign_id=campaign_id)
 
-        # ✅ FIX: Fair distribution across campaigns.
-        # Earlier this query used `.limit(total_tasks_needed)` with NO ordering,
-        # so the database always returned the same first N users (usually the
-        # lowest user IDs) for every new campaign. Example bug reported:
-        # 10 users total -> Campaign 1 assigns tasks to users 1-5 -> Campaign 2
-        # (again asking for 5 tasks) kept re-assigning users 1-5 instead of
-        # giving users 6-10 a turn, because nothing ordered candidates by how
-        # many tasks they'd already received.
-        #
-        # Fix: find all eligible users (monthly cap not exceeded, not already
-        # assigned in *this* campaign, not blocked), then rank them by their
-        # TOTAL lifetime task count (fewest tasks first) so whoever has
-        # received the least work so far gets priority for the new campaign.
-        # This guarantees the 5 users left out of Campaign 1 are the first
-        # ones picked for Campaign 2, and so on, so tasks spread evenly.
+        # Eligible users: monthly cap < 14, not blocked, not already assigned in this campaign
         eligible_query = db.session.query(User.id).\
             outerjoin(Task, and_(
                 Task.user_id == User.id,
@@ -1025,8 +1316,7 @@ def allocate_tasks(campaign_id):
         if not all_eligible_ids:
             return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
 
-        # Lifetime task count per eligible user (all campaigns, all time) —
-        # this is the "fairness score". Lower score = higher priority.
+        # Lifetime task count per eligible user (all time)
         live_counts = dict(
             db.session.query(Task.user_id, func.count(Task.id))
             .filter(Task.user_id.in_(all_eligible_ids))
@@ -1040,9 +1330,6 @@ def allocate_tasks(campaign_id):
             for u in eligible_users
         }
 
-        # Shuffle first so that users with an equal (tied) score are not
-        # always ordered the same way (e.g. always by ID), then do a stable
-        # sort by fairness score ascending — fewest tasks so far comes first.
         random.shuffle(all_eligible_ids)
         all_eligible_ids.sort(key=lambda uid: fairness_score.get(uid, 0))
 
@@ -1051,7 +1338,6 @@ def allocate_tasks(campaign_id):
         if not candidate_ids:
             return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
 
-        # Batch Operations
         review_texts = [r.review_text for r in CampaignReviewText.query.filter_by(campaign_id=campaign_id).all()]
         if not review_texts:
             return jsonify({'status': 'error', 'message': 'No review texts available'}), 400
@@ -1061,7 +1347,6 @@ def allocate_tasks(campaign_id):
         notifications_to_insert = []
 
         for user_id in candidate_ids:
-            # Create Task object
             new_task = Task(
                 campaign_id=campaign_id,
                 user_id=user_id,
@@ -1071,11 +1356,7 @@ def allocate_tasks(campaign_id):
                 assigned_date=now
             )
             tasks_to_insert.append(new_task)
-        
-        # ✅ FIX: bulk_save_objects() insert ke baad Task.id wapas nahi deta
-        # (jab tak return_defaults=True na ho), isliye UserCampaignTaskAssignment
-        # me task_id hamesha NULL save ho raha tha. add_all() + flush() se
-        # har Task ka real DB id turant Python object me mil jaata hai.
+
         db.session.add_all(tasks_to_insert)
         db.session.flush()  # Sync to get IDs
 
@@ -1088,13 +1369,14 @@ def allocate_tasks(campaign_id):
         db.session.add_all(assignments_to_insert)
         db.session.add_all(notifications_to_insert)
         db.session.commit()
-        
+
         return jsonify({'status': 'success', 'message': f'✅ Successfully assigned {len(candidate_ids)} tasks!'})
 
     except Exception as e:
         db.session.rollback()
         logger.exception(f"Allocation Error for Campaign {campaign_id}: {str(e)}")
         return jsonify({'status': 'error', 'message': 'System error'}), 500
+
 
 @app.route('/admin/support')
 @admin_required
@@ -1105,6 +1387,7 @@ def admin_support():
                            in_progress=len([t for t in tickets if t.status == 'In Progress']),
                            closed_tickets=len([t for t in tickets if t.status == 'Closed']))
 
+
 @app.route('/admin/support/ticket/<int:ticket_id>')
 @admin_required
 def admin_view_ticket(ticket_id):
@@ -1112,13 +1395,14 @@ def admin_view_ticket(ticket_id):
     if not ticket:
         flash('❌ Ticket not found!', 'error')
         return redirect(url_for('admin_support'))
-    
+
     if ticket.status == 'Open':
         ticket.status = 'In Progress'
         db.session.commit()
     return render_template('admin_support_ticket.html', ticket=ticket)
 
-# ✅ FIX 1: csrf.exempt 
+
+# Admin reply to ticket
 @app.route('/admin/support/ticket/<int:ticket_id>/reply', methods=['POST'])
 @csrf.exempt
 @admin_required
@@ -1126,14 +1410,14 @@ def admin_reply_ticket(ticket_id):
     ticket = db.session.get(SupportTicket, ticket_id)
     if not ticket:
         return jsonify({'status': 'error', 'message': 'Ticket not found'}), 404
-    
+
     message = request.form.get('message', '').strip()
     if len(message) < 5:
         return jsonify({'status': 'error', 'message': 'Message too short'}), 400
-    
+
     reply = SupportReply(
         ticket_id=ticket_id,
-        user_id=None, 
+        user_id=None,
         message=message,
         is_admin_reply=True
     )
@@ -1157,7 +1441,8 @@ def admin_reply_ticket(ticket_id):
         'reply': reply_data
     })
 
-# ✅ FIX 1: csrf.exempt 
+
+# Update ticket status
 @app.route('/admin/support/ticket/<int:ticket_id>/status/<status>', methods=['POST'])
 @csrf.exempt
 @admin_required
@@ -1165,9 +1450,10 @@ def update_ticket_status(ticket_id, status):
     ticket = db.session.get(SupportTicket, ticket_id)
     if not ticket or status not in ['Open', 'In Progress', 'Closed']:
         return jsonify({'status': 'error', 'message': 'Invalid request'}), 400
-    
+
     ticket.status = status
-    if status == 'Closed': ticket.closed_at = datetime.now(timezone.utc)
+    if status == 'Closed':
+        ticket.closed_at = datetime.now(timezone.utc)
     db.session.commit()
 
     notify_user(
@@ -1179,13 +1465,20 @@ def update_ticket_status(ticket_id, status):
     return jsonify({'status': 'success', 'message': f'Ticket status updated to {status}'})
 
 
+# ----------------- Static endpoints -----------------
+
 @app.route('/offline.html')
-def offline(): return render_template('offline.html')
+def offline():
+    return render_template('offline.html')
+
 
 @app.route('/static/manifest.json')
-def serve_manifest(): return send_file('static/manifest.json', mimetype='application/manifest+json')
+def serve_manifest():
+    return send_file('static/manifest.json', mimetype='application/manifest+json')
 
-# ✅ FIX 1: csrf.exempt 
+
+# ----------------- Misc API -----------------
+
 @app.route('/api/sync-pending-tasks', methods=['POST'])
 @csrf.exempt
 @login_required
@@ -1193,76 +1486,81 @@ def sync_pending_tasks():
     pending = TaskSubmission.query.filter_by(verification_status='Pending').all()
     return jsonify({'status': 'success', 'synced_tasks': len(pending), 'message': 'Tasks synced successfully'})
 
+
 @app.route('/uploads/<filename>')
 def serve_uploads(filename):
     return send_from_directory(os.path.join(os.getcwd(), app.config.get('UPLOAD_FOLDER', 'uploads')), filename)
+
+
+# ----------------- Allocation Dashboard -----------------
 
 @app.route("/admin/campaign_allocation_dashboard")
 @admin_required
 def campaign_allocation_dashboard():
     campaigns_progress = CampaignAllocationProgress.query.all()
     dashboard_data = []
-    
+
     for progress in campaigns_progress:
         campaign = db.session.get(Campaign, progress.campaign_id)
-        if not campaign: continue
-        
+        if not campaign:
+            continue
+
         assigned_pct = (progress.total_tasks_assigned / progress.total_tasks_created * 100) if progress.total_tasks_created > 0 else 0
         completed_pct = (progress.total_tasks_completed / progress.total_tasks_created * 100) if progress.total_tasks_created > 0 else 0
-        days_remaining = (progress.campaign_deadline - datetime.now(timezone.utc)).days
-        
+        days_remaining = (progress.campaign_deadline - datetime.now(timezone.utc)).days if getattr(progress, 'campaign_deadline', None) else 0
+
         if progress.is_fully_allocated and progress.total_tasks_completed == progress.total_tasks_created:
             status, status_color = '✅ Campaign Completed', 'success'
         elif progress.total_tasks_assigned == progress.total_tasks_created:
             status, status_color = '✅ All Tasks Assigned', 'success'
         else:
             status, status_color = f'⏳ {progress.total_tasks_created - progress.total_tasks_assigned} tasks waiting', 'warning'
-        
+
         dashboard_data.append({
             'campaign_id': campaign.id, 'campaign_name': campaign.name,
             'total_tasks': progress.total_tasks_created, 'assigned': progress.total_tasks_assigned,
             'completed': progress.total_tasks_completed, 'pending': progress.total_tasks_created - progress.total_tasks_assigned,
             'assigned_pct': round(assigned_pct, 2), 'completed_pct': round(completed_pct, 2),
-            'users_assigned': progress.users_count_assigned, 'users_needed': progress.users_count_planned,
-            'deadline': progress.campaign_deadline.strftime('%d-%m-%Y'), 'days_remaining': days_remaining,
+            'users_assigned': progress.users_count_assigned, 'users_needed': getattr(progress, 'users_count_planned', 0),
+            'deadline': progress.campaign_deadline.strftime('%d-%m-%Y') if getattr(progress, 'campaign_deadline', None) else '',
+            'days_remaining': days_remaining,
             'status': status, 'status_color': status_color
         })
     return render_template('admin_allocation_dashboard.html', campaigns=dashboard_data)
 
-# ==================== FORGOT PASSWORD (OTP BASED) ====================
+
+# ----------------- FORGOT PASSWORD (OTP BASED) -----------------
 
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
-    if request.method == "GET": 
+    if request.method == "GET":
         return render_template('forgot_password.html')
-    
+
     email = request.form.get('email', '').strip().lower()
     if not email:
         flash('❌ Please enter email!', 'error')
         return render_template('forgot_password.html')
-    
+
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Security: Agar email galat bhi ho toh hacker ko pata na chale
+        # Security: if email wrong, don't reveal it
         flash('✅ If your email exists, OTP has been sent!', 'success')
         return render_template('forgot_password.html')
-    
+
     try:
         # Purane OTP delete karein
         PasswordResetToken.query.filter_by(user_id=user.id, is_used=False).delete()
-        
+
         # 6-Digit Random OTP Generate karein
         otp = str(random.randint(100000, 999999))
-        
-        # Database mein save karein (hum existing reset_token column use kar lenge OTP ke liye)
+
         token = PasswordResetToken(
             user_id=user.id, email=email, reset_token=otp,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15) # 15 min validity
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15)  # 15 min validity
         )
         db.session.add(token)
         db.session.commit()
-        
-        # Email Bhejein
+
         html_body = f"""
         <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
             <h2>Password Reset OTP</h2>
@@ -1277,17 +1575,16 @@ def forgot_password():
             html=html_body
         )
         mail.send(msg)
-        
-        # Session mein email save kar lein taaki next page par pata rahe kiski email hai
+
         session['reset_email'] = email
         flash('✅ OTP sent successfully to your email!', 'success')
         return redirect(url_for('verify_otp'))
-        
+
     except Exception as e:
         db.session.rollback()
-        print(f"🔥 EMAIL ERROR: {str(e)}") 
+        logger.error(f"🔥 EMAIL ERROR: {str(e)}")
         flash('❌ Error occurred while sending email! Check SMTP settings.', 'error')
-    
+
     return render_template('forgot_password.html')
 
 
@@ -1296,80 +1593,76 @@ def verify_otp():
     if 'reset_email' not in session:
         flash('❌ Invalid request, please start again.', 'error')
         return redirect(url_for('forgot_password'))
-        
+
     email = session['reset_email']
-    
+
     if request.method == "POST":
         entered_otp = request.form.get('otp', '').strip()
-        
-        # Database se OTP check karein
+
         token_record = PasswordResetToken.query.filter_by(
-            email=email, 
-            reset_token=entered_otp, 
+            email=email,
+            reset_token=entered_otp,
             is_used=False
         ).first()
-        
-        # Agar OTP galat hai ya expire ho gaya
-        if not token_record or token_record.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+
+        if not token_record or token_record.expires_at < datetime.now(timezone.utc):
             flash('❌ Invalid or expired OTP!', 'error')
             return render_template('verify_otp.html', email=email)
-            
-        # OTP Sahi hai! Ab naya password set karne deinge
+
         session['otp_verified'] = True
         flash('✅ OTP Verified! Set your new password.', 'success')
         return redirect(url_for('set_new_password'))
-        
+
     return render_template('verify_otp.html', email=email)
 
 
 @app.route("/set_new_password", methods=["GET", "POST"])
 def set_new_password():
-    # Security check: User ne OTP verify kiya hai ya nahi?
     if not session.get('otp_verified') or 'reset_email' not in session:
         flash('❌ Session expired. Please verify OTP again.', 'error')
         return redirect(url_for('forgot_password'))
-        
+
     email = session['reset_email']
-    
+
     if request.method == "POST":
         new_password = request.form.get('new_password', '')
         confirm_password = request.form.get('confirm_password', '')
-        
+
         if not new_password or new_password != confirm_password or len(new_password) < 8:
             flash('❌ Passwords must match and be at least 8 characters!', 'error')
             return render_template('set_new_password.html')
-            
+
         try:
-            # Naya password set karein
             user = User.query.filter_by(email=email).first()
             user.set_password(new_password)
-            
-            # OTP ko "used" mark kar dein taaki dobara use na ho
+
             token_record = PasswordResetToken.query.filter_by(email=email, is_used=False).first()
             if token_record:
                 token_record.is_used = True
-                
+
             db.session.commit()
-            
-            # Confirmation Email (Optional)
+
             try:
                 mail.send(Message(subject='✅ Password Changed Successfully', recipients=[user.email], body='Your password has been successfully changed.'))
-            except: pass
-            
-            # Session clean kar dein
+            except Exception:
+                pass
+
             session.pop('reset_email', None)
             session.pop('otp_verified', None)
-            
+
             flash('✅ Password reset successfully! You can login now.', 'success')
             return redirect(url_for('user_login'))
-            
+
         except Exception as e:
             db.session.rollback()
+            logger.error(f"Error resetting password: {e}")
             flash('❌ Error resetting password!', 'error')
             return render_template('set_new_password.html')
-            
+
     return render_template('set_new_password.html')
 
+
+# ----------------- Analytics & Leaderboard -----------------
 
 @app.route("/admin/analytics")
 @admin_required
@@ -1377,11 +1670,11 @@ def admin_analytics():
     approved_tasks = Task.query.filter_by(status='Approved').count()
     rejected_tasks = Task.query.filter_by(status='Rejected').count()
     pending_tasks = TaskSubmission.query.filter_by(verification_status='Pending').count()
-    
+
     total_earned = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Earn').scalar() or 0
     total_redeemed = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Redeem').scalar() or 0
     total_refunded = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Refund').scalar() or 0
-    
+
     today = datetime.now(timezone.utc).date()
     dates = []
     user_counts = []
@@ -1390,17 +1683,17 @@ def admin_analytics():
         count = User.query.filter(db.func.date(User.created_at) == target_date).count()
         dates.append(target_date.strftime('%d %b'))
         user_counts.append(count)
-        
+
     top_campaigns = CampaignAllocationProgress.query.order_by(CampaignAllocationProgress.total_tasks_completed.desc()).limit(5).all()
     campaign_names = []
     campaign_completions = []
-    
+
     for progress in top_campaigns:
         if progress.campaign:
-            campaign_names.append(progress.campaign.name[:15] + '..') 
+            campaign_names.append(progress.campaign.name[:15] + '..')
             campaign_completions.append(progress.total_tasks_completed)
-            
-    return render_template("admin_analytics.html", 
+
+    return render_template("admin_analytics.html",
                          approved_tasks=approved_tasks,
                          rejected_tasks=rejected_tasks,
                          pending_tasks=pending_tasks,
@@ -1412,52 +1705,9 @@ def admin_analytics():
                          campaign_names=campaign_names,
                          campaign_completions=campaign_completions)
 
-# ✅ FIX 1: csrf.exempt 
-@app.route("/admin/user/<int:user_id>/delete", methods=["POST"])
-@csrf.exempt
-@admin_required
-def delete_user(user_id):
-    user = db.session.get(User, user_id)
-    
-    if not user:
-        return jsonify({'status': 'error', 'message': 'User not found'}), 404
-        
-    try:
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({'status': 'success', 'message': f'User {user.name} deleted successfully!'})
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error deleting user: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Failed to delete user due to a database error.'}), 500
-    
-# ✅ FIX 1: csrf.exempt 
-@app.route("/admin/user/<int:user_id>/toggle_block", methods=["POST"])
-@csrf.exempt
-@admin_required
-def toggle_block_user(user_id):
-    user = db.session.get(User, user_id)
-    
-    if not user:
-        return jsonify({'status': 'error', 'message': 'User not found'}), 404
-        
-    try:
-        user.is_blocked = not user.is_blocked
-        db.session.commit()
-        
-        action = "Blocked" if user.is_blocked else "Unblocked"
-        return jsonify({'status': 'success', 'message': f'User {user.name} has been {action} successfully!'})
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error toggling block for user: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
 
-# ============ LEADERBOARD (Professional, Admin-controlled) ============
-
+# Leaderboard compute utility
 def _compute_leaderboard(settings, limit=None):
-    """Settings ke hisaab se ranked leaderboard data return karta hai."""
     excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
     period_start = settings.period_start or datetime.utcnow()
 
@@ -1487,9 +1737,6 @@ def _compute_leaderboard(settings, limit=None):
     if not score_map:
         return []
 
-    # ✅ Always compute lifetime total points earned and total tasks completed
-    # for every user, so the leaderboard can show these stats professionally
-    # regardless of which metric is used to rank.
     all_time_points_rows = (
         db.session.query(Wallet.user_id, db.func.sum(WalletTransaction.points).label('total'))
         .join(WalletTransaction, WalletTransaction.wallet_id == Wallet.id)
@@ -1658,9 +1905,10 @@ def admin_leaderboard_exclude(user_id):
         logger.error(f"Error toggling leaderboard exclusion: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
 
+
 @app.route("/admin/allocations")
 def admin_allocations():
-    # Check if admin is logged in (apni admin verification ka logic yahan ensure karein)
+    # Check if admin is logged in
     if 'admin_logged_in' not in session:
         flash("Please login as admin first.", "error")
         return redirect(url_for('admin_login'))
@@ -1670,10 +1918,9 @@ def admin_allocations():
 
     for campaign in campaigns:
         progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-        
-        # Get all users assigned to this campaign
+
         assignments = UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).all()
-        
+
         assigned_users = []
         for assign in assignments:
             user = User.query.get(assign.user_id)
@@ -1684,7 +1931,7 @@ def admin_allocations():
                     'assigned_date': assign.assigned_at.strftime("%Y-%m-%d %I:%M %p") if assign.assigned_at else "N/A",
                     'status': assign.status
                 })
-        
+
         if progress:
             total_created = progress.total_tasks_created
             total_assigned = progress.total_tasks_assigned
@@ -1705,29 +1952,30 @@ def admin_allocations():
     return render_template('admin_allocations.html', allocation_data=allocation_data)
 
 
+# ----------------- PROFILE / EDIT -----------------
+
 @app.route("/profile")
 def user_profile():
-    # Check if user is logged in
     if 'user_id' not in session:
         flash("Please login to view your profile.", "error")
         return redirect(url_for('user_login'))
 
     user = User.query.get(session['user_id'])
     wallet = Wallet.query.filter_by(user_id=user.id).first()
-    
-    # Task stats nikalne ke liye
+
     total_tasks = Task.query.filter_by(user_id=user.id).count()
     completed_tasks = Task.query.filter_by(user_id=user.id, status='Completed').count()
     pending_tasks = Task.query.filter_by(user_id=user.id, status='Assigned').count()
 
     return render_template(
-        'profile.html', 
-        user=user, 
-        wallet=wallet, 
-        total_tasks=total_tasks, 
-        completed_tasks=completed_tasks, 
+        'profile.html',
+        user=user,
+        wallet=wallet,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
         pending_tasks=pending_tasks
     )
+
 
 @app.route("/edit_profile", methods=["GET", "POST"])
 def edit_profile():
@@ -1736,62 +1984,115 @@ def edit_profile():
         return redirect(url_for('user_login'))
 
     user = User.query.get(session['user_id'])
-    
+
     if request.method == "POST":
         name = request.form.get('name', '').strip()
         phone = request.form.get('phone', '').strip()
         current_password = request.form.get('current_password')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
-        
+
         if name:
             user.name = name
         if phone:
             user.mobile = phone
-            
+
         if current_password or new_password:
             if not current_password:
                 flash("❌ Please enter your current password to set a new one.", "error")
                 return redirect(url_for('edit_profile'))
-                
+
             if not user.check_password(current_password):
                 flash("❌ Current password is incorrect!", "error")
                 return redirect(url_for('edit_profile'))
-                
+
             if new_password != confirm_password:
                 flash("❌ New passwords do not match!", "error")
                 return redirect(url_for('edit_profile'))
-                
+
             valid, msg = is_valid_password(new_password)
             if not valid:
                 flash(f"❌ {msg}", "error")
                 return redirect(url_for('edit_profile'))
-                
+
             user.set_password(new_password)
-            
+
         db.session.commit()
         flash("✅ Profile updated successfully!", "success")
         return redirect(url_for('user_profile'))
-        
+
     return render_template('edit_profile.html', user=user)
-    
-# ============ AUTOMATED BACKGROUND JOBS ============
+
+
+# ----------------- BACKGROUND SCHEDULED JOBS -----------------
 
 @scheduler.task('cron', id='monthly_reset', day=1, hour=0, minute=0)
 def monthly_task_reset():
     with app.app_context():
         logger.info("Monthly task reset started...")
-        # Yahan apna logic likhein
+        # Add custom logic here
         db.session.commit()
         logger.info("Monthly task reset finished!")
+
 
 @scheduler.task('cron', id='increment_month', day=1, hour=0, minute=0)
 def increment_allocation_month():
     with app.app_context():
-        # Har task ka allocation month +1 kar do
-        Task.query.update({'allocation_month': Task.allocation_month + 1})
+        try:
+            # If Task.allocation_month exists; else this may fail on some schemas
+            Task.query.update({'allocation_month': Task.allocation_month + 1})
+            db.session.commit()
+            logger.info("Monthly allocation month incremented!")
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Failed to increment allocation_month: {e}")
+
+
+# ----------------- ADMIN: user management -----------------
+
+@app.route("/admin/user/<int:user_id>/delete", methods=["POST"])
+@csrf.exempt
+@admin_required
+def delete_user(user_id):
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    try:
+        db.session.delete(user)
         db.session.commit()
-        logger.info("Monthly allocation month incremented!")
+        return jsonify({'status': 'success', 'message': f'User {user.name} deleted successfully!'})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting user: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to delete user due to a database error.'}), 500
+
+
+@app.route("/admin/user/<int:user_id>/toggle_block", methods=["POST"])
+@csrf.exempt
+@admin_required
+def toggle_block_user(user_id):
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    try:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+
+        action = "Blocked" if user.is_blocked else "Unblocked"
+        return jsonify({'status': 'success', 'message': f'User {user.name} has been {action} successfully!'})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling block for user: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
+
+
+# ----------------- App entrypoint -----------------
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
