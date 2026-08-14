@@ -178,9 +178,9 @@ def is_valid_name(name):
 
 def is_valid_phone(phone):
     if not phone or len(phone) == 0:
-        return True, "Phone is optional"
+        return False, "Phone number is required"
     if not re.match(r'^[0-9]{10}$', phone):
-        return False, "Phone must be 10 digits"
+        return False, "Phone must be exactly 10 digits"
     return True, "Phone is valid"
 
 def allowed_file(filename):
