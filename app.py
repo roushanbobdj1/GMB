@@ -364,15 +364,7 @@ def register():
             'expires': (datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()
         }
 
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-            <h2>Verify Your Email</h2>
-            <p>Hi {name}, welcome to GMB Earn!</p>
-            <p>Your 6-digit OTP to verify your email address is:</p>
-            <h1 style="color: #198754; letter-spacing: 5px;">{otp}</h1>
-            <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
-        </div>
-        """
+        # Bypass Mail Send for Render Free Tier
         print(f"\n=========================================")
         print(f"🚀 NEW REGISTRATION OTP FOR {email}: {otp}")
         print(f"=========================================\n")
@@ -382,7 +374,7 @@ def register():
 
     except Exception as e:
         logger.error(f"Email Error during registration: {str(e)}")
-        flash('❌ Failed to send OTP. Please check SMTP configuration.', 'error')
+        flash('❌ Failed to process request.', 'error')
         return redirect(url_for('user_register'))
 
 
@@ -1575,18 +1567,20 @@ def forgot_password():
             <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
         </div>
         """
+        
+        # Bypass Mail Send for Render Free Tier
         print(f"\n=========================================")
         print(f"🔐 PASSWORD RESET OTP FOR {email}: {otp}")
         print(f"=========================================\n")
         
         session['reset_email'] = email
-        flash('✅ OTP sent successfully to your email!', 'success')
+        flash('✅ OTP generated! Check Render Server Logs to see your OTP.', 'success')
         return redirect(url_for('verify_otp'))
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"🔥 EMAIL ERROR: {str(e)}")
-        flash('❌ Error occurred while sending email! Check SMTP settings.', 'error')
+        flash('❌ Error occurred while processing request.', 'error')
 
     return render_template('forgot_password.html')
 
@@ -1646,7 +1640,8 @@ def set_new_password():
             db.session.commit()
 
             try:
-                mail.send(Message(subject='✅ Password Changed Successfully', recipients=[user.email], body='Your password has been successfully changed.'))
+                # Bypass Mail Send for Render Free Tier
+                print(f"✅ Password changed successfully for {user.email}")
             except Exception:
                 pass
 
