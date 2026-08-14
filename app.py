@@ -1917,6 +1917,52 @@ def admin_leaderboard_exclude(user_id):
         db.session.rollback()
         logger.error(f"Error toggling leaderboard exclusion: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
+
+@app.route("/admin/allocations")
+def admin_allocations():
+    # Check if admin is logged in (apni admin verification ka logic yahan ensure karein)
+    if 'admin_logged_in' not in session:
+        flash("Please login as admin first.", "error")
+        return redirect(url_for('admin_login'))
+
+    campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
+    allocation_data = []
+
+    for campaign in campaigns:
+        progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
+        
+        # Get all users assigned to this campaign
+        assignments = UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).all()
+        
+        assigned_users = []
+        for assign in assignments:
+            user = User.query.get(assign.user_id)
+            if user:
+                assigned_users.append({
+                    'name': user.name,
+                    'email': user.email,
+                    'assigned_date': assign.assigned_at.strftime("%Y-%m-%d %I:%M %p") if assign.assigned_at else "N/A",
+                    'status': assign.status
+                })
+        
+        if progress:
+            total_created = progress.total_tasks_created
+            total_assigned = progress.total_tasks_assigned
+            remaining = total_created - total_assigned
+        else:
+            total_created = 0
+            total_assigned = 0
+            remaining = 0
+
+        allocation_data.append({
+            'campaign': campaign,
+            'total_created': total_created,
+            'total_assigned': total_assigned,
+            'remaining': remaining,
+            'assigned_users': assigned_users
+        })
+
+    return render_template('admin_allocations.html', allocation_data=allocation_data)
     
 # ============ AUTOMATED BACKGROUND JOBS ============
 
