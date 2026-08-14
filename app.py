@@ -36,7 +36,17 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 mail = Mail(app)
+# Mail Server Settings
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
 
+# Email aur Password dono ab .env file se secure tarike se load honge
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_APP_PASSWORD')
+
+# Sender email ke liye bhi humne same env variable use kar liya hai
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
 db.init_app(app)
 scheduler = APScheduler()
 scheduler.init_app(app)
@@ -261,7 +271,7 @@ def register():
     name = data.get('name')
     phone = data.get('phone', '')
 
-    # 🚨 NAYA BADLAAV: phone.strip() check add kiya gaya hai taaki phone number compulsory ho jaye
+    
     if not email or not password or not name or not phone.strip():
         flash("❌ All fields including Mobile Number are required!", "error")
         return redirect(url_for('user_register'))
@@ -1415,11 +1425,12 @@ def campaign_allocation_dashboard():
         })
     return render_template('admin_allocation_dashboard.html', campaigns=dashboard_data)
 
+# ==================== FORGOT PASSWORD (OTP BASED) ====================
 
-# ==================== FORGOT PASSWORD ====================
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
-    if request.method == "GET": return render_template('forgot_password.html')
+    if request.method == "GET": 
+        return render_template('forgot_password.html')
     
     email = request.form.get('email', '').strip().lower()
     if not email:
@@ -1428,34 +1439,133 @@ def forgot_password():
     
     user = User.query.filter_by(email=email).first()
     if not user:
-        flash('✅ If email exists, reset link sent!', 'success')
+        # Security: Agar email galat bhi ho toh hacker ko pata na chale
+        flash('✅ If your email exists, OTP has been sent!', 'success')
         return render_template('forgot_password.html')
     
     try:
+        # Purane OTP delete karein
         PasswordResetToken.query.filter_by(user_id=user.id, is_used=False).delete()
         
-        reset_token = secrets.token_urlsafe(32)
+        # 6-Digit Random OTP Generate karein
+        otp = str(random.randint(100000, 999999))
+        
+        # Database mein save karein (hum existing reset_token column use kar lenge OTP ke liye)
         token = PasswordResetToken(
-            user_id=user.id, email=email, reset_token=reset_token,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+            user_id=user.id, email=email, reset_token=otp,
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15) # 15 min validity
         )
         db.session.add(token)
         db.session.commit()
         
-        reset_link = f"{request.host_url}reset_password/{reset_token}"
+        # Email Bhejein
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+            <h2>Password Reset OTP</h2>
+            <p>Your 6-digit OTP to reset your GMB Earn password is:</p>
+            <h1 style="color: #0d6efd; letter-spacing: 5px;">{otp}</h1>
+            <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
+        </div>
+        """
         msg = Message(
-            subject='🔐 Reset Your Password - GMB Earn',
+            subject='🔐 Your Password Reset OTP - GMB Earn',
             recipients=[email],
-            html=f'<p>Reset password link: <a href="{reset_link}">{reset_link}</a></p>'
+            html=html_body
         )
         mail.send(msg)
-        flash('✅ Reset link sent to your email!', 'success')
+        
+        # Session mein email save kar lein taaki next page par pata rahe kiski email hai
+        session['reset_email'] = email
+        flash('✅ OTP sent successfully to your email!', 'success')
+        return redirect(url_for('verify_otp'))
+        
     except Exception as e:
         db.session.rollback()
-        print(f"🔥 EMAIL ERROR: {str(e)}")  # Yeh terminal me error dikhayega
-        flash('❌ Error occurred while sending email!', 'error')
+        print(f"🔥 EMAIL ERROR: {str(e)}") 
+        flash('❌ Error occurred while sending email! Check SMTP settings.', 'error')
     
     return render_template('forgot_password.html')
+
+
+@app.route("/verify_otp", methods=["GET", "POST"])
+def verify_otp():
+    if 'reset_email' not in session:
+        flash('❌ Invalid request, please start again.', 'error')
+        return redirect(url_for('forgot_password'))
+        
+    email = session['reset_email']
+    
+    if request.method == "POST":
+        entered_otp = request.form.get('otp', '').strip()
+        
+        # Database se OTP check karein
+        token_record = PasswordResetToken.query.filter_by(
+            email=email, 
+            reset_token=entered_otp, 
+            is_used=False
+        ).first()
+        
+        # Agar OTP galat hai ya expire ho gaya
+        if not token_record or token_record.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
+            flash('❌ Invalid or expired OTP!', 'error')
+            return render_template('verify_otp.html', email=email)
+            
+        # OTP Sahi hai! Ab naya password set karne deinge
+        session['otp_verified'] = True
+        flash('✅ OTP Verified! Set your new password.', 'success')
+        return redirect(url_for('set_new_password'))
+        
+    return render_template('verify_otp.html', email=email)
+
+
+@app.route("/set_new_password", methods=["GET", "POST"])
+def set_new_password():
+    # Security check: User ne OTP verify kiya hai ya nahi?
+    if not session.get('otp_verified') or 'reset_email' not in session:
+        flash('❌ Session expired. Please verify OTP again.', 'error')
+        return redirect(url_for('forgot_password'))
+        
+    email = session['reset_email']
+    
+    if request.method == "POST":
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not new_password or new_password != confirm_password or len(new_password) < 8:
+            flash('❌ Passwords must match and be at least 8 characters!', 'error')
+            return render_template('set_new_password.html')
+            
+        try:
+            # Naya password set karein
+            user = User.query.filter_by(email=email).first()
+            user.set_password(new_password)
+            
+            # OTP ko "used" mark kar dein taaki dobara use na ho
+            token_record = PasswordResetToken.query.filter_by(email=email, is_used=False).first()
+            if token_record:
+                token_record.is_used = True
+                
+            db.session.commit()
+            
+            # Confirmation Email (Optional)
+            try:
+                mail.send(Message(subject='✅ Password Changed Successfully', recipients=[user.email], body='Your password has been successfully changed.'))
+            except: pass
+            
+            # Session clean kar dein
+            session.pop('reset_email', None)
+            session.pop('otp_verified', None)
+            
+            flash('✅ Password reset successfully! You can login now.', 'success')
+            return redirect(url_for('user_login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('❌ Error resetting password!', 'error')
+            return render_template('set_new_password.html')
+            
+    return render_template('set_new_password.html')
+
 
 @app.route("/admin/analytics")
 @admin_required
