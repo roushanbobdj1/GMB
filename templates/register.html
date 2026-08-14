@@ -20,7 +20,8 @@
 
                         <!-- Registration Form -->
                         <form id="registrationForm" method="POST" action="/register">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
                             <!-- Full Name -->
                             <div class="mb-3">
                                 <label class="form-label fw-500">
@@ -53,10 +54,10 @@
                                 <small class="form-text text-muted">Enter your email</small>
                             </div>
 
-                            <!-- Phone Number (Optional) -->
+                            <!-- Phone Number (Made Mandatory for OTP Backend) -->
                             <div class="mb-3">
                                 <label class="form-label fw-500">
-                                    <i class="fas fa-phone"></i> Phone Number
+                                    <i class="fas fa-phone-alt"></i> Mobile Number
                                     <span class="text-danger">*</span>
                                 </label>
                                 <input 
@@ -64,24 +65,32 @@
                                     class="form-control form-control-lg" 
                                     name="phone" 
                                     id="phone"
-                                    placeholder="10-digit phone number"
-                                    pattern="[0-9]{10}">
+                                    placeholder="10-digit mobile number"
+                                    pattern="[0-9]{10}"
+                                    maxlength="10"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    required>
                                 <small class="form-text text-muted">10 digits (e.g., 9876543210)</small>
                             </div>
 
-                            <!-- Password -->
+                            <!-- Password (WITH SHOW/HIDE BUTTON) -->
                             <div class="mb-3">
                                 <label class="form-label fw-500">
                                     <i class="fas fa-lock"></i> Password
                                     <span class="text-danger">*</span>
                                 </label>
-                                <input 
-                                    type="password" 
-                                    class="form-control form-control-lg" 
-                                    name="password" 
-                                    id="password"
-                                    placeholder="Minimum 8 characters"
-                                    required>
+                                <div class="position-relative">
+                                    <input 
+                                        type="password" 
+                                        class="form-control form-control-lg pe-5" 
+                                        name="password" 
+                                        id="password"
+                                        placeholder="Minimum 8 characters"
+                                        required>
+                                    <button class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-3" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 <small class="form-text text-muted d-block mt-2">
                                     ✓ At least 8 characters<br>
                                     ✓ Uppercase letter (A-Z)<br>
@@ -92,19 +101,24 @@
                                 <div id="passwordStrength" class="mt-2"></div>
                             </div>
 
-                            <!-- Confirm Password -->
+                            <!-- Confirm Password (WITH SHOW/HIDE BUTTON) -->
                             <div class="mb-4">
                                 <label class="form-label fw-500">
                                     <i class="fas fa-lock"></i> Confirm Password
                                     <span class="text-danger">*</span>
                                 </label>
-                                <input 
-                                    type="password" 
-                                    class="form-control form-control-lg" 
-                                    name="confirm_password" 
-                                    id="confirm_password"
-                                    placeholder="Re-enter password"
-                                    required>
+                                <div class="position-relative">
+                                    <input 
+                                        type="password" 
+                                        class="form-control form-control-lg pe-5" 
+                                        name="confirm_password" 
+                                        id="confirm_password"
+                                        placeholder="Re-enter password"
+                                        required>
+                                    <button class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-decoration-none text-muted px-3" type="button" id="toggleConfirmPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 <div id="passwordMatch" class="mt-2"></div>
                             </div>
 
@@ -124,8 +138,9 @@
                             <!-- Send OTP Button -->
                             <button 
                                 type="submit" 
+                                id="regBtn"
                                 class="btn btn-primary btn-lg w-100">
-                                <i class="fas fa-user-plus"></i> Register
+                                <i class="fas fa-paper-plane"></i> Get OTP to Register
                             </button>
                         </form>
 
@@ -150,14 +165,8 @@
     }
 
     @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .form-control-lg {
@@ -166,6 +175,11 @@
         border-radius: 0.5rem;
         border: 2px solid #e9ecef;
         transition: all 0.3s ease;
+    }
+
+    /* pe-5 class is for padding-end to make space for the eye icon */
+    .pe-5 {
+        padding-right: 3rem !important;
     }
 
     .form-control-lg:focus {
@@ -184,13 +198,12 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
     }
-
-    #passwordStrength {
-        font-size: 0.875rem;
-        font-weight: 600;
+    
+    .btn-link:hover i {
+        color: #667eea;
     }
 
-    #passwordMatch {
+    #passwordStrength, #passwordMatch {
         font-size: 0.875rem;
         font-weight: 600;
     }
@@ -205,13 +218,40 @@
     }
 
     @media (max-width: 576px) {
-        .card-body {
-            padding: 1.5rem !important;
-        }
+        .card-body { padding: 1.5rem !important; }
     }
 </style>
 
 <script>
+    // ✅ Toggle Password Visibility Feature
+    document.getElementById('togglePassword')?.addEventListener('click', function (e) {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    document.getElementById('toggleConfirmPassword')?.addEventListener('click', function (e) {
+        const confirmInput = document.getElementById('confirm_password');
+        const icon = this.querySelector('i');
+        if (confirmInput.type === 'password') {
+            confirmInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            confirmInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
     function validatePassword(password) {
         const hasUpper = /[A-Z]/.test(password);
         const hasLower = /[a-z]/.test(password);
@@ -287,7 +327,7 @@
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
         
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-3 mb-3`;
         alertDiv.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -299,7 +339,7 @@
         setTimeout(() => alertDiv.remove(), 5000);
     }
 
-    // Simple Form Validation (no OTP)
+    // Form Validation (Including mandatory phone check)
     document.getElementById('registrationForm')?.addEventListener('submit', function(e) {
         const name = this.name.value.trim();
         const email = this.email.value.trim();
@@ -307,6 +347,7 @@
         const password = this.password.value;
         const confirmPassword = this.confirm_password.value;
         const termsChecked = document.getElementById('terms').checked;
+        const submitBtn = document.getElementById('regBtn');
 
         if (!name) {
             e.preventDefault();
@@ -327,9 +368,10 @@
             return;
         }
 
-        if (phone && !/^[0-9]{10}$/.test(phone)) {
+        // Phone Validation Check
+        if (!phone || !/^[0-9]{10}$/.test(phone)) {
             e.preventDefault();
-            showAlert('Phone must be 10 digits', 'error');
+            showAlert('Please enter a valid 10-digit mobile number', 'error');
             return;
         }
 
@@ -350,6 +392,10 @@
             showAlert('Please agree to Terms & Conditions', 'error');
             return;
         }
+        
+        // Show loading spinner
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending OTP...';
     });
 </script>
 {% endblock %}
