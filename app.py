@@ -373,10 +373,11 @@ def register():
             <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
         </div>
         """
-        msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
-        mail.send(msg)
+        print(f"\n=========================================")
+        print(f"🚀 NEW REGISTRATION OTP FOR {email}: {otp}")
+        print(f"=========================================\n")
 
-        flash('✅ Verification OTP sent to your email!', 'success')
+        flash('✅ OTP generated! Check Render Server Logs to see your OTP.', 'success')
         return redirect(url_for('verify_registration'))
 
     except Exception as e:
@@ -1574,13 +1575,10 @@ def forgot_password():
             <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
         </div>
         """
-        msg = Message(
-            subject='🔐 Your Password Reset OTP - GMB Earn',
-            recipients=[email],
-            html=html_body
-        )
-        mail.send(msg)
-
+        print(f"\n=========================================")
+        print(f"🔐 PASSWORD RESET OTP FOR {email}: {otp}")
+        print(f"=========================================\n")
+        
         session['reset_email'] = email
         flash('✅ OTP sent successfully to your email!', 'success')
         return redirect(url_for('verify_otp'))
