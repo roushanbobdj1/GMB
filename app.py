@@ -1,4 +1,4 @@
-# Combined and cleaned app.py
+# Combined, Cleaned, and Production-Ready app.py for Hostinger VPS
 import os
 import re
 import uuid
@@ -365,11 +365,6 @@ def register():
         # REAL EMAIL SENDING ACTIVE
         msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
         mail.send(msg)
-
-        # Print to console as backup
-        print(f"\n=========================================")
-        print(f"🚀 EMAIL SENT TO {email} | OTP: {otp}")
-        print(f"=========================================\n")
 
         flash('✅ Verification OTP sent to your email!', 'success')
         return redirect(url_for('verify_registration'))
@@ -1536,17 +1531,12 @@ def forgot_password():
         </div>
         """
         
-        # REAL EMAIL SENDING ACTIVE
         msg = Message(
             subject='🔐 Your Password Reset OTP - GMB Earn',
             recipients=[email],
             html=html_body
         )
         mail.send(msg)
-        
-        print(f"\n=========================================")
-        print(f"🔐 EMAIL SENT | PASSWORD RESET OTP FOR {email}: {otp}")
-        print(f"=========================================\n")
         
         session['reset_email'] = email
         flash('✅ OTP sent successfully to your email!', 'success')
@@ -1615,9 +1605,7 @@ def set_new_password():
             db.session.commit()
 
             try:
-                # REAL EMAIL SENDING ACTIVE
                 mail.send(Message(subject='✅ Password Changed Successfully', recipients=[user.email], body='Your password has been successfully changed.'))
-                print(f"✅ Password success email sent to {user.email}")
             except Exception:
                 pass
 
