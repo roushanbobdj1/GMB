@@ -1,0 +1,1181 @@
+{% extends "base.html" %}
+
+{% block title %}Allocation Tracking - GMB Earn{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --allocation-primary: #0d6efd;
+        --allocation-primary-dark: #0b5ed7;
+        --allocation-success: #198754;
+        --allocation-warning: #f59e0b;
+        --allocation-danger: #dc3545;
+
+        --allocation-text: #1f2937;
+        --allocation-text-secondary: #475569;
+        --allocation-muted: #64748b;
+
+        --allocation-border: #e5e7eb;
+        --allocation-border-light: #eef2f7;
+        --allocation-bg: #f8fafc;
+
+        --allocation-shadow-sm:
+            0 2px 8px rgba(15, 23, 42, 0.05);
+
+        --allocation-shadow-md:
+            0 10px 30px rgba(15, 23, 42, 0.08);
+
+        --allocation-shadow-hover:
+            0 16px 38px rgba(15, 23, 42, 0.11);
+
+        --allocation-radius: 16px;
+        --allocation-transition: 220ms ease;
+    }
+
+    /* =========================================================
+       PAGE
+    ========================================================== */
+
+    .allocation-page {
+        min-height: 100%;
+        padding: 30px 0 50px;
+
+        background:
+            radial-gradient(
+                circle at 5% 5%,
+                rgba(13, 110, 253, 0.045),
+                transparent 25%
+            ),
+            linear-gradient(
+                180deg,
+                #f8fafc 0%,
+                #ffffff 100%
+            );
+    }
+
+    /* =========================================================
+       PAGE HEADER
+    ========================================================== */
+
+    .allocation-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+
+        margin-bottom: 26px;
+    }
+
+    .allocation-header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-width: 0;
+    }
+
+    .allocation-back-btn {
+        width: 44px;
+        height: 44px;
+
+        flex-shrink: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border: 1px solid var(--allocation-border);
+        border-radius: 12px;
+
+        background: #ffffff;
+        color: var(--allocation-text-secondary);
+
+        box-shadow: var(--allocation-shadow-sm);
+
+        transition:
+            color var(--allocation-transition),
+            border-color var(--allocation-transition),
+            background var(--allocation-transition),
+            transform var(--allocation-transition),
+            box-shadow var(--allocation-transition);
+    }
+
+    .allocation-back-btn:hover {
+        color: var(--allocation-primary);
+        border-color: #bfdbfe;
+        background: #f8fbff;
+
+        transform: translateX(-2px);
+
+        box-shadow: var(--allocation-shadow-md);
+    }
+
+    .allocation-page-title-wrap {
+        min-width: 0;
+    }
+
+    .allocation-page-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        margin: 0;
+
+        color: var(--allocation-text);
+
+        font-size: 26px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: -0.5px;
+    }
+
+    .allocation-page-title i {
+        color: var(--allocation-primary);
+        font-size: 23px;
+    }
+
+    .allocation-page-subtitle {
+        margin: 6px 0 0;
+
+        color: var(--allocation-muted);
+
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    /* =========================================================
+       EMPTY STATE - NO CAMPAIGNS
+    ========================================================== */
+
+    .allocation-empty-campaigns {
+        padding: 65px 25px;
+
+        text-align: center;
+
+        background: #ffffff;
+
+        border: 1px solid var(--allocation-border);
+        border-radius: var(--allocation-radius);
+
+        box-shadow: var(--allocation-shadow-sm);
+    }
+
+    .allocation-empty-icon {
+        width: 72px;
+        height: 72px;
+
+        margin: 0 auto 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 20px;
+
+        background: #f1f5f9;
+        color: #94a3b8;
+
+        font-size: 28px;
+    }
+
+    .allocation-empty-campaigns h3 {
+        margin: 0 0 7px;
+
+        color: var(--allocation-text);
+
+        font-size: 18px;
+        font-weight: 750;
+    }
+
+    .allocation-empty-campaigns p {
+        margin: 0;
+
+        color: var(--allocation-muted);
+
+        font-size: 14px;
+    }
+
+    /* =========================================================
+       CAMPAIGN CARD
+    ========================================================== */
+
+    .allocation-card {
+        position: relative;
+
+        margin-bottom: 16px;
+
+        overflow: hidden;
+
+        background: #ffffff;
+
+        border: 1px solid var(--allocation-border);
+        border-radius: var(--allocation-radius);
+
+        box-shadow: var(--allocation-shadow-sm);
+
+        transition:
+            box-shadow var(--allocation-transition),
+            border-color var(--allocation-transition),
+            transform var(--allocation-transition);
+    }
+
+    .allocation-card:hover {
+        border-color: #dbe3ee;
+        box-shadow: var(--allocation-shadow-md);
+    }
+
+    .allocation-card:last-child {
+        margin-bottom: 0;
+    }
+
+    /* =========================================================
+       CAMPAIGN HEADER
+    ========================================================== */
+
+    .allocation-card-header {
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 25px;
+
+        padding: 20px 22px;
+
+        border: 0;
+
+        background: #ffffff;
+
+        text-align: left;
+
+        cursor: pointer;
+
+        transition:
+            background var(--allocation-transition);
+    }
+
+    .allocation-card-header:hover {
+        background: #fbfdff;
+    }
+
+    .allocation-card-header:focus-visible {
+        outline: 3px solid rgba(13, 110, 253, 0.12);
+        outline-offset: -3px;
+    }
+
+    .allocation-campaign-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .allocation-campaign-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        min-width: 0;
+
+        margin-bottom: 7px;
+    }
+
+    .allocation-campaign-icon {
+        width: 38px;
+        height: 38px;
+
+        flex-shrink: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+
+        background: #eff6ff;
+        color: var(--allocation-primary);
+
+        font-size: 15px;
+    }
+
+    .allocation-campaign-title {
+        margin: 0;
+
+        overflow: hidden;
+
+        color: var(--allocation-text);
+
+        font-size: 17px;
+        line-height: 1.3;
+        font-weight: 750;
+
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .allocation-campaign-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px 14px;
+
+        margin: 0;
+
+        color: var(--allocation-muted);
+
+        font-size: 12px;
+        font-weight: 550;
+    }
+
+    .allocation-meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .allocation-meta-item i {
+        color: #94a3b8;
+        font-size: 11px;
+    }
+
+    .allocation-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+
+        font-weight: 700;
+    }
+
+    .allocation-status.active {
+        color: var(--allocation-success);
+    }
+
+    .allocation-status.inactive {
+        color: var(--allocation-muted);
+    }
+
+    .allocation-status-dot {
+        width: 6px;
+        height: 6px;
+
+        border-radius: 50%;
+
+        background: currentColor;
+    }
+
+    /* =========================================================
+       STATS
+    ========================================================== */
+
+    .allocation-stats {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+
+        flex-shrink: 0;
+    }
+
+    .allocation-stat {
+        min-width: 92px;
+
+        padding: 11px 13px;
+
+        text-align: center;
+
+        border: 1px solid transparent;
+        border-radius: 11px;
+    }
+
+    .allocation-stat-label {
+        display: block;
+
+        margin-bottom: 3px;
+
+        font-size: 9px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: 0.65px;
+        text-transform: uppercase;
+    }
+
+    .allocation-stat-value {
+        display: block;
+
+        font-size: 18px;
+        line-height: 1.1;
+        font-weight: 800;
+    }
+
+    .allocation-stat-total {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #475569;
+    }
+
+    .allocation-stat-assigned {
+        background: #ecfdf3;
+        border-color: #bbf7d0;
+        color: #15803d;
+    }
+
+    .allocation-stat-remaining {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #b45309;
+    }
+
+    .allocation-chevron {
+        width: 36px;
+        height: 36px;
+
+        flex-shrink: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+
+        background: #f8fafc;
+        color: #64748b;
+
+        font-size: 13px;
+
+        transition:
+            transform var(--allocation-transition),
+            background var(--allocation-transition),
+            color var(--allocation-transition);
+    }
+
+    .allocation-card-header[aria-expanded="true"] .allocation-chevron {
+        transform: rotate(180deg);
+
+        background: #eff6ff;
+        color: var(--allocation-primary);
+    }
+
+    /* =========================================================
+       COLLAPSE BODY
+    ========================================================== */
+
+    .allocation-card-body {
+        border-top: 1px solid var(--allocation-border-light);
+        background: #ffffff;
+    }
+
+    /* =========================================================
+       TABLE
+    ========================================================== */
+
+    .allocation-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .allocation-table {
+        width: 100%;
+        min-width: 760px;
+
+        margin: 0;
+
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .allocation-table thead th {
+        padding: 13px 20px;
+
+        background: #f8fafc;
+
+        border-bottom: 1px solid var(--allocation-border);
+
+        color: #64748b;
+
+        font-size: 10px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+
+        white-space: nowrap;
+    }
+
+    .allocation-table tbody td {
+        padding: 15px 20px;
+
+        border-bottom: 1px solid #f1f5f9;
+
+        color: var(--allocation-text-secondary);
+
+        font-size: 13px;
+        font-weight: 550;
+
+        vertical-align: middle;
+    }
+
+    .allocation-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .allocation-table tbody tr {
+        transition: background var(--allocation-transition);
+    }
+
+    .allocation-table tbody tr:hover {
+        background: #fbfdff;
+    }
+
+    .allocation-index {
+        width: 45px;
+
+        color: #94a3b8 !important;
+
+        font-size: 12px !important;
+        font-weight: 700 !important;
+    }
+
+    .allocation-user {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+
+        color: var(--allocation-text);
+
+        font-weight: 700;
+    }
+
+    .allocation-user-avatar {
+        width: 34px;
+        height: 34px;
+
+        flex-shrink: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 9px;
+
+        background: #eff6ff;
+        color: var(--allocation-primary);
+
+        font-size: 14px;
+    }
+
+    .allocation-email {
+        color: #64748b;
+    }
+
+    .allocation-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+
+        color: #64748b;
+    }
+
+    .allocation-date i {
+        color: #94a3b8;
+    }
+
+    /* =========================================================
+       STATUS BADGES
+    ========================================================== */
+
+    .allocation-task-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        padding: 6px 10px;
+
+        border-radius: 999px;
+
+        font-size: 11px;
+        line-height: 1;
+        font-weight: 800;
+
+        white-space: nowrap;
+    }
+
+    .allocation-task-status::before {
+        content: "";
+
+        width: 6px;
+        height: 6px;
+
+        border-radius: 50%;
+
+        background: currentColor;
+    }
+
+    .status-Assigned {
+        background: #ecfeff;
+        color: #0891b2;
+        border: 1px solid #a5f3fc;
+    }
+
+    .status-Completed {
+        background: #ecfdf3;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+    }
+
+    /* =========================================================
+       NO DATA
+    ========================================================== */
+
+    .allocation-no-data {
+        padding: 48px 25px;
+
+        text-align: center;
+    }
+
+    .allocation-no-data-icon {
+        width: 64px;
+        height: 64px;
+
+        margin: 0 auto 15px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 18px;
+
+        background: #f8fafc;
+        color: #94a3b8;
+
+        font-size: 25px;
+    }
+
+    .allocation-no-data h4 {
+        margin: 0 0 6px;
+
+        color: var(--allocation-text);
+
+        font-size: 16px;
+        font-weight: 750;
+    }
+
+    .allocation-no-data p {
+        margin: 0;
+
+        color: var(--allocation-muted);
+
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================== */
+
+    @media (max-width: 1100px) {
+
+        .allocation-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .allocation-stats {
+            width: 100%;
+        }
+
+        .allocation-stat {
+            flex: 1;
+        }
+
+        .allocation-chevron {
+            margin-left: auto;
+        }
+    }
+
+    @media (max-width: 767px) {
+
+        .allocation-page {
+            padding-top: 22px;
+        }
+
+        .allocation-page-header {
+            margin-bottom: 20px;
+        }
+
+        .allocation-page-title {
+            font-size: 21px;
+        }
+
+        .allocation-page-title i {
+            font-size: 19px;
+        }
+
+        .allocation-page-subtitle {
+            display: none;
+        }
+
+        .allocation-card-header {
+            padding: 16px;
+        }
+
+        .allocation-campaign-title {
+            font-size: 15px;
+        }
+
+        .allocation-campaign-icon {
+            width: 34px;
+            height: 34px;
+        }
+
+        .allocation-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+        }
+
+        .allocation-stat {
+            min-width: 0;
+            padding: 9px 7px;
+        }
+
+        .allocation-stat-value {
+            font-size: 16px;
+        }
+
+        .allocation-stat-label {
+            font-size: 8px;
+        }
+
+        .allocation-chevron {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+
+        .allocation-page-header {
+            gap: 10px;
+        }
+
+        .allocation-back-btn {
+            width: 40px;
+            height: 40px;
+        }
+
+        .allocation-page-title {
+            font-size: 19px;
+        }
+
+        .allocation-page-title i {
+            display: none;
+        }
+
+        .allocation-campaign-meta {
+            gap: 5px 10px;
+        }
+
+        .allocation-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .allocation-stat {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+        }
+
+        .allocation-stat-label {
+            margin: 0;
+        }
+
+        .allocation-stat-value {
+            font-size: 15px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .allocation-card,
+        .allocation-card-header,
+        .allocation-back-btn,
+        .allocation-chevron,
+        .allocation-table tbody tr {
+            transition: none;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="allocation-page">
+
+    <div class="container-fluid px-3 px-lg-4">
+
+        <!-- =====================================================
+             PAGE HEADER
+        ====================================================== -->
+
+        <div class="allocation-page-header">
+
+            <div class="allocation-header-left">
+
+                <a
+                    href="/admin_dashboard"
+                    class="allocation-back-btn"
+                    aria-label="Back to Admin Dashboard"
+                    title="Back to Admin Dashboard"
+                >
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+
+                <div class="allocation-page-title-wrap">
+
+                    <h1 class="allocation-page-title">
+                        <i class="fas fa-sitemap"></i>
+                        <span>Campaign Task Allocations</span>
+                    </h1>
+
+                    <p class="allocation-page-subtitle">
+                        Monitor campaign targets, assignments and task progress
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             ALLOCATION LIST
+        ====================================================== -->
+
+        <div class="accordion" id="allocationAccordion">
+
+            {% if allocation_data %}
+
+                {% for item in allocation_data %}
+
+                    <div class="allocation-card">
+
+                        <!-- Campaign Header -->
+                        <div
+                            class="allocation-card-header"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapse{{ item.campaign.id }}"
+                            aria-expanded="false"
+                            aria-controls="collapse{{ item.campaign.id }}"
+                            role="button"
+                            tabindex="0"
+                        >
+
+                            <!-- Campaign Information -->
+                            <div class="allocation-campaign-info">
+
+                                <div class="allocation-campaign-title-row">
+
+                                    <div class="allocation-campaign-icon">
+                                        <i class="fas fa-bullhorn"></i>
+                                    </div>
+
+                                    <h2 class="allocation-campaign-title">
+                                        {{ item.campaign.name }}
+                                    </h2>
+
+                                </div>
+
+
+                                <div class="allocation-campaign-meta">
+
+                                    <span class="allocation-meta-item">
+                                        <i class="fas fa-calendar-alt"></i>
+
+                                        <span>
+                                            Created on:
+                                            {{ item.campaign.created_at.strftime("%Y-%m-%d") if item.campaign.created_at else "N/A" }}
+                                        </span>
+                                    </span>
+
+
+                                    <span class="allocation-meta-item">
+
+                                        <span>
+                                            Status:
+                                        </span>
+
+                                        <span
+                                            class="allocation-status {{ 'active' if item.campaign.status == 'Active' else 'inactive' }}"
+                                        >
+                                            <span class="allocation-status-dot"></span>
+                                            {{ item.campaign.status }}
+                                        </span>
+
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Statistics -->
+                            <div class="allocation-stats">
+
+                                <div class="allocation-stat allocation-stat-total">
+
+                                    <span class="allocation-stat-label">
+                                        Target Limit
+                                    </span>
+
+                                    <span class="allocation-stat-value">
+                                        {{ item.total_created }}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="allocation-stat allocation-stat-assigned">
+
+                                    <span class="allocation-stat-label">
+                                        Assigned
+                                    </span>
+
+                                    <span class="allocation-stat-value">
+                                        {{ item.total_assigned }}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="allocation-stat allocation-stat-remaining">
+
+                                    <span class="allocation-stat-label">
+                                        Remaining
+                                    </span>
+
+                                    <span class="allocation-stat-value">
+                                        {{ item.remaining }}
+                                    </span>
+
+                                </div>
+
+
+                                <span class="allocation-chevron">
+                                    <i class="fas fa-chevron-down"></i>
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             COLLAPSIBLE CONTENT
+                        ================================================== -->
+
+                        <div
+                            id="collapse{{ item.campaign.id }}"
+                            class="collapse allocation-card-body"
+                            data-bs-parent="#allocationAccordion"
+                        >
+
+                            {% if item.assigned_users %}
+
+                                <div class="allocation-table-wrapper">
+
+                                    <table class="allocation-table">
+
+                                        <thead>
+
+                                            <tr>
+
+                                                <th>#</th>
+
+                                                <th>User Name</th>
+
+                                                <th>Email Address</th>
+
+                                                <th>Assigned Date &amp; Time</th>
+
+                                                <th>Task Status</th>
+
+                                            </tr>
+
+                                        </thead>
+
+
+                                        <tbody>
+
+                                            {% for user in item.assigned_users %}
+
+                                                <tr>
+
+                                                    <td class="allocation-index">
+                                                        {{ loop.index }}
+                                                    </td>
+
+
+                                                    <td>
+
+                                                        <span class="allocation-user">
+
+                                                            <span class="allocation-user-avatar">
+                                                                <i class="fas fa-user"></i>
+                                                            </span>
+
+                                                            <span>
+                                                                {{ user.name }}
+                                                            </span>
+
+                                                        </span>
+
+                                                    </td>
+
+
+                                                    <td class="allocation-email">
+                                                        {{ user.email }}
+                                                    </td>
+
+
+                                                    <td>
+
+                                                        <span class="allocation-date">
+
+                                                            <i class="far fa-clock"></i>
+
+                                                            <span>
+                                                                {{ user.assigned_date }}
+                                                            </span>
+
+                                                        </span>
+
+                                                    </td>
+
+
+                                                    <td>
+
+                                                        <span class="allocation-task-status status-{{ user.status }}">
+                                                            {{ user.status }}
+                                                        </span>
+
+                                                    </td>
+
+                                                </tr>
+
+                                            {% endfor %}
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
+                            {% else %}
+
+                                <!-- No Assigned Users -->
+
+                                <div class="allocation-no-data">
+
+                                    <div class="allocation-no-data-icon">
+                                        <i class="fas fa-inbox"></i>
+                                    </div>
+
+                                    <h4>
+                                        No Tasks Assigned Yet
+                                    </h4>
+
+                                    <p>
+                                        No tasks have been assigned to any user for this campaign yet.
+                                    </p>
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <!-- No Campaigns -->
+
+                <div class="allocation-empty-campaigns">
+
+                    <div class="allocation-empty-icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+
+                    <h3>
+                        No Campaign Allocations Found
+                    </h3>
+
+                    <p>
+                        There are currently no campaign allocation records to display.
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        /*
+         * Keep the chevron state synchronized with Bootstrap's
+         * collapse component without changing backend behaviour.
+         */
+        const collapseElements = document.querySelectorAll(
+            "#allocationAccordion .collapse"
+        );
+
+        collapseElements.forEach(function (collapseElement) {
+
+            const campaignHeader =
+                document.querySelector(
+                    '[data-bs-target="#' + collapseElement.id + '"]'
+                );
+
+            if (!campaignHeader) {
+                return;
+            }
+
+            collapseElement.addEventListener(
+                "show.bs.collapse",
+                function () {
+                    campaignHeader.setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+                }
+            );
+
+            collapseElement.addEventListener(
+                "hide.bs.collapse",
+                function () {
+                    campaignHeader.setAttribute(
+                        "aria-expanded",
+                        "false"
+                    );
+                }
+            );
+
+        });
+
+    });
+</script>
+
+{% endblock %}
