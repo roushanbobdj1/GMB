@@ -1853,44 +1853,6 @@ def admin_leaderboard_exclude(user_id):
         db.session.rollback()
         logger.error(f"Error toggling leaderboard exclusion: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
-
-
-@app.route("/reset_password/<token>", methods=["GET", "POST"])
-def reset_password(token):
-    token_record = PasswordResetToken.query.filter_by(reset_token=token, is_used=False).first()
-    
-    if not token_record or token_record.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
-        flash('❌ Invalid or expired reset link!', 'error')
-        return redirect(url_for('forgot_password'))
-        
-    if request.method == "GET":
-        return render_template('reset_password.html', token=token)
-    
-    new_password = request.form.get('new_password', '')
-    confirm_password = request.form.get('confirm_password', '')
-    
-    if not new_password or new_password != confirm_password or len(new_password) < 8:
-        flash('❌ Passwords must match and be at least 8 characters!', 'error')
-        return render_template('reset_password.html', token=token)
-    
-    try:
-        user = db.session.get(User, token_record.user_id)
-        user.set_password(new_password)
-        token_record.is_used = True
-        db.session.add(user)
-        db.session.add(token_record)
-        db.session.commit()
-        
-        try:
-            mail.send(Message(subject='✅ Password Changed', recipients=[user.email], body='Your password was changed.'))
-        except: pass
-        
-        flash('✅ Password reset successfully! Login now.', 'success')
-        return redirect(url_for('user_login'))
-    except Exception:
-        db.session.rollback()
-        flash('❌ Error resetting password!', 'error')
-        return render_template('reset_password.html', token=token)
     
 # ============ AUTOMATED BACKGROUND JOBS ============
 
