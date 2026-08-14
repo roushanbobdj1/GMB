@@ -1963,6 +1963,77 @@ def admin_allocations():
         })
 
     return render_template('admin_allocations.html', allocation_data=allocation_data)
+
+
+@app.route("/profile")
+def user_profile():
+    # Check if user is logged in
+    if 'user_id' not in session:
+        flash("Please login to view your profile.", "error")
+        return redirect(url_for('user_login'))
+
+    user = User.query.get(session['user_id'])
+    wallet = Wallet.query.filter_by(user_id=user.id).first()
+    
+    # Task stats nikalne ke liye
+    total_tasks = Task.query.filter_by(user_id=user.id).count()
+    completed_tasks = Task.query.filter_by(user_id=user.id, status='Completed').count()
+    pending_tasks = Task.query.filter_by(user_id=user.id, status='Assigned').count()
+
+    return render_template(
+        'profile.html', 
+        user=user, 
+        wallet=wallet, 
+        total_tasks=total_tasks, 
+        completed_tasks=completed_tasks, 
+        pending_tasks=pending_tasks
+    )
+
+@app.route("/edit_profile", methods=["GET", "POST"])
+def edit_profile():
+    if 'user_id' not in session:
+        flash("Please login to access this page.", "error")
+        return redirect(url_for('user_login'))
+
+    user = User.query.get(session['user_id'])
+    
+    if request.method == "POST":
+        name = request.form.get('name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if name:
+            user.name = name
+        if phone:
+            user.mobile = phone
+            
+        if current_password or new_password:
+            if not current_password:
+                flash("❌ Please enter your current password to set a new one.", "error")
+                return redirect(url_for('edit_profile'))
+                
+            if not user.check_password(current_password):
+                flash("❌ Current password is incorrect!", "error")
+                return redirect(url_for('edit_profile'))
+                
+            if new_password != confirm_password:
+                flash("❌ New passwords do not match!", "error")
+                return redirect(url_for('edit_profile'))
+                
+            valid, msg = is_valid_password(new_password)
+            if not valid:
+                flash(f"❌ {msg}", "error")
+                return redirect(url_for('edit_profile'))
+                
+            user.set_password(new_password)
+            
+        db.session.commit()
+        flash("✅ Profile updated successfully!", "success")
+        return redirect(url_for('user_profile'))
+        
+    return render_template('edit_profile.html', user=user)
     
 # ============ AUTOMATED BACKGROUND JOBS ============
 
