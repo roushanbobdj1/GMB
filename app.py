@@ -297,6 +297,18 @@ with app.app_context():
 
 @app.route("/")
 def index():
+    # If the user is logged in, send them straight to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('user_dashboard'))
+    # If admin is logged in
+    elif 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
+    # For any new user/PWA install, send directly to login
+    return redirect(url_for('user_login'))
+
+# If you still want the landing page accessible via a specific link (optional but good practice):
+@app.route("/landing")
+def landing():
     return render_template("index.html")
 
 
