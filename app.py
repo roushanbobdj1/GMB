@@ -2066,7 +2066,36 @@ def toggle_block_user(user_id):
         logger.error(f"Error toggling block for user: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Database error occurred.'}), 500
 
+# ----------------- CUSTOM ERROR HANDLERS -----------------
 
+@app.errorhandler(404)
+def page_not_found(e):
+    # Agar user koi aisi URL type kare jo exist nahi karti
+    flash("⚠️ The page you are looking for does not exist.", "warning")
+    
+    # Check if admin is logged in to redirect to admin dashboard, else user dashboard
+    if 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('index'))
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    # Agar user URL bar mein POST request ko directly open karne ki koshish kare
+    flash("❌ Action not allowed. Please use the proper buttons on the dashboard.", "error")
+    
+    # Redirect back safely
+    if 'admin_id' in session:
+        return redirect(url_for('admin_campaigns'))
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    # Agar server mein koi error aa jaye
+    flash("❌ Something went wrong on our end. Please try again later.", "error")
+    
+    if 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('index'))
 # ----------------- App entrypoint -----------------
 
 if __name__ == "__main__":
