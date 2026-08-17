@@ -54,7 +54,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 
 # Real Email Settings (Active)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com''
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587                     
 app.config['MAIL_USE_TLS'] = True                 
 app.config['MAIL_USE_SSL'] = False                  
@@ -72,7 +72,6 @@ scheduler.start()
 # Ensure upload folder exists
 os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
 
-# SocketIO (real-time)
 # SocketIO (real-time)
 socketio = SocketIO(
     app,
@@ -346,39 +345,80 @@ def register():
         flash("❌ Email already exists!", "error")
         return redirect(url_for('user_register'))
 
-    # ✅ GENERATE OTP & SEND REAL EMAIL
+    # ⚠️ TEMPORARY OTP BYPASS: DIRECT REGISTRATION FOR TESTING
     try:
-        otp = str(random.randint(100000, 999999))
+        # 1. Direct Account Creation
+        user = User(email=email, name=name, mobile=phone)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
 
-        session['pending_registration'] = {
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'password': password,
-            'otp': otp,
-            'expires': (datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()
-        }
+        # 2. Wallet Creation
+        wallet = Wallet(
+            user_id=user.id,
+            total_points=0,
+            available_points=0,
+            redeemed_points=0
+        )
+        db.session.add(wallet)
+        db.session.commit()
 
-        html_body = f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-            <h2>Verify Your Email</h2>
-            <p>Hi {name}, welcome to GMB Earn!</p>
-            <p>Your 6-digit OTP to verify your email address is:</p>
-            <h1 style="color: #198754; letter-spacing: 5px;">{otp}</h1>
-            <p>This OTP is valid for 15 minutes. Do not share it with anyone.</p>
-        </div>
-        """
-        
-        # REAL EMAIL SENDING ACTIVE
-        msg = Message(subject='📧 Verify Your Email - GMB Earn', recipients=[email], html=html_body)
-        mail.send(msg)
+        # 3. Auto Assign Tasks
+        active_campaigns = Campaign.query.filter_by(status='Active').all()
+        tasks_assigned_count = 0
 
-        flash('✅ Verification OTP sent to your email!', 'success')
-        return redirect(url_for('verify_registration'))
+        for campaign in active_campaigns:
+            progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
+
+            if progress and progress.total_tasks_assigned < progress.total_tasks_created:
+                review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
+                assigned_review = random.choice(review_texts).review_text if review_texts else "Default Review Text"
+
+                new_task = Task(
+                    campaign_id=campaign.id,
+                    user_id=user.id,
+                    review_text=assigned_review,
+                    gmb_link=campaign.gmb_link,
+                    status='Assigned',
+                    assigned_date=datetime.now(timezone.utc)
+                )
+                db.session.add(new_task)
+                db.session.flush()
+
+                assignment = UserCampaignTaskAssignment(
+                    user_id=user.id,
+                    campaign_id=campaign.id,
+                    task_id=new_task.id,
+                    status='Assigned',
+                    assigned_at=datetime.now(timezone.utc)
+                )
+                db.session.add(assignment)
+                tasks_assigned_count += 1
+
+                progress.total_tasks_assigned += 1
+                progress.users_count_assigned += 1
+                progress.updated_at = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        # 4. Notification
+        if tasks_assigned_count > 0:
+            notification = Notification(
+                user_id=user.id,
+                message=f'🎉 Welcome! You have {tasks_assigned_count} task(s) to complete and earn points! 💰',
+                notification_type='auto_assigned',
+                is_read=False
+            )
+            db.session.add(notification)
+            db.session.commit()
+
+        flash("✅ Registration successful! You can login now 🎉", "success")
+        return redirect(url_for('user_login'))
 
     except Exception as e:
-        logger.error(f"Email Error during registration: {str(e)}")
-        flash('❌ Failed to send OTP email. Please check SMTP settings.', 'error')
+        logger.error(f"Error during direct registration: {str(e)}")
+        db.session.rollback()
+        flash('❌ Error saving account. Please try again.', 'error')
         return redirect(url_for('user_register'))
 
 
