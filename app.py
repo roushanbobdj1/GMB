@@ -295,7 +295,7 @@ with app.app_context():
 
 
 # ----------------- USER ROUTES -----------------
-
+    
 @app.route("/")
 def index():
     # Authentication-aware redirect to directly serve PWA entry needs
