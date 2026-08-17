@@ -4,1170 +4,1853 @@
 
 {% block extra_css %}
 <style>
-    /* ============================================
-       VARIABLES & GENERAL
-       ============================================ */
+    /* =========================================================
+       GMB EARN — PROFESSIONAL ADMIN DASHBOARD
+       ========================================================= */
+
     :root {
-        --primary: #0d6efd;
-        --primary-light: #0dcaf0;
-        --success: #198754;
-        --warning: #ffc107;
-        --danger: #dc3545;
-        --info: #0d6efd;
-        --light: #f8f9fa;
-        --muted: #6c757d;
-        --border: #e9ecef;
-        
-        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-        --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-        --info-gradient: linear-gradient(135deg, #0dcaf0 0%, #00d4ff 100%);
-        
-        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
-        --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
-        
-        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        --dash-primary: #2563eb;
+        --dash-primary-2: #06b6d4;
+        --dash-success: #10b981;
+        --dash-warning: #f59e0b;
+        --dash-danger: #ef4444;
+        --dash-purple: #7c3aed;
+
+        --dash-text: #172033;
+        --dash-text-soft: #64748b;
+        --dash-bg: #f5f7fb;
+        --dash-card: #ffffff;
+        --dash-border: #e5eaf1;
+
+        --dash-radius: 16px;
+        --dash-radius-sm: 12px;
+
+        --dash-shadow-sm: 0 2px 8px rgba(15, 23, 42, .04);
+        --dash-shadow: 0 8px 25px rgba(15, 23, 42, .07);
+        --dash-shadow-hover: 0 14px 35px rgba(15, 23, 42, .11);
+
+        --dash-transition: 220ms ease;
     }
 
-    /* ============================================
-       PAGE HEADER
-       ============================================ */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 3rem;
-        flex-wrap: wrap;
-        gap: 1.5rem;
+    /* =========================================================
+       PAGE
+       ========================================================= */
+
+    .admin-dashboard {
+        width: 100%;
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 28px 24px 50px;
     }
 
-    .header-content h1 {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
+    /* =========================================================
+       HEADER
+       ========================================================= */
+
+    .dashboard-header {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
     }
 
-    .header-content h1 i {
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .dashboard-title-area {
+        min-width: 0;
     }
 
-    .header-content p {
-        color: var(--muted);
-        font-weight: 500;
+    .dashboard-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 6px;
+        color: var(--dash-text);
+        font-size: clamp(1.55rem, 2vw, 2.15rem);
+        line-height: 1.2;
+        font-weight: 800;
+        letter-spacing: -.035em;
+    }
+
+    .dashboard-title-icon {
+        width: 46px;
+        height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 46px;
+        border-radius: 13px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--dash-primary), var(--dash-primary-2));
+        box-shadow: 0 8px 20px rgba(37, 99, 235, .20);
+        font-size: 1.15rem;
+    }
+
+    .dashboard-subtitle {
         margin: 0;
-    }
-
-    .last-update {
-        font-size: 0.85rem;
-        color: var(--muted);
+        color: var(--dash-text-soft);
+        font-size: .92rem;
         font-weight: 500;
-        text-align: right;
     }
 
-    .last-update strong {
-        color: var(--primary);
+    .dashboard-updated {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 14px;
+        border: 1px solid var(--dash-border);
+        border-radius: 10px;
+        background: var(--dash-card);
+        box-shadow: var(--dash-shadow-sm);
+        color: var(--dash-text-soft);
+        font-size: .78rem;
+        white-space: nowrap;
     }
 
-    /* ============================================
-       STAT CARDS
-       ============================================ */
+    .dashboard-updated .update-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--dash-success);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, .10);
+    }
+
+    .dashboard-updated strong {
+        color: var(--dash-text);
+        font-weight: 700;
+    }
+
+    /* =========================================================
+       MAIN GRID
+       ========================================================= */
+
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .dashboard-main,
+    .dashboard-sidebar {
+        min-width: 0;
+    }
+
+    /* =========================================================
+       SECTION
+       ========================================================= */
+
+    .dashboard-section {
+        margin-bottom: 28px;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 14px;
+    }
+
+    .section-heading-left {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .section-heading-left i {
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        color: var(--dash-primary);
+        background: rgba(37, 99, 235, .09);
+        font-size: .85rem;
+    }
+
+    .section-heading h2 {
+        margin: 0;
+        color: var(--dash-text);
+        font-size: 1.02rem;
+        font-weight: 800;
+        letter-spacing: -.015em;
+    }
+
+    /* =========================================================
+       STAT GRID
+       ========================================================= */
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
     .stat-card {
-        background: white;
-        border-radius: 14px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
         position: relative;
+        min-width: 0;
+        padding: 18px;
         overflow: hidden;
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        background: var(--dash-card);
+        box-shadow: var(--dash-shadow-sm);
+        transition:
+            transform var(--dash-transition),
+            box-shadow var(--dash-transition),
+            border-color var(--dash-transition);
     }
 
     .stat-card::before {
-        content: '';
+        content: "";
         position: absolute;
-        left: 0;
         top: 0;
-        width: 4px;
-        height: 100%;
-        border-radius: 0;
-        background: var(--primary-gradient);
-    }
-
-    .stat-card.primary::before {
-        background: var(--primary-gradient);
-    }
-
-    .stat-card.success::before {
-        background: var(--success-gradient);
-    }
-
-    .stat-card.warning::before {
-        background: var(--warning-gradient);
-    }
-
-    .stat-card.danger::before {
-        background: var(--danger-gradient);
-    }
-
-    .stat-card.info::before {
-        background: var(--info-gradient);
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--stat-color, var(--dash-primary));
     }
 
     .stat-card:hover {
-        transform: translateY(-8px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+        border-color: rgba(37, 99, 235, .18);
+        box-shadow: var(--dash-shadow-hover);
     }
 
-    .stat-content {
+    .stat-card.primary {
+        --stat-color: var(--dash-primary);
+    }
+
+    .stat-card.success {
+        --stat-color: var(--dash-success);
+    }
+
+    .stat-card.warning {
+        --stat-color: var(--dash-warning);
+    }
+
+    .stat-card.danger {
+        --stat-color: var(--dash-danger);
+    }
+
+    .stat-card.info {
+        --stat-color: var(--dash-primary-2);
+    }
+
+    .stat-top {
         display: flex;
-        justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 1rem;
+        justify-content: space-between;
+        gap: 12px;
     }
 
-    .stat-info h3 {
-        font-size: 0.85rem;
-        color: var(--muted);
-        font-weight: 700;
+    .stat-info {
+        min-width: 0;
+    }
+
+    .stat-label {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--dash-text-soft);
+        font-size: .70rem;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-        margin: 0 0 0.5rem 0;
+        letter-spacing: .07em;
     }
 
     .stat-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #2d3748;
+        display: block;
+        overflow: hidden;
+        color: var(--dash-text);
+        font-size: clamp(1.45rem, 2.2vw, 1.85rem);
         line-height: 1;
+        font-weight: 800;
+        letter-spacing: -.04em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .stat-icon-wrapper {
-        width: 60px;
-        height: 60px;
-        border-radius: 12px;
-        display: flex;
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .stat-card.primary .stat-icon-wrapper {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
-        color: var(--primary);
-    }
-
-    .stat-card.success .stat-icon-wrapper {
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
-        color: var(--success);
-    }
-
-    .stat-card.warning .stat-icon-wrapper {
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
-        color: var(--warning);
-    }
-
-    .stat-card.danger .stat-icon-wrapper {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
-        color: var(--danger);
-    }
-
-    .stat-card.info .stat-icon-wrapper {
-        background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%);
-        color: var(--info);
-    }
-
-    .stat-footer {
-        font-size: 0.85rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .stat-footer.success {
-        color: var(--success);
-    }
-
-    .stat-footer.warning {
-        color: var(--warning);
-    }
-
-    .stat-footer.danger {
-        color: var(--danger);
-    }
-
-    .stat-footer.muted {
-        color: var(--muted);
-    }
-
-    /* ============================================
-       SECTION HEADERS
-       ============================================ */
-    .section-header {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .section-header i {
-        font-size: 1.3rem;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* ============================================
-       ACTION CARDS
-       ============================================ */
-    .action-card {
-        background: white;
+        flex: 0 0 44px;
         border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .action-card:hover {
-        transform: translateX(8px);
-        box-shadow: var(--shadow-lg);
-        color: inherit;
-        text-decoration: none;
-    }
-
-    .action-card-content {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex: 1;
-    }
-
-    .action-card-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        flex-shrink: 0;
-    }
-
-    .action-card-text h6 {
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
+        color: var(--stat-color);
+        background: color-mix(
+            in srgb,
+            var(--stat-color) 10%,
+            transparent
+        );
         font-size: 1rem;
     }
 
-    .action-card-text p {
-        color: var(--muted);
-        font-size: 0.9rem;
+    .stat-bottom {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 15px;
+        color: var(--dash-text-soft);
+        font-size: .73rem;
+        font-weight: 600;
+    }
+
+    .stat-bottom i {
+        color: var(--stat-color);
+        font-size: .68rem;
+    }
+
+    /* =========================================================
+       QUICK ACTIONS
+       ========================================================= */
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .quick-action {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        background: var(--dash-card);
+        color: inherit;
+        text-decoration: none;
+        box-shadow: var(--dash-shadow-sm);
+        transition:
+            transform var(--dash-transition),
+            box-shadow var(--dash-transition),
+            border-color var(--dash-transition);
+    }
+
+    .quick-action:hover {
+        color: inherit;
+        text-decoration: none;
+        transform: translateY(-3px);
+        border-color: rgba(37, 99, 235, .20);
+        box-shadow: var(--dash-shadow-hover);
+    }
+
+    .quick-action-icon {
+        width: 48px;
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 48px;
+        border-radius: 13px;
+        font-size: 1.05rem;
+    }
+
+    .quick-action-icon.blue {
+        color: var(--dash-primary);
+        background: rgba(37, 99, 235, .10);
+    }
+
+    .quick-action-icon.yellow {
+        color: var(--dash-warning);
+        background: rgba(245, 158, 11, .11);
+    }
+
+    .quick-action-content {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .quick-action-content h3 {
+        margin: 0 0 4px;
+        color: var(--dash-text);
+        font-size: .9rem;
+        font-weight: 800;
+    }
+
+    .quick-action-content p {
         margin: 0;
-        font-weight: 500;
+        color: var(--dash-text-soft);
+        font-size: .76rem;
+        line-height: 1.4;
     }
 
-    .action-card-arrow {
-        font-size: 1.2rem;
-        opacity: 0.6;
-        transition: all var(--transition-base);
+    .quick-action-arrow {
+        color: #94a3b8;
+        font-size: .75rem;
+        transition: transform var(--dash-transition);
     }
 
-    .action-card:hover .action-card-arrow {
-        transform: translateX(4px);
-        opacity: 1;
+    .quick-action:hover .quick-action-arrow {
+        transform: translateX(3px);
+        color: var(--dash-primary);
     }
 
-    /* ============================================
-       MANAGEMENT CARDS
-       ============================================ */
+    .pending-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        margin-top: 5px;
+        border-radius: 20px;
+        color: #92400e;
+        background: rgba(245, 158, 11, .12);
+        font-size: .68rem;
+        font-weight: 800;
+    }
+
+    /* =========================================================
+       MANAGEMENT GRID
+       ========================================================= */
+
+    .management-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
     .management-card {
-        background: white;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
-        height: 100%;
+        min-width: 0;
         display: flex;
         flex-direction: column;
+        min-height: 220px;
+        padding: 20px;
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        background: var(--dash-card);
+        box-shadow: var(--dash-shadow-sm);
+        transition:
+            transform var(--dash-transition),
+            box-shadow var(--dash-transition),
+            border-color var(--dash-transition);
     }
 
     .management-card:hover {
-        transform: translateY(-8px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+        border-color: rgba(37, 99, 235, .18);
+        box-shadow: var(--dash-shadow-hover);
     }
 
-    .management-card-body {
-        padding: 2rem;
-        text-align: center;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .management-card-icon {
-        width: 90px;
-        height: 90px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .management-card-icon.primary {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
-        color: var(--primary);
-    }
-
-    .management-card-icon.success {
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
-        color: var(--success);
-    }
-
-    .management-card-icon.warning {
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
-        color: var(--warning);
-    }
-
-    .management-card-icon.danger {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
-        color: var(--danger);
-    }
-
-    .management-card-icon.info {
-        background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%);
-        color: var(--info);
-    }
-
-    .management-card-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 0.75rem;
-    }
-
-    .management-card-text {
-        color: var(--muted);
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
-        font-weight: 500;
-    }
-
-    .management-card-badge {
-        display: inline-block;
-        padding: 0.5rem 0.75rem;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 0.8rem;
-        margin-bottom: 1rem;
-    }
-
-    .management-card-btn {
-        padding: 0.7rem 1.2rem;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        text-decoration: none;
+    .management-icon {
+        width: 48px;
+        height: 48px;
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all var(--transition-base);
+        justify-content: center;
+        margin-bottom: 15px;
+        border-radius: 13px;
+        font-size: 1rem;
     }
 
-    .management-card-btn:hover {
-        transform: translateY(-2px);
+    .management-icon.blue {
+        color: var(--dash-primary);
+        background: rgba(37, 99, 235, .10);
     }
 
-    /* ============================================
-       STATUS CARDS
-       ============================================ */
-    .status-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
+    .management-icon.green {
+        color: var(--dash-success);
+        background: rgba(16, 185, 129, .10);
     }
 
-    .status-card:hover {
-        box-shadow: var(--shadow-lg);
+    .management-icon.red {
+        color: var(--dash-danger);
+        background: rgba(239, 68, 68, .10);
     }
 
-    .status-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
+    .management-icon.yellow {
+        color: var(--dash-warning);
+        background: rgba(245, 158, 11, .11);
     }
 
-    .status-title {
+    .management-icon.cyan {
+        color: var(--dash-primary-2);
+        background: rgba(6, 182, 212, .10);
+    }
+
+    .management-icon.purple {
+        color: var(--dash-purple);
+        background: rgba(124, 58, 237, .10);
+    }
+
+    .management-card h3 {
+        margin: 0 0 7px;
+        color: var(--dash-text);
+        font-size: .91rem;
         font-weight: 800;
-        color: #2d3748;
-        font-size: 1rem;
-        margin: 0;
     }
 
-    .status-badge {
-        padding: 0.4rem 0.8rem;
+    .management-card p {
+        flex: 1;
+        margin: 0 0 16px;
+        color: var(--dash-text-soft);
+        font-size: .76rem;
+        line-height: 1.5;
+    }
+
+    .management-meta {
+        margin-bottom: 10px;
+    }
+
+    .management-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
         border-radius: 20px;
-        font-weight: 700;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: .67rem;
+        font-weight: 800;
     }
 
-    .status-text {
-        font-size: 0.9rem;
-        color: var(--muted);
-        margin: 0;
-        font-weight: 500;
+    .management-badge.red {
+        color: #b91c1c;
+        background: rgba(239, 68, 68, .10);
     }
 
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 1200px) {
-        .stat-value {
-            font-size: 1.7rem;
-        }
+    .management-badge.yellow {
+        color: #92400e;
+        background: rgba(245, 158, 11, .12);
     }
 
-    @media (max-width: 992px) {
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 2.5rem;
-        }
-
-        .header-content h1 {
-            font-size: 1.8rem;
-        }
-
-        .last-update {
-            text-align: left;
-            width: 100%;
-        }
-
-        .stat-card {
-            padding: 1.25rem;
-        }
-
-        .management-card-body {
-            padding: 1.5rem;
-        }
-
-        .management-card-icon {
-            width: 70px;
-            height: 70px;
-            font-size: 1.5rem;
-        }
+    .management-badge.cyan {
+        color: #0e7490;
+        background: rgba(6, 182, 212, .10);
     }
 
-    @media (max-width: 768px) {
-        .header-content h1 {
-            font-size: 1.5rem;
-        }
-
-        .stat-card {
-            margin-bottom: 1rem;
-        }
-
-        .section-header {
-            font-size: 1rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .action-card {
-            padding: 1.25rem;
-        }
-
-        .action-card-text h6 {
-            font-size: 0.95rem;
-        }
-
-        .action-card-text p {
-            font-size: 0.8rem;
-        }
-
-        .management-card-body {
-            padding: 1.25rem;
-        }
-
-        .management-card-title {
-            font-size: 1rem;
-        }
-
-        .management-card-text {
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-        }
-
-        .status-card {
-            padding: 1.25rem;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .stat-value {
-            font-size: 1.5rem;
-        }
-
-        .stat-content {
-            flex-direction: column-reverse;
-            gap: 1rem;
-        }
-
-        .stat-icon-wrapper {
-            width: 50px;
-            height: 50px;
-            font-size: 1.2rem;
-        }
-
-        .management-card-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 1.3rem;
-        }
-
-        .action-card {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .action-card-arrow {
-            position: absolute;
-            right: 1.25rem;
-        }
-    }
-
-    /* Dark Theme Support */
-    [data-theme="dark"] .page-header,
-    [data-theme="dark"] .stat-card,
-    [data-theme="dark"] .action-card,
-    [data-theme="dark"] .management-card,
-    [data-theme="dark"] .status-card {
-        background: #2d3748;
-        border-color: #4b5563;
-    }
-
-    [data-theme="dark"] .header-content h1,
-    [data-theme="dark"] .section-header,
-    [data-theme="dark"] .stat-title,
-    [data-theme="dark"] .status-title,
-    [data-theme="dark"] .management-card-title,
-    [data-theme="dark"] .action-card-text h6 {
-        color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .header-content p,
-    [data-theme="dark"] .last-update,
-    [data-theme="dark"] .action-card-text p,
-    [data-theme="dark"] .management-card-text,
-    [data-theme="dark"] .status-text {
-        color: #a0aec0;
-    }
-
-    [data-theme="dark"] .stat-value {
-        color: #e2e8f0;
-    }
-
-    /* ============================================
-       NEW: Two-column shell (desktop sidebar layout)
-       ============================================ */
-    @media (min-width: 992px) {
-        .admin-dashboard-shell {
-            max-width: 1320px;
-            margin: 0 auto;
-        }
-    }
-
-    .admin-side-card {
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-sm);
-        padding: 1.5rem;
-    }
-
-    [data-theme="dark"] .admin-side-card {
-        background: #1a1f2e;
-    }
-
-    .side-card-title {
-        font-size: 1rem;
-        font-weight: 700;
-        display: flex;
+    .management-btn {
+        display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        color: var(--dark);
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        min-height: 36px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        color: #fff !important;
+        font-size: .73rem;
+        font-weight: 800;
+        text-decoration: none !important;
+        transition:
+            transform var(--dash-transition),
+            filter var(--dash-transition);
     }
 
-    [data-theme="dark"] .side-card-title {
-        color: #e2e8f0;
+    .management-btn:hover {
+        color: #fff !important;
+        transform: translateY(-1px);
+        filter: brightness(.96);
     }
 
-    .side-card-title i {
-        color: var(--primary);
+    .btn-blue {
+        background: linear-gradient(135deg, #2563eb, #06b6d4);
     }
 
-    /* Action summary list */
-    .side-summary-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.85rem;
+    .btn-green {
+        background: linear-gradient(135deg, #059669, #10b981);
     }
 
-    .side-summary-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        font-size: 0.86rem;
-        font-weight: 600;
-        color: var(--dark);
-        padding-bottom: 0.75rem;
-        border-bottom: 1px dashed var(--border);
+    .btn-red {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
     }
 
-    [data-theme="dark"] .side-summary-item {
-        color: #e2e8f0;
+    .btn-yellow {
+        background: linear-gradient(135deg, #d97706, #f59e0b);
     }
 
-    .side-summary-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
+    .btn-purple {
+        background: linear-gradient(135deg, #6d28d9, #8b5cf6);
     }
 
-    .side-summary-item strong {
-        font-size: 1rem;
-        color: var(--primary);
+    /* =========================================================
+       SIDEBAR CARDS
+       ========================================================= */
+
+    .sidebar-card {
+        margin-bottom: 14px;
+        padding: 18px;
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        background: var(--dash-card);
+        box-shadow: var(--dash-shadow-sm);
     }
 
-    /* Quick links list */
-    .side-link-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .side-link-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.7rem 0.85rem;
-        border-radius: var(--radius-md);
-        color: var(--dark);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.92rem;
-        transition: background var(--transition-fast), color var(--transition-fast);
-    }
-
-    [data-theme="dark"] .side-link-item {
-        color: #e2e8f0;
-    }
-
-    .side-link-item i:first-child {
-        color: var(--primary);
-        width: 1.2rem;
-        text-align: center;
-        margin-right: 0.6rem;
-    }
-
-    .side-link-item:hover {
-        background: rgba(13, 110, 253, 0.08);
-        color: var(--primary);
-    }
-
-    .side-link-item .fa-chevron-right {
-        font-size: 0.75rem;
-        color: var(--muted);
-    }
-
-    /* System status list (sidebar version, stacked) */
-    .status-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .status-list-item {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.75rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .status-list-item:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
-
-    .status-list-item .status-title {
-        font-size: 0.88rem;
-        font-weight: 700;
-        margin-bottom: 0.15rem;
-    }
-
-    .status-list-item .status-text {
-        font-size: 0.78rem;
+    .sidebar-card:last-child {
         margin-bottom: 0;
     }
 
-    .status-list-item .status-badge {
-        white-space: nowrap;
-        flex-shrink: 0;
+    .sidebar-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 15px;
+        color: var(--dash-text);
+        font-size: .88rem;
+        font-weight: 800;
     }
 
-    /* Mobile: compact header, tighter spacing */
-    @media (max-width: 767.98px) {
-        .page-header h1 {
+    .sidebar-title i {
+        width: 29px;
+        height: 29px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: var(--dash-primary);
+        background: rgba(37, 99, 235, .09);
+        font-size: .76rem;
+    }
+
+    /* Summary */
+
+    .summary-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .summary-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--dash-border);
+    }
+
+    .summary-item:first-child {
+        padding-top: 0;
+    }
+
+    .summary-item:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .summary-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--dash-text-soft);
+        font-size: .74rem;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .summary-label i {
+        width: 16px;
+        text-align: center;
+        flex: 0 0 16px;
+    }
+
+    .summary-value {
+        flex: 0 0 auto;
+        color: var(--dash-text);
+        font-size: .88rem;
+        font-weight: 800;
+    }
+
+    /* Quick Links */
+
+    .sidebar-links {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 11px;
+        border-radius: 9px;
+        color: var(--dash-text);
+        text-decoration: none;
+        font-size: .77rem;
+        font-weight: 700;
+        transition:
+            background var(--dash-transition),
+            color var(--dash-transition);
+    }
+
+    .sidebar-link:hover {
+        color: var(--dash-primary);
+        background: rgba(37, 99, 235, .07);
+        text-decoration: none;
+    }
+
+    .sidebar-link span {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .sidebar-link span i {
+        width: 17px;
+        color: var(--dash-primary);
+        text-align: center;
+    }
+
+    .sidebar-link > i {
+        color: #94a3b8;
+        font-size: .65rem;
+    }
+
+    /* System Status */
+
+    .system-list {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .system-item {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 13px;
+        border-bottom: 1px solid var(--dash-border);
+    }
+
+    .system-item:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .system-item-content {
+        min-width: 0;
+    }
+
+    .system-item h4 {
+        margin: 0 0 3px;
+        color: var(--dash-text);
+        font-size: .77rem;
+        font-weight: 800;
+    }
+
+    .system-item p {
+        margin: 0;
+        color: var(--dash-text-soft);
+        font-size: .69rem;
+        line-height: 1.4;
+    }
+
+    .status-badge {
+        flex: 0 0 auto;
+        padding: 4px 7px;
+        border-radius: 20px;
+        color: #047857;
+        background: rgba(16, 185, 129, .10);
+        font-size: .61rem;
+        font-weight: 800;
+    }
+
+    /* =========================================================
+       FOCUS
+       ========================================================= */
+
+    .quick-action:focus-visible,
+    .sidebar-link:focus-visible,
+    .management-btn:focus-visible {
+        outline: 3px solid rgba(37, 99, 235, .25);
+        outline-offset: 2px;
+    }
+
+    /* =========================================================
+       DARK THEME
+       ========================================================= */
+
+    [data-theme="dark"] {
+        --dash-text: #e5e7eb;
+        --dash-text-soft: #94a3b8;
+        --dash-bg: #0f172a;
+        --dash-card: #182235;
+        --dash-border: #293548;
+
+        --dash-shadow-sm: 0 2px 10px rgba(0, 0, 0, .16);
+        --dash-shadow: 0 8px 25px rgba(0, 0, 0, .22);
+        --dash-shadow-hover: 0 14px 35px rgba(0, 0, 0, .30);
+    }
+
+    [data-theme="dark"] .dashboard-updated,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .quick-action,
+    [data-theme="dark"] .management-card,
+    [data-theme="dark"] .sidebar-card {
+        background: var(--dash-card);
+    }
+
+    [data-theme="dark"] .dashboard-title,
+    [data-theme="dark"] .section-heading h2,
+    [data-theme="dark"] .stat-value,
+    [data-theme="dark"] .quick-action-content h3,
+    [data-theme="dark"] .management-card h3,
+    [data-theme="dark"] .sidebar-title,
+    [data-theme="dark"] .summary-value,
+    [data-theme="dark"] .sidebar-link,
+    [data-theme="dark"] .system-item h4,
+    [data-theme="dark"] .dashboard-updated strong {
+        color: #f1f5f9;
+    }
+
+    [data-theme="dark"] .quick-action-content p,
+    [data-theme="dark"] .management-card p,
+    [data-theme="dark"] .summary-label,
+    [data-theme="dark"] .system-item p,
+    [data-theme="dark"] .dashboard-subtitle {
+        color: #94a3b8;
+    }
+
+    /* =========================================================
+       RESPONSIVE — TABLET
+       ========================================================= */
+
+    @media (max-width: 1199px) {
+        .dashboard-layout {
+            grid-template-columns: minmax(0, 1fr) 290px;
+            gap: 18px;
+        }
+
+        .management-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    /* =========================================================
+       RESPONSIVE — SMALL TABLET
+       ========================================================= */
+
+    @media (max-width: 991px) {
+        .admin-dashboard {
+            padding: 22px 18px 40px;
+        }
+
+        .dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-sidebar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .sidebar-card {
+            margin-bottom: 0;
+        }
+
+        .sidebar-card.system-card {
+            grid-column: 1 / -1;
+        }
+
+        .sidebar-card.quick-links-card {
+            display: block;
+        }
+    }
+
+    /* =========================================================
+       RESPONSIVE — MOBILE
+       ========================================================= */
+
+    @media (max-width: 767px) {
+        .admin-dashboard {
+            padding: 18px 14px 35px;
+        }
+
+        .dashboard-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 13px;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-title {
+            font-size: 1.45rem;
+        }
+
+        .dashboard-title-icon {
+            width: 40px;
+            height: 40px;
+            flex-basis: 40px;
+            border-radius: 11px;
+            font-size: 1rem;
+        }
+
+        .dashboard-subtitle {
+            font-size: .80rem;
+        }
+
+        .dashboard-updated {
+            width: 100%;
+            justify-content: flex-start;
+            font-size: .72rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 14px;
+            border-radius: 13px;
+        }
+
+        .stat-top {
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-size: .62rem;
+        }
+
+        .stat-value {
             font-size: 1.35rem;
+        }
+
+        .stat-icon {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+            border-radius: 10px;
+            font-size: .85rem;
+        }
+
+        .stat-bottom {
+            margin-top: 12px;
+            font-size: .64rem;
+        }
+
+        .quick-actions {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .quick-action {
+            padding: 14px;
+        }
+
+        .management-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .management-card {
+            min-height: 205px;
+            padding: 15px;
+            border-radius: 13px;
+        }
+
+        .management-icon {
+            width: 42px;
+            height: 42px;
+            margin-bottom: 12px;
+            border-radius: 11px;
+            font-size: .9rem;
+        }
+
+        .management-card h3 {
+            font-size: .80rem;
+        }
+
+        .management-card p {
+            font-size: .68rem;
+            line-height: 1.45;
+        }
+
+        .management-btn {
+            min-height: 34px;
+            padding: 7px 8px;
+            font-size: .65rem;
+        }
+
+        .dashboard-sidebar {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .sidebar-card.system-card {
+            grid-column: auto;
+        }
+
+        .sidebar-card {
+            padding: 15px;
+            border-radius: 13px;
+        }
+
+        .sidebar-card.quick-links-card {
+            display: block;
+        }
+    }
+
+    /* =========================================================
+       RESPONSIVE — SMALL MOBILE
+       ========================================================= */
+
+    @media (max-width: 480px) {
+        .admin-dashboard {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .dashboard-title {
+            font-size: 1.30rem;
+        }
+
+        .dashboard-title-icon {
+            width: 37px;
+            height: 37px;
+            flex-basis: 37px;
+        }
+
+        .stats-grid {
+            gap: 8px;
+        }
+
+        .stat-card {
+            padding: 12px;
+        }
+
+        .stat-label {
+            font-size: .57rem;
+            letter-spacing: .04em;
+        }
+
+        .stat-value {
+            font-size: 1.18rem;
+        }
+
+        .stat-icon {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+            font-size: .75rem;
+        }
+
+        .stat-bottom {
+            font-size: .58rem;
+            line-height: 1.3;
+        }
+
+        .management-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .management-card {
+            min-height: auto;
+        }
+
+        .management-card p {
+            margin-bottom: 12px;
+        }
+
+        .section-heading {
+            margin-bottom: 11px;
+        }
+
+        .section-heading h2 {
+            font-size: .92rem;
+        }
+    }
+
+    /* =========================================================
+       REDUCE MOTION
+       ========================================================= */
+
+    @media (prefers-reduced-motion: reduce) {
+        .stat-card,
+        .quick-action,
+        .management-card,
+        .management-btn,
+        .quick-action-arrow,
+        .sidebar-link {
+            transition: none !important;
         }
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
-<div class="container-fluid py-4 py-lg-5 admin-dashboard-shell">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>
-                <i class="fas fa-chart-bar"></i> Admin Dashboard
+
+<div class="admin-dashboard">
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="dashboard-header">
+
+        <div class="dashboard-title-area">
+
+            <h1 class="dashboard-title">
+                <span class="dashboard-title-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </span>
+                Admin Dashboard
             </h1>
-            <p>Platform overview and complete management suite</p>
-        </div>
-        <div class="last-update">
-            <small>Last updated: <strong id="lastUpdate">Just now</strong></small>
-        </div>
-    </div>
 
-    <div class="row g-4">
-        <!-- ================= MAIN COLUMN ================= -->
-        <div class="col-lg-8">
+            <p class="dashboard-subtitle">
+                Platform overview and complete management suite
+            </p>
 
-            <!-- Key Metrics Row -->
-            <div class="row g-3 mb-5">
-                <!-- Total Users -->
-                <div class="col-md-6 col-lg-4">
+        </div>
+
+        <div class="dashboard-updated">
+            <span class="update-dot"></span>
+            <span>Last updated</span>
+            <strong id="lastUpdate">Just now</strong>
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         DASHBOARD LAYOUT
+         ===================================================== -->
+
+    <div class="dashboard-layout">
+
+        <!-- =================================================
+             MAIN COLUMN
+             ================================================= -->
+
+        <main class="dashboard-main">
+
+
+            <!-- =================================================
+                 KEY METRICS
+                 ================================================= -->
+
+            <section class="dashboard-section">
+
+                <div class="section-heading">
+
+                    <div class="section-heading-left">
+                        <i class="fas fa-chart-bar"></i>
+                        <h2>Key Metrics</h2>
+                    </div>
+
+                </div>
+
+
+                <div class="stats-grid">
+
+                    <!-- Total Users -->
                     <div class="stat-card primary">
-                        <div class="stat-content">
+
+                        <div class="stat-top">
+
                             <div class="stat-info">
-                                <h3>Total Users</h3>
-                                <div class="stat-value">{{ total_users }}</div>
+                                <span class="stat-label">Total Users</span>
+                                <span class="stat-value">{{ total_users }}</span>
                             </div>
-                            <div class="stat-icon-wrapper">
+
+                            <span class="stat-icon">
                                 <i class="fas fa-users"></i>
-                            </div>
-                        </div>
-                        <div class="stat-footer success">
-                            <i class="fas fa-arrow-up"></i> Active platform users
-                        </div>
-                    </div>
-                </div>
+                            </span>
 
-                <!-- Total Campaigns -->
-                <div class="col-md-6 col-lg-4">
+                        </div>
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-arrow-up"></i>
+                            Active platform users
+                        </div>
+
+                    </div>
+
+
+                    <!-- Campaigns -->
                     <div class="stat-card info">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3>Campaigns</h3>
-                                <div class="stat-value">{{ total_campaigns }}</div>
-                            </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fas fa-megaphone"></i>
-                            </div>
-                        </div>
-                        <div class="stat-footer muted">
-                            <i class="fas fa-check-circle"></i> All time campaigns
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Active Campaigns -->
-                <div class="col-md-6 col-lg-4">
+                        <div class="stat-top">
+
+                            <div class="stat-info">
+                                <span class="stat-label">Campaigns</span>
+                                <span class="stat-value">{{ total_campaigns }}</span>
+                            </div>
+
+                            <span class="stat-icon">
+                                <i class="fas fa-bullhorn"></i>
+                            </span>
+
+                        </div>
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-layer-group"></i>
+                            All time campaigns
+                        </div>
+
+                    </div>
+
+
+                    <!-- Active Campaigns -->
                     <div class="stat-card success">
-                        <div class="stat-content">
+
+                        <div class="stat-top">
+
                             <div class="stat-info">
-                                <h3>Active Now</h3>
-                                <div class="stat-value">{{ active_campaigns }}</div>
+                                <span class="stat-label">Active Now</span>
+                                <span class="stat-value">{{ active_campaigns }}</span>
                             </div>
-                            <div class="stat-icon-wrapper">
+
+                            <span class="stat-icon">
                                 <i class="fas fa-play-circle"></i>
-                            </div>
-                        </div>
-                        <div class="stat-footer success">
-                            <i class="fas fa-check-circle"></i> Running
-                        </div>
-                    </div>
-                </div>
+                            </span>
 
-                <!-- Pending Tasks -->
-                <div class="col-md-6 col-lg-4">
+                        </div>
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-check-circle"></i>
+                            Currently running
+                        </div>
+
+                    </div>
+
+
+                    <!-- Pending Tasks -->
                     <div class="stat-card warning">
-                        <div class="stat-content">
-                            <div class="stat-info">
-                                <h3>Pending Tasks</h3>
-                                <div class="stat-value">{{ pending_tasks }}</div>
-                            </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fas fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                        <div class="stat-footer warning">
-                            <i class="fas fa-exclamation-circle"></i> Awaiting verification
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Support Tickets -->
-                <div class="col-md-6 col-lg-4">
+                        <div class="stat-top">
+
+                            <div class="stat-info">
+                                <span class="stat-label">Pending Tasks</span>
+                                <span class="stat-value">{{ pending_tasks }}</span>
+                            </div>
+
+                            <span class="stat-icon">
+                                <i class="fas fa-tasks"></i>
+                            </span>
+
+                        </div>
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-clock"></i>
+                            Awaiting verification
+                        </div>
+
+                    </div>
+
+
+                    <!-- Support -->
                     <div class="stat-card danger">
-                        <div class="stat-content">
+
+                        <div class="stat-top">
+
                             <div class="stat-info">
-                                <h3>Support Tickets</h3>
-                                <div class="stat-value">{{ pending_support }}</div>
+                                <span class="stat-label">Support Tickets</span>
+                                <span class="stat-value">{{ pending_support }}</span>
                             </div>
-                            <div class="stat-icon-wrapper">
+
+                            <span class="stat-icon">
                                 <i class="fas fa-headset"></i>
-                            </div>
-                        </div>
-                        <div class="stat-footer danger">
-                            <i class="fas fa-bell"></i> Pending
-                        </div>
-                    </div>
-                </div>
+                            </span>
 
-                <!-- Pending Redeems -->
-                <div class="col-md-6 col-lg-4">
+                        </div>
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-bell"></i>
+                            Pending requests
+                        </div>
+
+                    </div>
+
+
+                    <!-- Redeems -->
                     <div class="stat-card warning">
-                        <div class="stat-content">
+
+                        <div class="stat-top">
+
                             <div class="stat-info">
-                                <h3>Redeems</h3>
-                                <div class="stat-value">{{ pending_redeems }}</div>
+                                <span class="stat-label">Redeems</span>
+                                <span class="stat-value">{{ pending_redeems }}</span>
                             </div>
-                            <div class="stat-icon-wrapper">
+
+                            <span class="stat-icon">
                                 <i class="fas fa-money-bill-wave"></i>
-                            </div>
+                            </span>
+
                         </div>
-                        <div class="stat-footer warning">
-                            <i class="fas fa-clock"></i> Pending payout
+
+                        <div class="stat-bottom">
+                            <i class="fas fa-clock"></i>
+                            Pending payout
                         </div>
+
                     </div>
+
                 </div>
-            </div>
 
-            <!-- Quick Actions -->
-            <div class="mb-5">
-                <h4 class="section-header">
-                    <i class="fas fa-bolt"></i> Quick Actions
-                </h4>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <a href="/admin/create_campaign" class="action-card">
-                            <div class="action-card-content">
-                                <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%); color: var(--primary);">
-                                    <i class="fas fa-plus-circle"></i>
-                                </div>
-                                <div class="action-card-text">
-                                    <h6>Create New Campaign</h6>
-                                    <p>Launch a new campaign to engage users</p>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right action-card-arrow"></i>
-                        </a>
+            </section>
+
+
+            <!-- =================================================
+                 QUICK ACTIONS
+                 ================================================= -->
+
+            <section class="dashboard-section">
+
+                <div class="section-heading">
+
+                    <div class="section-heading-left">
+                        <i class="fas fa-bolt"></i>
+                        <h2>Quick Actions</h2>
                     </div>
 
-                    <div class="col-md-6">
-                        <a href="/admin/verify_tasks" class="action-card">
-                            <div class="action-card-content">
-                                <div class="action-card-icon" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%); color: var(--warning);">
-                                    <i class="fas fa-tasks"></i>
-                                </div>
-                                <div class="action-card-text">
-                                    <h6>Verify Tasks</h6>
-                                    <p>
-                                        <span class="badge" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%); color: #856404;">{{ pending_tasks }} Pending</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <i class="fas fa-chevron-right action-card-arrow"></i>
-                        </a>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Management Section -->
-            <div class="mb-5">
-                <h4 class="section-header">
-                    <i class="fas fa-cogs"></i> Management
-                </h4>
-                <div class="row g-4">
-                    <!-- Manage Campaigns -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon primary">
-                                    <i class="fas fa-megaphone"></i>
-                                </div>
-                                <h5 class="management-card-title">Manage Campaigns</h5>
-                                <p class="management-card-text">Create, edit, pause, or resume campaigns</p>
-                                <a href="/admin/campaigns" class="management-card-btn btn-primary" style="background: var(--primary-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> View Campaigns
-                                </a>
-                            </div>
-                        </div>
+
+                <div class="quick-actions">
+
+                    <a href="/admin/create_campaign" class="quick-action">
+
+                        <span class="quick-action-icon blue">
+                            <i class="fas fa-plus-circle"></i>
+                        </span>
+
+                        <span class="quick-action-content">
+
+                            <h3>Create New Campaign</h3>
+
+                            <p>
+                                Launch a new campaign and engage users
+                            </p>
+
+                        </span>
+
+                        <i class="fas fa-chevron-right quick-action-arrow"></i>
+
+                    </a>
+
+
+                    <a href="/admin/verify_tasks" class="quick-action">
+
+                        <span class="quick-action-icon yellow">
+                            <i class="fas fa-tasks"></i>
+                        </span>
+
+                        <span class="quick-action-content">
+
+                            <h3>Verify Tasks</h3>
+
+                            <p>
+                                Review and approve submitted tasks
+                            </p>
+
+                            <span class="pending-pill">
+                                {{ pending_tasks }} Pending
+                            </span>
+
+                        </span>
+
+                        <i class="fas fa-chevron-right quick-action-arrow"></i>
+
+                    </a>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 MANAGEMENT
+                 ================================================= -->
+
+            <section class="dashboard-section">
+
+                <div class="section-heading">
+
+                    <div class="section-heading-left">
+                        <i class="fas fa-cogs"></i>
+                        <h2>Management</h2>
                     </div>
+
+                </div>
+
+
+                <div class="management-grid">
+
+
+                    <!-- Campaigns -->
+                    <article class="management-card">
+
+                        <span class="management-icon blue">
+                            <i class="fas fa-bullhorn"></i>
+                        </span>
+
+                        <h3>Manage Campaigns</h3>
+
+                        <p>
+                            Create, edit, pause or resume campaigns.
+                        </p>
+
+                        <a href="/admin/campaigns"
+                           class="management-btn btn-blue">
+                            <i class="fas fa-arrow-right"></i>
+                            View Campaigns
+                        </a>
+
+                    </article>
+
 
                     <!-- Verify Tasks -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon success">
-                                    <i class="fas fa-check-square"></i>
-                                </div>
-                                <h5 class="management-card-title">Verify Tasks</h5>
-                                <p class="management-card-text">Review and approve task submissions</p>
-                                <a href="/admin/verify_tasks" class="management-card-btn btn-success" style="background: var(--success-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> Review Pending
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    <article class="management-card">
 
-                    <!-- Support Tickets -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon danger">
-                                    <i class="fas fa-headset"></i>
-                                </div>
-                                <h5 class="management-card-title">Support Tickets</h5>
-                                <p class="management-card-text">Manage user support requests</p>
-                                <span class="management-card-badge" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%); color: #842029;">{{ pending_support }} Pending</span>
-                                <br>
-                                <a href="/admin/support" class="management-card-btn btn-danger" style="background: var(--danger-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> View Tickets
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                        <span class="management-icon green">
+                            <i class="fas fa-check-square"></i>
+                        </span>
 
-                    <!-- Process Redeems -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon warning">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </div>
-                                <h5 class="management-card-title">Process Redeems</h5>
-                                <p class="management-card-text">Approve payout requests</p>
-                                <span class="management-card-badge" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%); color: #856404;">{{ pending_redeems }} Pending</span>
-                                <br>
-                                <a href="/admin/redeems" class="management-card-btn btn-warning" style="background: var(--warning-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> View Requests
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                        <h3>Verify Tasks</h3>
 
-                    <!-- View Users -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon info">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <h5 class="management-card-title">View All Users</h5>
-                                <p class="management-card-text">See user details & performance</p>
-                                <span class="management-card-badge" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(0, 212, 255, 0.12) 100%); color: #0d6efd;">{{ total_users }} Users</span>
-                                <br>
-                                <a href="/admin/list/users" class="management-card-btn btn-info" style="background: var(--info-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> View Users
-                                </a>
-                            </div>
+                        <p>
+                            Review and approve task submissions.
+                        </p>
+
+                        <a href="/admin/verify_tasks"
+                           class="management-btn btn-green">
+                            <i class="fas fa-arrow-right"></i>
+                            Review Pending
+                        </a>
+
+                    </article>
+
+
+                    <!-- Support -->
+                    <article class="management-card">
+
+                        <span class="management-icon red">
+                            <i class="fas fa-headset"></i>
+                        </span>
+
+                        <h3>Support Tickets</h3>
+
+                        <p>
+                            Manage user support requests.
+                        </p>
+
+                        <div class="management-meta">
+                            <span class="management-badge red">
+                                {{ pending_support }} Pending
+                            </span>
                         </div>
-                    </div>
+
+                        <a href="/admin/support"
+                           class="management-btn btn-red">
+                            <i class="fas fa-arrow-right"></i>
+                            View Tickets
+                        </a>
+
+                    </article>
+
+
+                    <!-- Redeems -->
+                    <article class="management-card">
+
+                        <span class="management-icon yellow">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </span>
+
+                        <h3>Process Redeems</h3>
+
+                        <p>
+                            Review and approve payout requests.
+                        </p>
+
+                        <div class="management-meta">
+                            <span class="management-badge yellow">
+                                {{ pending_redeems }} Pending
+                            </span>
+                        </div>
+
+                        <a href="/admin/redeems"
+                           class="management-btn btn-yellow">
+                            <i class="fas fa-arrow-right"></i>
+                            View Requests
+                        </a>
+
+                    </article>
+
+
+                    <!-- Users -->
+                    <article class="management-card">
+
+                        <span class="management-icon cyan">
+                            <i class="fas fa-users"></i>
+                        </span>
+
+                        <h3>View All Users</h3>
+
+                        <p>
+                            See user details and performance.
+                        </p>
+
+                        <div class="management-meta">
+                            <span class="management-badge cyan">
+                                {{ total_users }} Users
+                            </span>
+                        </div>
+
+                        <a href="/admin/list/users"
+                           class="management-btn btn-blue">
+                            <i class="fas fa-arrow-right"></i>
+                            View Users
+                        </a>
+
+                    </article>
+
 
                     <!-- Analytics -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon primary">
-                                    <i class="fas fa-chart-line"></i>
-                                </div>
-                                <h5 class="management-card-title">Analytics</h5>
-                                <p class="management-card-text">View platform statistics & trends</p>
-                                <a href="/admin/analytics" class="management-card-btn btn-primary" style="background: var(--primary-gradient); color: white;">
-                                    <i class="fas fa-arrow-right"></i> View Analytics
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    <article class="management-card">
 
-                    <!-- Task Allocations -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="management-card">
-                            <div class="management-card-body">
-                                <div class="management-card-icon" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%); color: #667eea;">
-                                    <i class="fas fa-sitemap"></i>
-                                </div>
-                                <h5 class="management-card-title">Task Allocations</h5>
-                                <p class="management-card-text">Track assigned tasks, remaining limits &amp; user details</p>
-                                <a href="/admin/allocations" class="management-card-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                    <i class="fas fa-arrow-right"></i> Track Details
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                        <span class="management-icon blue">
+                            <i class="fas fa-chart-line"></i>
+                        </span>
+
+                        <h3>Analytics</h3>
+
+                        <p>
+                            View platform statistics and trends.
+                        </p>
+
+                        <a href="/admin/analytics"
+                           class="management-btn btn-blue">
+                            <i class="fas fa-arrow-right"></i>
+                            View Analytics
+                        </a>
+
+                    </article>
+
+
+                    <!-- Allocations -->
+                    <article class="management-card">
+
+                        <span class="management-icon purple">
+                            <i class="fas fa-sitemap"></i>
+                        </span>
+
+                        <h3>Task Allocations</h3>
+
+                        <p>
+                            Track assigned tasks, limits and user details.
+                        </p>
+
+                        <a href="/admin/allocations"
+                           class="management-btn btn-purple">
+                            <i class="fas fa-arrow-right"></i>
+                            Track Details
+                        </a>
+
+                    </article>
+
+
                 </div>
-            </div>
 
-        </div>
-        <!-- ================= END MAIN COLUMN ================= -->
+            </section>
 
-        <!-- ================= SIDEBAR (desktop) / stacked (mobile) ================= -->
-        <div class="col-lg-4">
+        </main>
 
-            <!-- Summary Card -->
-            <div class="admin-side-card mb-4">
-                <div class="side-card-title"><i class="fas fa-clipboard-list"></i> Action Summary</div>
-                <div class="side-summary-list">
-                    <div class="side-summary-item">
-                        <span><i class="fas fa-hourglass-half text-warning"></i> Tasks awaiting verification</span>
-                        <strong>{{ pending_tasks }}</strong>
+
+        <!-- =================================================
+             SIDEBAR
+             ================================================= -->
+
+        <aside class="dashboard-sidebar">
+
+
+            <!-- =================================================
+                 ACTION SUMMARY
+                 ================================================= -->
+
+            <section class="sidebar-card">
+
+                <h2 class="sidebar-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Action Summary
+                </h2>
+
+
+                <div class="summary-list">
+
+
+                    <div class="summary-item">
+
+                        <span class="summary-label">
+                            <i class="fas fa-hourglass-half"
+                               style="color:#f59e0b;"></i>
+
+                            Tasks awaiting verification
+                        </span>
+
+                        <strong class="summary-value">
+                            {{ pending_tasks }}
+                        </strong>
+
                     </div>
-                    <div class="side-summary-item">
-                        <span><i class="fas fa-headset text-danger"></i> Open support tickets</span>
-                        <strong>{{ pending_support }}</strong>
+
+
+                    <div class="summary-item">
+
+                        <span class="summary-label">
+                            <i class="fas fa-headset"
+                               style="color:#ef4444;"></i>
+
+                            Open support tickets
+                        </span>
+
+                        <strong class="summary-value">
+                            {{ pending_support }}
+                        </strong>
+
                     </div>
-                    <div class="side-summary-item">
-                        <span><i class="fas fa-money-bill-wave text-warning"></i> Redeem requests pending</span>
-                        <strong>{{ pending_redeems }}</strong>
+
+
+                    <div class="summary-item">
+
+                        <span class="summary-label">
+                            <i class="fas fa-money-bill-wave"
+                               style="color:#f59e0b;"></i>
+
+                            Redeem requests pending
+                        </span>
+
+                        <strong class="summary-value">
+                            {{ pending_redeems }}
+                        </strong>
+
                     </div>
-                    <div class="side-summary-item">
-                        <span><i class="fas fa-play-circle text-success"></i> Campaigns currently active</span>
-                        <strong>{{ active_campaigns }}</strong>
+
+
+                    <div class="summary-item">
+
+                        <span class="summary-label">
+                            <i class="fas fa-play-circle"
+                               style="color:#10b981;"></i>
+
+                            Campaigns currently active
+                        </span>
+
+                        <strong class="summary-value">
+                            {{ active_campaigns }}
+                        </strong>
+
                     </div>
+
+
                 </div>
-            </div>
 
-            <!-- Quick Links (desktop sidebar) -->
-            <div class="admin-side-card d-none d-lg-block mb-4">
-                <div class="side-card-title"><i class="fas fa-compass"></i> Quick Links</div>
-                <div class="side-link-list">
-                    <a href="/admin/campaigns" class="side-link-item">
-                        <span><i class="fas fa-megaphone"></i> Manage Campaigns</span>
+            </section>
+
+
+            <!-- =================================================
+                 QUICK LINKS
+                 ================================================= -->
+
+            <section class="sidebar-card quick-links-card">
+
+                <h2 class="sidebar-title">
+                    <i class="fas fa-compass"></i>
+                    Quick Links
+                </h2>
+
+
+                <nav class="sidebar-links">
+
+
+                    <a href="/admin/campaigns"
+                       class="sidebar-link">
+
+                        <span>
+                            <i class="fas fa-bullhorn"></i>
+                            Manage Campaigns
+                        </span>
+
                         <i class="fas fa-chevron-right"></i>
+
                     </a>
-                    <a href="/admin/list/users" class="side-link-item">
-                        <span><i class="fas fa-users"></i> View All Users</span>
+
+
+                    <a href="/admin/list/users"
+                       class="sidebar-link">
+
+                        <span>
+                            <i class="fas fa-users"></i>
+                            View All Users
+                        </span>
+
                         <i class="fas fa-chevron-right"></i>
+
                     </a>
-                    <a href="/admin/allocations" class="side-link-item">
-                        <span><i class="fas fa-sitemap"></i> Task Allocations</span>
+
+
+                    <a href="/admin/allocations"
+                       class="sidebar-link">
+
+                        <span>
+                            <i class="fas fa-sitemap"></i>
+                            Task Allocations
+                        </span>
+
                         <i class="fas fa-chevron-right"></i>
+
                     </a>
-                    <a href="/admin/analytics" class="side-link-item">
-                        <span><i class="fas fa-chart-line"></i> Analytics</span>
+
+
+                    <a href="/admin/analytics"
+                       class="sidebar-link">
+
+                        <span>
+                            <i class="fas fa-chart-line"></i>
+                            Analytics
+                        </span>
+
                         <i class="fas fa-chevron-right"></i>
+
                     </a>
-                    <a href="/admin/leaderboard" class="side-link-item">
-                        <span><i class="fas fa-trophy"></i> Leaderboard</span>
+
+
+                    <a href="/admin/leaderboard"
+                       class="sidebar-link">
+
+                        <span>
+                            <i class="fas fa-trophy"></i>
+                            Leaderboard
+                        </span>
+
                         <i class="fas fa-chevron-right"></i>
+
                     </a>
+
+
+                </nav>
+
+            </section>
+
+
+            <!-- =================================================
+                 SYSTEM STATUS
+                 ================================================= -->
+
+            <section class="sidebar-card system-card">
+
+                <h2 class="sidebar-title">
+                    <i class="fas fa-heartbeat"></i>
+                    System Status
+                </h2>
+
+
+                <div class="system-list">
+
+
+                    <div class="system-item">
+
+                        <div class="system-item-content">
+
+                            <h4>Platform Status</h4>
+
+                            <p>
+                                All systems running smoothly
+                            </p>
+
+                        </div>
+
+                        <span class="status-badge">
+                            Operational
+                        </span>
+
+                    </div>
+
+
+                    <div class="system-item">
+
+                        <div class="system-item-content">
+
+                            <h4>Database</h4>
+
+                            <p>
+                                All data synced successfully
+                            </p>
+
+                        </div>
+
+                        <span class="status-badge">
+                            Connected
+                        </span>
+
+                    </div>
+
+
+                    <div class="system-item">
+
+                        <div class="system-item-content">
+
+                            <h4>API Status</h4>
+
+                            <p>
+                                All endpoints working properly
+                            </p>
+
+                        </div>
+
+                        <span class="status-badge">
+                            Active
+                        </span>
+
+                    </div>
+
+
                 </div>
-            </div>
 
-            <!-- System Status -->
-            <div class="admin-side-card">
-                <div class="side-card-title"><i class="fas fa-heartbeat"></i> System Status</div>
-                <div class="status-list">
-                    <div class="status-list-item">
-                        <div>
-                            <h6 class="status-title">Platform Status</h6>
-                            <p class="status-text">All systems running smoothly</p>
-                        </div>
-                        <span class="status-badge" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%); color: var(--success);">Operational</span>
-                    </div>
-                    <div class="status-list-item">
-                        <div>
-                            <h6 class="status-title">Database</h6>
-                            <p class="status-text">All data synced and synchronized</p>
-                        </div>
-                        <span class="status-badge" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%); color: var(--success);">Connected</span>
-                    </div>
-                    <div class="status-list-item">
-                        <div>
-                            <h6 class="status-title">API Status</h6>
-                            <p class="status-text">All endpoints working properly</p>
-                        </div>
-                        <span class="status-badge" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%); color: var(--success);">Active</span>
-                    </div>
-                </div>
-            </div>
+            </section>
 
-        </div>
-        <!-- ================= END SIDEBAR ================= -->
+
+        </aside>
+
     </div>
+
 </div>
 
+
+<!-- =========================================================
+     LIVE CLOCK
+     ========================================================= -->
+
 <script>
-    (function() {
-        'use strict';
+(function () {
+    "use strict";
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const lastUpdateElement = document.getElementById('lastUpdate');
-            
-            function updateTime() {
-                const now = new Date();
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                const seconds = String(now.getSeconds()).padStart(2, '0');
-                lastUpdateElement.textContent = `${hours}:${minutes}:${seconds}`;
-            }
+    function updateDashboardTime() {
 
-            // Update immediately
-            updateTime();
+        const element = document.getElementById("lastUpdate");
 
-            // Update every second
-            setInterval(updateTime, 1000);
+        if (!element) {
+            return;
+        }
+
+        const now = new Date();
+
+        const time = now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
         });
-    })();
+
+        element.textContent = time;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        updateDashboardTime();
+
+        setInterval(updateDashboardTime, 1000);
+
+    });
+
+})();
 </script>
 
 {% endblock %}
