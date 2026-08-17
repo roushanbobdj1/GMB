@@ -2802,19 +2802,6 @@
                LOADING
             ===================================================== */
 
-            window.showLoading = function () {
-
-                const overlay = $("#loadingOverlay");
-
-                if (!overlay) return;
-
-                overlay.classList.add("show");
-                overlay.setAttribute(
-                    "aria-hidden",
-                    "false"
-                );
-            };
-
             window.hideLoading = function () {
 
                 const overlay = $("#loadingOverlay");
@@ -4239,12 +4226,6 @@
             if (isExcludedPath(url.pathname)) return false;
             if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search && url.hash) return false;
             return true;
-        }
-
-        function setLoading(on) {
-            document.body.classList.toggle('gmb-spa-busy', !!on);
-            const loader = document.getElementById(LOADER_ID);
-            if (loader) loader.classList.toggle('show', !!on);
         }
 
         function updateActiveNavigation(path) {
