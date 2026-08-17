@@ -298,6 +298,17 @@ with app.app_context():
 
 @app.route("/")
 def index():
+    # Authentication-aware redirect to directly serve PWA entry needs
+    if 'user_id' in session:
+        return redirect(url_for('user_dashboard'))
+    elif 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
+    
+    return redirect(url_for('user_login'))
+
+@app.route("/landing")
+def landing():
+    # If landing page is still needed externally
     return render_template("index.html")
 
 
