@@ -2801,7 +2801,10 @@
             /* =====================================================
                LOADING
             ===================================================== */
-
+            window.showLoading = function () {
+                // Global loading overlay disabled
+            };
+        
             window.hideLoading = function () {
 
                 const overlay = $("#loadingOverlay");
@@ -4226,6 +4229,10 @@
             if (isExcludedPath(url.pathname)) return false;
             if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search && url.hash) return false;
             return true;
+        }
+
+        function setLoading(on) {
+            // Loading animation completely disabled
         }
 
         function updateActiveNavigation(path) {
