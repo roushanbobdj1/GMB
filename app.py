@@ -73,7 +73,6 @@ scheduler.start()
 os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
 
 # SocketIO (real-time)
-# SocketIO (real-time)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
@@ -252,7 +251,8 @@ def check_if_blocked():
                 'support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket',
                 'logout', 'static', 'offline', 'serve_uploads'
             ]
-            if request.endpoint not in allowed_routes:
+            # [FIXED BUG]: Checking request.endpoint to prevent 404 crash
+            if request.endpoint and request.endpoint not in allowed_routes:
                 flash('❌ Your account has been blocked by Admin. Please contact support.', 'error')
                 return redirect(url_for('support_page'))
 
@@ -1036,6 +1036,7 @@ def delete_campaign(campaign_id):
             except Exception:
                 pass
 
+    # Ensure Task.campaign_id is nullable in models.py for this to work
     Task.query.filter_by(campaign_id=campaign.id).update({'campaign_id': None})
     UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).delete()
     CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).delete()
@@ -1069,6 +1070,10 @@ def task_verify_action(submission_id, action):
 
     task = submission.task
     user = task.user if task else None
+
+    # [FIXED BUG]: Checking if user is missing (i.e. was deleted) to prevent crash
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User associated with this task not found or deleted!'}), 404
 
     try:
         if action == 'approve':
@@ -1688,7 +1693,8 @@ def admin_analytics():
 
 def _compute_leaderboard(settings, limit=None):
     excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
-    period_start = settings.period_start or datetime.utcnow()
+    # [FIXED BUG]: Removed utcnow() which caused timezone crash
+    period_start = settings.period_start or datetime.now(timezone.utc)
     rows = []
 
     if settings.ranking_basis == 'points':
@@ -1734,7 +1740,7 @@ def _compute_leaderboard(settings, limit=None):
 
     users = User.query.filter(User.id.in_(score_map.keys())).all()
     for user in users:
-        if user.id in excluded_ids or user.is_blocked:
+        if user.id in excluded_ids or getattr(user, 'is_blocked', False):
             continue
         rows.append({
             'user_id': user.id,
@@ -1845,8 +1851,9 @@ def admin_leaderboard_settings():
 def admin_leaderboard_reset():
     settings = LeaderboardSettings.get_settings()
     try:
-        settings.period_start = datetime.utcnow()
-        settings.last_reset_at = datetime.utcnow()
+        # [FIXED BUG]: Removed utcnow() which caused timezone crash
+        settings.period_start = datetime.now(timezone.utc)
+        settings.last_reset_at = datetime.now(timezone.utc)
         settings.last_reset_by = session.get('admin_id')
         db.session.commit()
         flash('✅ Leaderboard has been reset! New ranking period started.', 'success')
@@ -2064,4 +2071,5 @@ def toggle_block_user(user_id):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    socketio.run(app, host="0.0.0.0", port=port, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+    # [FIXED BUG]: Removed 'allow_unsafe_werkzeug=True' for Production Security
+    socketio.run(app, host="0.0.0.0", port=port, debug=False, use_reloader=False)
