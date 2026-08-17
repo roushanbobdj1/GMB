@@ -73,7 +73,14 @@ scheduler.start()
 os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
 
 # SocketIO (real-time)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+# SocketIO (real-time)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="gevent",
+    logger=False,
+    engineio_logger=False
+)
 
 # CSRF protection
 csrf = CSRFProtect(app)
