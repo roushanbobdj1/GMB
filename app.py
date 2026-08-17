@@ -1874,7 +1874,7 @@ def admin_leaderboard_exclude(user_id):
 
 @app.route("/admin/allocations")
 def admin_allocations():
-    if 'admin_logged_in' not in session:
+    if 'admin_id' not in session:
         flash("Please login as admin first.", "error")
         return redirect(url_for('admin_login'))
 
