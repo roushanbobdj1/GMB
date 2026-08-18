@@ -354,10 +354,10 @@
             box-shadow: var(--shadow-md);
         }
 
+        /* ✅ Hamburger menu drop-down fix */
         .navbar .container-fluid {
             min-width: 0;
-            flex-wrap: nowrap;
-            gap: 0.25rem;
+            flex-wrap: wrap; /* Ye wapas wrap par laya gaya hai taaki hamburger menu niche khul sake */
         }
 
         /* =========================================================
@@ -1760,7 +1760,7 @@
         }
 
         /* =========================================================
-           RESPONSIVE (FIXED MOBILE UI)
+           RESPONSIVE (FIXED MOBILE UI & MENU)
         ========================================================= */
 
         @media (max-width: 991.98px) {
@@ -1770,12 +1770,19 @@
             .nav-user-pill {
                 margin: 0.5rem 0;
             }
+            
+            /* ✅ Hamburger Menu Dropdown Fix */
             .navbar-collapse {
                 max-height: calc(100vh - 100px);
                 overflow-y: auto;
-                padding-top: 0.5rem;
-                padding-bottom: 0.5rem;
+                background: var(--surface); /* Menu ka solid background */
+                border-radius: var(--radius-md);
+                padding: 0.5rem;
+                margin-top: 0.5rem;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-md);
             }
+            
             .nav-link {
                 margin: 2px 0;
             }
@@ -2082,7 +2089,7 @@
             </button>
 
             <div
-                class="collapse navbar-collapse"
+                class="collapse navbar-collapse w-100"
                 id="navbarNav">
 
                 <ul class="navbar-nav ms-auto align-items-lg-center">
@@ -2224,16 +2231,16 @@
 
                     <!-- Tools -->
 
-                    <li class="nav-item d-flex align-items-center gap-2">
+                    <li class="nav-item d-flex align-items-center gap-2 mt-2 mt-lg-0 pb-2 pb-lg-0">
 
                         <button
                             type="button"
-                            class="btn btn-primary btn-sm"
+                            class="btn btn-primary btn-sm w-100 w-lg-auto"
                             id="installBtn">
 
                             <i class="fas fa-download"></i>
 
-                            <span class="d-none d-md-inline">
+                            <span>
                                 Install App
                             </span>
 
@@ -2241,7 +2248,7 @@
 
                         <button
                             type="button"
-                            class="theme-toggle"
+                            class="theme-toggle flex-shrink-0"
                             id="themeToggle"
                             aria-label="Toggle dark mode"
                             title="Toggle theme">
@@ -2361,12 +2368,13 @@
 
         </a>
 
+        <!-- ✅ Profile ki jagah Leaderboard button update kar diya gaya hai -->
         <a
-            href="/profile"
-            class="bottom-nav-item {% if request.path == '/profile' %}active{% endif %}">
+            href="/leaderboard"
+            class="bottom-nav-item {% if request.path == '/leaderboard' %}active{% endif %}">
 
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
+            <i class="fas fa-trophy"></i>
+            <span>Rank</span>
 
         </a>
 
