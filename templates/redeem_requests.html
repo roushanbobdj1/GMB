@@ -4,762 +4,951 @@
 
 {% block extra_css %}
 <style>
-    /* =========================================================
-       REDEEM REQUESTS - RESPONSIVE ADMIN UI
-       Desktop  : Professional table
-       Mobile   : Request cards
-       ========================================================= */
+/* =========================================================
+   REDEEM REQUESTS — RESPONSIVE ADMIN UI
+   Desktop : Professional data table
+   Mobile  : App-style request cards
+   ========================================================= */
 
-    :root {
-        --rr-primary: #0d6efd;
-        --rr-success: #198754;
-        --rr-warning: #ffc107;
-        --rr-danger: #dc3545;
-        --rr-muted: #6c757d;
-        --rr-text: #2d3748;
-        --rr-bg: #f8fafc;
-        --rr-card: #ffffff;
-        --rr-border: #e9ecef;
+:root {
+    --rr-primary: #0d6efd;
+    --rr-success: #198754;
+    --rr-success-dark: #157347;
+    --rr-warning: #ffc107;
+    --rr-danger: #dc3545;
+    --rr-danger-dark: #bb2d3b;
+    --rr-muted: #6c757d;
+    --rr-text: #263238;
+    --rr-bg: #f5f7fb;
+    --rr-card: #ffffff;
+    --rr-border: #e5e9ef;
 
-        --rr-shadow-sm: 0 2px 8px rgba(0, 0, 0, .05);
-        --rr-shadow-md: 0 6px 18px rgba(0, 0, 0, .08);
-        --rr-shadow-lg: 0 12px 30px rgba(0, 0, 0, .12);
+    --rr-shadow-sm: 0 2px 10px rgba(15, 23, 42, .055);
+    --rr-shadow-md: 0 8px 24px rgba(15, 23, 42, .08);
+    --rr-shadow-lg: 0 16px 40px rgba(15, 23, 42, .14);
 
-        --rr-radius: 14px;
-        --rr-transition: 220ms cubic-bezier(.4, 0, .2, 1);
-    }
+    --rr-radius: 14px;
+    --rr-transition: 220ms cubic-bezier(.4, 0, .2, 1);
+}
 
-    /* =========================================================
-       PAGE
-       ========================================================= */
+/* =========================================================
+   PAGE
+   ========================================================= */
 
-    .redeem-page {
-        width: 100%;
-        min-width: 0;
-    }
+.redeem-page {
+    width: 100%;
+    min-width: 0;
+}
 
-    .redeem-page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
+.redeem-page-container {
+    width: 100%;
+}
 
-    .redeem-page-title {
-        margin: 0;
-        color: var(--rr-text);
-        font-size: clamp(1.35rem, 2vw, 1.85rem);
-        font-weight: 800;
-        line-height: 1.25;
-        display: flex;
-        align-items: center;
-        gap: .65rem;
-    }
+.redeem-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
 
-    .redeem-page-title i {
-        color: var(--rr-primary);
-    }
+.redeem-page-title {
+    margin: 0;
+    color: var(--rr-text);
+    font-size: clamp(1.3rem, 2vw, 1.8rem);
+    font-weight: 800;
+    line-height: 1.25;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
 
-    /* =========================================================
-       MAIN DESKTOP TABLE CARD
-       ========================================================= */
+.redeem-page-title i {
+    color: var(--rr-primary);
+}
 
-    .redeem-table-card {
-        background: var(--rr-card);
-        border: 1px solid var(--rr-border);
-        border-radius: var(--rr-radius);
-        box-shadow: var(--rr-shadow-sm);
-        overflow: hidden;
-    }
+/* =========================================================
+   DESKTOP TABLE
+   ========================================================= */
 
-    .redeem-table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-    }
+.redeem-table-card {
+    background: var(--rr-card);
+    border: 1px solid var(--rr-border);
+    border-radius: var(--rr-radius);
+    box-shadow: var(--rr-shadow-sm);
+    overflow: hidden;
+}
+
+.redeem-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.redeem-table {
+    width: 100%;
+    min-width: 1100px;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.redeem-table thead th {
+    background: #f8fafc;
+    color: var(--rr-muted);
+    border-bottom: 1px solid var(--rr-border);
+    padding: .95rem .85rem;
+    font-size: .74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.redeem-table tbody td {
+    padding: .95rem .85rem;
+    border-bottom: 1px solid #edf0f3;
+    color: var(--rr-text);
+    font-size: .88rem;
+    vertical-align: middle;
+}
+
+.redeem-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.redeem-table tbody tr {
+    transition: background var(--rr-transition);
+}
+
+.redeem-table tbody tr:hover {
+    background: rgba(13, 110, 253, .025);
+}
+
+.redeem-table th:first-child,
+.redeem-table td:first-child {
+    padding-left: 1.25rem;
+}
+
+.redeem-table th:last-child,
+.redeem-table td:last-child {
+    padding-right: 1.25rem;
+}
+
+/* =========================================================
+   USER
+   ========================================================= */
+
+.rr-user-info {
+    min-width: 160px;
+    max-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: .18rem;
+}
+
+.rr-user-name {
+    color: var(--rr-text);
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.rr-user-email {
+    color: var(--rr-muted);
+    font-size: .77rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.rr-request-id {
+    color: var(--rr-muted);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   POINTS
+   ========================================================= */
+
+.rr-points {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    color: var(--rr-success);
+    font-size: 1rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rr-points::before {
+    content: "₹";
+    font-size: .8rem;
+    opacity: .8;
+}
+
+/* =========================================================
+   PAYMENT
+   ========================================================= */
+
+.rr-payment-method {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: .28rem .6rem;
+    border-radius: 999px;
+    background: #6c757d;
+    color: #fff;
+    font-size: .73rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rr-payment-details {
+    display: block;
+    max-width: 210px;
+    color: var(--rr-text);
+    font-weight: 600;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.rr-date {
+    color: var(--rr-muted);
+    font-size: .79rem;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.rr-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3rem;
+    padding: .38rem .62rem;
+    border-radius: 999px;
+    font-size: .73rem;
+    font-weight: 800;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.rr-status-process {
+    background: rgba(255, 193, 7, .13);
+    color: #956f00;
+    border-color: rgba(255, 193, 7, .2);
+}
+
+.rr-status-completed {
+    background: rgba(25, 135, 84, .12);
+    color: #157347;
+    border-color: rgba(25, 135, 84, .18);
+}
+
+.rr-status-failed {
+    background: rgba(220, 53, 69, .11);
+    color: #b02a37;
+    border-color: rgba(220, 53, 69, .18);
+}
+
+/* =========================================================
+   REASON
+   ========================================================= */
+
+.rr-reason {
+    display: block;
+    max-width: 190px;
+    color: var(--rr-danger);
+    font-size: .79rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.rr-no-reason {
+    color: #adb5bd;
+    font-size: .83rem;
+}
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.rr-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .4rem;
+    min-width: 165px;
+}
+
+.rr-action-btn {
+    min-height: 36px;
+    border: 0;
+    border-radius: 8px;
+    padding: .45rem .68rem;
+    font-size: .76rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3rem;
+    white-space: nowrap;
+    transition: all var(--rr-transition);
+    cursor: pointer;
+}
+
+.rr-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.rr-action-btn:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.rr-btn-approve {
+    background: var(--rr-success);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(25, 135, 84, .18);
+}
+
+.rr-btn-approve:hover {
+    background: var(--rr-success-dark);
+    color: #fff;
+}
+
+.rr-btn-reject {
+    background: var(--rr-danger);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(220, 53, 69, .16);
+}
+
+.rr-btn-reject:hover {
+    background: var(--rr-danger-dark);
+    color: #fff;
+}
+
+.rr-processed {
+    color: var(--rr-muted);
+    font-size: .77rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.rr-empty {
+    padding: 4rem 1.5rem;
+    text-align: center;
+    color: var(--rr-muted);
+}
+
+.rr-empty-icon {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f3f5;
+    color: #adb5bd;
+    font-size: 2rem;
+}
+
+.rr-empty h5 {
+    margin: 0 0 .45rem;
+    color: var(--rr-text);
+    font-weight: 800;
+}
+
+.rr-empty p {
+    margin: 0;
+    font-size: .9rem;
+}
+
+/* =========================================================
+   MOBILE LIST
+   ========================================================= */
+
+.redeem-mobile-list {
+    display: none;
+}
+
+.rr-mobile-card {
+    position: relative;
+    width: 100%;
+    background: var(--rr-card);
+    border: 1px solid var(--rr-border);
+    border-radius: 16px;
+    box-shadow: var(--rr-shadow-sm);
+    overflow: hidden;
+}
+
+.rr-mobile-card + .rr-mobile-card {
+    margin-top: .85rem;
+}
+
+/* top section */
+
+.rr-mobile-top {
+    padding: .95rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    border-bottom: 1px solid var(--rr-border);
+}
+
+.rr-mobile-user {
+    min-width: 0;
+    flex: 1;
+}
+
+.rr-mobile-user-name {
+    margin: 0;
+    color: var(--rr-text);
+    font-size: .98rem;
+    font-weight: 800;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.rr-mobile-user-email {
+    display: block;
+    margin-top: .22rem;
+    color: var(--rr-muted);
+    font-size: .72rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.rr-mobile-id {
+    flex: 0 0 auto;
+    color: var(--rr-muted);
+    background: #f3f5f8;
+    border-radius: 7px;
+    padding: .28rem .45rem;
+    font-size: .68rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* body */
+
+.rr-mobile-body {
+    padding: .9rem 1rem;
+}
+
+/* amount */
+
+.rr-mobile-points-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .8rem;
+    padding: .85rem .9rem;
+    border-radius: 11px;
+    background: rgba(25, 135, 84, .055);
+    border: 1px solid rgba(25, 135, 84, .12);
+    margin-bottom: .8rem;
+}
+
+.rr-mobile-points-label {
+    color: var(--rr-muted);
+    font-size: .69rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .35px;
+}
+
+.rr-mobile-points {
+    color: var(--rr-success);
+    font-size: 1.25rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+/* information grid */
+
+.rr-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+}
+
+.rr-mobile-field {
+    min-width: 0;
+    padding: .68rem .7rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #edf0f3;
+}
+
+.rr-mobile-field.full {
+    grid-column: 1 / -1;
+}
+
+.rr-mobile-label {
+    display: block;
+    margin-bottom: .28rem;
+    color: var(--rr-muted);
+    font-size: .63rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.rr-mobile-value {
+    display: block;
+    color: var(--rr-text);
+    font-size: .78rem;
+    font-weight: 650;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* status inside field */
+
+.rr-mobile-value .rr-status {
+    max-width: 100%;
+}
+
+/* footer */
+
+.rr-mobile-footer {
+    padding: .8rem 1rem .9rem;
+    border-top: 1px solid var(--rr-border);
+    background: rgba(248, 250, 252, .55);
+}
+
+.rr-mobile-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .55rem;
+}
+
+.rr-mobile-action {
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    border-radius: 9px;
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    transition: all var(--rr-transition);
+    cursor: pointer;
+}
+
+.rr-mobile-action:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+.rr-mobile-action.approve {
+    background: var(--rr-success);
+    box-shadow: 0 3px 8px rgba(25, 135, 84, .15);
+}
+
+.rr-mobile-action.reject {
+    background: var(--rr-danger);
+    box-shadow: 0 3px 8px rgba(220, 53, 69, .13);
+}
+
+.rr-mobile-processed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    color: var(--rr-muted);
+    font-size: .76rem;
+    font-weight: 800;
+}
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+#rejectReasonModal .modal-dialog {
+    width: 100%;
+    max-width: 500px;
+}
+
+#rejectReasonModal .modal-content {
+    border: 0;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--rr-shadow-lg);
+}
+
+#rejectReasonModal .modal-header {
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid var(--rr-border);
+}
+
+#rejectReasonModal .modal-title {
+    color: var(--rr-text);
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+#rejectReasonModal .modal-body {
+    padding: 1.1rem 1.15rem;
+}
+
+#rejectReasonModal .modal-footer {
+    padding: .85rem 1.15rem;
+    border-top: 1px solid var(--rr-border);
+    gap: .5rem;
+}
+
+#rejectReasonInput {
+    min-height: 105px;
+    resize: vertical;
+    border-radius: 9px;
+    border: 1px solid #ced4da;
+}
+
+#rejectReasonInput:focus {
+    border-color: var(--rr-primary);
+    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .12);
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 991.98px) {
 
     .redeem-table {
-        width: 100%;
-        min-width: 1100px;
-        margin: 0;
-        border-collapse: separate;
-        border-spacing: 0;
+        min-width: 1050px;
     }
 
-    .redeem-table thead th {
-        background: #f8f9fa;
-        color: var(--rr-muted);
-        border-bottom: 1px solid var(--rr-border);
-        padding: 1rem .85rem;
-        font-size: .76rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .35px;
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-
+    .redeem-table thead th,
     .redeem-table tbody td {
-        padding: 1rem .85rem;
-        border-bottom: 1px solid #edf0f2;
-        color: var(--rr-text);
-        font-size: .9rem;
-        vertical-align: middle;
-    }
-
-    .redeem-table tbody tr:last-child td {
-        border-bottom: 0;
-    }
-
-    .redeem-table tbody tr {
-        transition: background var(--rr-transition);
-    }
-
-    .redeem-table tbody tr:hover {
-        background: rgba(13, 110, 253, .025);
+        padding-left: .7rem;
+        padding-right: .7rem;
     }
 
     .redeem-table th:first-child,
     .redeem-table td:first-child {
-        padding-left: 1.25rem;
+        padding-left: .9rem;
     }
 
     .redeem-table th:last-child,
     .redeem-table td:last-child {
-        padding-right: 1.25rem;
+        padding-right: .9rem;
+    }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 767.98px) {
+
+    .redeem-page-container {
+        padding: .7rem .65rem 1.25rem !important;
     }
 
-    /* =========================================================
-       USER INFO
-       ========================================================= */
-
-    .rr-user-info {
-        min-width: 160px;
-        max-width: 220px;
-        display: flex;
-        flex-direction: column;
-        gap: .2rem;
+    .redeem-page-header {
+        margin-bottom: .8rem;
     }
 
-    .rr-user-name {
-        color: var(--rr-text);
-        font-weight: 700;
-        line-height: 1.3;
-        overflow-wrap: anywhere;
+    .redeem-page-title {
+        font-size: 1.18rem;
+        gap: .48rem;
     }
 
-    .rr-user-email {
-        color: var(--rr-muted);
-        font-size: .78rem;
-        line-height: 1.4;
-        overflow-wrap: anywhere;
-    }
-
-    .rr-request-id {
-        color: var(--rr-muted);
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    /* =========================================================
-       POINTS
-       ========================================================= */
-
-    .rr-points {
-        display: inline-flex;
-        align-items: center;
-        gap: .3rem;
-        color: var(--rr-success);
-        font-size: 1.05rem;
-        font-weight: 800;
-        white-space: nowrap;
-    }
-
-    .rr-points::before {
-        content: "₹";
-        font-size: .82rem;
-        opacity: .8;
-    }
-
-    /* =========================================================
-       PAYMENT DETAILS
-       ========================================================= */
-
-    .rr-payment-method {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 28px;
-        padding: .3rem .65rem;
-        border-radius: 999px;
-        background: #6c757d;
-        color: #fff;
-        font-size: .76rem;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .rr-payment-details {
-        display: block;
-        max-width: 210px;
-        color: var(--rr-text);
-        font-weight: 600;
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-    }
-
-    .rr-date {
-        color: var(--rr-muted);
-        font-size: .8rem;
-        white-space: nowrap;
-    }
-
-    /* =========================================================
-       STATUS
-       ========================================================= */
-
-    .rr-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: .35rem;
-        padding: .4rem .7rem;
-        border-radius: 999px;
-        font-size: .76rem;
-        font-weight: 800;
-        white-space: nowrap;
-        border: 1px solid transparent;
-    }
-
-    .rr-status-process {
-        background: rgba(255, 193, 7, .13);
-        color: #956f00;
-        border-color: rgba(255, 193, 7, .2);
-    }
-
-    .rr-status-completed {
-        background: rgba(25, 135, 84, .12);
-        color: #157347;
-        border-color: rgba(25, 135, 84, .18);
-    }
-
-    .rr-status-failed {
-        background: rgba(220, 53, 69, .11);
-        color: #b02a37;
-        border-color: rgba(220, 53, 69, .18);
-    }
-
-    /* =========================================================
-       REASON
-       ========================================================= */
-
-    .rr-reason {
-        display: block;
-        max-width: 190px;
-        color: var(--rr-danger);
-        font-size: .8rem;
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-    }
-
-    .rr-no-reason {
-        color: #adb5bd;
-        font-size: .85rem;
-    }
-
-    /* =========================================================
-       ACTIONS
-       ========================================================= */
-
-    .rr-actions {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: .45rem;
-        min-width: 165px;
-    }
-
-    .rr-action-btn {
-        min-height: 36px;
-        border: 0;
-        border-radius: 8px;
-        padding: .48rem .72rem;
-        font-size: .78rem;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: .35rem;
-        white-space: nowrap;
-        transition: all var(--rr-transition);
-        cursor: pointer;
-    }
-
-    .rr-action-btn:hover {
-        transform: translateY(-1px);
-    }
-
-    .rr-action-btn:disabled {
-        opacity: .65;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .rr-btn-approve {
-        background: var(--rr-success);
-        color: #fff;
-        box-shadow: 0 3px 8px rgba(25, 135, 84, .18);
-    }
-
-    .rr-btn-approve:hover {
-        background: #157347;
-        color: #fff;
-    }
-
-    .rr-btn-reject {
-        background: var(--rr-danger);
-        color: #fff;
-        box-shadow: 0 3px 8px rgba(220, 53, 69, .16);
-    }
-
-    .rr-btn-reject:hover {
-        background: #bb2d3b;
-        color: #fff;
-    }
-
-    .rr-processed {
-        color: var(--rr-muted);
-        font-size: .78rem;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    /* =========================================================
-       EMPTY STATE
-       ========================================================= */
-
-    .rr-empty {
-        padding: 4rem 1.5rem;
-        text-align: center;
-        color: var(--rr-muted);
-    }
-
-    .rr-empty-icon {
-        width: 76px;
-        height: 76px;
-        margin: 0 auto 1rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f1f3f5;
-        color: #adb5bd;
-        font-size: 2rem;
-    }
-
-    .rr-empty h5 {
-        margin: 0 0 .45rem;
-        color: var(--rr-text);
-        font-weight: 800;
-    }
-
-    .rr-empty p {
-        margin: 0;
-        font-size: .9rem;
-    }
-
-    /* =========================================================
-       MOBILE CARD VIEW
-       ========================================================= */
-
-    .redeem-mobile-list {
+    .redeem-table-card {
         display: none;
     }
 
-    .rr-mobile-card {
-        background: var(--rr-card);
-        border: 1px solid var(--rr-border);
-        border-radius: 14px;
-        box-shadow: var(--rr-shadow-sm);
-        overflow: hidden;
+    .redeem-mobile-list {
+        display: block;
     }
 
-    .rr-mobile-card + .rr-mobile-card {
-        margin-top: .9rem;
+    .rr-mobile-card {
+        border-radius: 15px;
     }
 
     .rr-mobile-top {
-        padding: 1rem;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: .75rem;
-        border-bottom: 1px solid var(--rr-border);
-    }
-
-    .rr-mobile-user {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .rr-mobile-user-name {
-        margin: 0;
-        color: var(--rr-text);
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1.3;
-        overflow-wrap: anywhere;
-    }
-
-    .rr-mobile-user-email {
-        display: block;
-        margin-top: .25rem;
-        color: var(--rr-muted);
-        font-size: .76rem;
-        line-height: 1.4;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-    }
-
-    .rr-mobile-id {
-        color: var(--rr-muted);
-        font-size: .72rem;
-        font-weight: 800;
-        white-space: nowrap;
+        padding: .85rem .85rem;
     }
 
     .rr-mobile-body {
-        padding: 1rem;
-    }
-
-    .rr-mobile-points-box {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: .85rem;
-        border-radius: 10px;
-        background: rgba(25, 135, 84, .06);
-        border: 1px solid rgba(25, 135, 84, .12);
-        margin-bottom: .9rem;
-    }
-
-    .rr-mobile-points-label {
-        color: var(--rr-muted);
-        font-size: .75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .3px;
-    }
-
-    .rr-mobile-points {
-        color: var(--rr-success);
-        font-size: 1.25rem;
-        font-weight: 900;
-    }
-
-    .rr-mobile-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: .7rem;
-    }
-
-    .rr-mobile-field {
-        min-width: 0;
-        padding: .75rem;
-        border-radius: 9px;
-        background: #f8f9fa;
-        border: 1px solid #edf0f2;
-    }
-
-    .rr-mobile-field.full {
-        grid-column: 1 / -1;
-    }
-
-    .rr-mobile-label {
-        display: block;
-        margin-bottom: .3rem;
-        color: var(--rr-muted);
-        font-size: .68rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .3px;
-    }
-
-    .rr-mobile-value {
-        display: block;
-        color: var(--rr-text);
-        font-size: .82rem;
-        font-weight: 650;
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        padding: .8rem .85rem;
     }
 
     .rr-mobile-footer {
-        padding: .9rem 1rem 1rem;
-        border-top: 1px solid var(--rr-border);
+        padding: .75rem .85rem .8rem;
     }
 
-    .rr-mobile-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: .6rem;
+    .rr-mobile-points-box {
+        padding: .78rem .8rem;
+        margin-bottom: .7rem;
     }
 
-    .rr-mobile-action {
-        width: 100%;
-        min-height: 42px;
-        border: 0;
-        border-radius: 9px;
-        color: #fff;
-        font-size: .82rem;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: .4rem;
-        transition: all var(--rr-transition);
+    .rr-mobile-points {
+        font-size: 1.15rem;
     }
 
-    .rr-mobile-action:disabled {
-        opacity: .65;
-    }
-
-    .rr-mobile-action.approve {
-        background: var(--rr-success);
-    }
-
-    .rr-mobile-action.reject {
-        background: var(--rr-danger);
-    }
-
-    .rr-mobile-processed {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 42px;
-        color: var(--rr-muted);
-        font-size: .8rem;
-        font-weight: 800;
-    }
-
-    /* =========================================================
-       MODAL
-       ========================================================= */
-
-    #rejectReasonModal .modal-content {
-        border: 0;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: var(--rr-shadow-lg);
-    }
-
-    #rejectReasonModal .modal-header {
-        padding: 1rem 1.15rem;
-        border-bottom: 1px solid var(--rr-border);
-    }
-
-    #rejectReasonModal .modal-title {
-        color: var(--rr-text);
-        font-weight: 800;
-        font-size: 1rem;
-    }
-
-    #rejectReasonModal .modal-body {
-        padding: 1.15rem;
-    }
-
-    #rejectReasonModal .modal-footer {
-        padding: .9rem 1.15rem;
-        border-top: 1px solid var(--rr-border);
+    .rr-mobile-grid {
         gap: .5rem;
     }
 
-    #rejectReasonInput {
-        min-height: 100px;
-        resize: vertical;
-        border-radius: 9px;
-        border: 1px solid #ced4da;
+    .rr-mobile-field {
+        padding: .62rem .65rem;
     }
 
-    #rejectReasonInput:focus {
-        border-color: var(--rr-primary);
-        box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .12);
+    .rr-mobile-label {
+        font-size: .6rem;
     }
 
-    /* =========================================================
-       DARK THEME
-       ========================================================= */
-
-    [data-theme="dark"] .redeem-page-title,
-    [data-theme="dark"] .rr-user-name,
-    [data-theme="dark"] .rr-mobile-user-name,
-    [data-theme="dark"] .rr-payment-details,
-    [data-theme="dark"] .rr-mobile-value,
-    [data-theme="dark"] .rr-empty h5,
-    [data-theme="dark"] #rejectReasonModal .modal-title {
-        color: #e2e8f0;
+    .rr-mobile-value {
+        font-size: .75rem;
     }
 
-    [data-theme="dark"] .redeem-table-card,
-    [data-theme="dark"] .rr-mobile-card,
-    [data-theme="dark"] #rejectReasonModal .modal-content {
-        background: #2d3748;
-        border-color: #4b5563;
+    .rr-mobile-action {
+        min-height: 43px;
+        font-size: .78rem;
     }
 
-    [data-theme="dark"] .redeem-table thead th {
-        background: #374151;
-        color: #a0aec0;
-        border-color: #4b5563;
+    #rejectReasonModal .modal-dialog {
+        margin: .6rem;
+        width: auto;
     }
 
-    [data-theme="dark"] .redeem-table tbody td {
-        color: #e2e8f0;
-        border-color: #4b5563;
+    #rejectReasonModal .modal-content {
+        border-radius: 14px;
+    }
+}
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+    .redeem-page-container {
+        padding-left: .5rem !important;
+        padding-right: .5rem !important;
     }
 
-    [data-theme="dark"] .redeem-table tbody tr:hover {
-        background: rgba(255,255,255,.025);
+    .rr-mobile-user-name {
+        font-size: .91rem;
     }
 
-    [data-theme="dark"] .rr-mobile-top,
-    [data-theme="dark"] .rr-mobile-footer,
-    [data-theme="dark"] #rejectReasonModal .modal-header,
-    [data-theme="dark"] #rejectReasonModal .modal-footer {
-        border-color: #4b5563;
+    .rr-mobile-user-email {
+        font-size: .68rem;
     }
 
-    [data-theme="dark"] .rr-mobile-field {
-        background: #374151;
-        border-color: #4b5563;
+    .rr-mobile-id {
+        font-size: .64rem;
+        padding: .25rem .38rem;
     }
 
-    [data-theme="dark"] .rr-mobile-points-box {
-        background: rgba(25, 135, 84, .1);
-        border-color: rgba(25, 135, 84, .2);
+    .rr-mobile-grid {
+        grid-template-columns: 1fr 1fr;
     }
 
-    [data-theme="dark"] .rr-empty-icon {
-        background: #374151;
-        color: #718096;
+    .rr-mobile-field {
+        padding: .58rem .6rem;
     }
 
-    [data-theme="dark"] #rejectReasonInput {
-        background: #374151;
-        color: #e2e8f0;
-        border-color: #4b5563;
+    .rr-mobile-label {
+        font-size: .57rem;
     }
 
-    /* =========================================================
-       TABLE -> CARD BREAKPOINT
-       ========================================================= */
-
-    @media (max-width: 767.98px) {
-
-        .redeem-page-container {
-            padding-left: .75rem !important;
-            padding-right: .75rem !important;
-        }
-
-        .redeem-page-header {
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .redeem-page-title {
-            font-size: 1.25rem;
-            gap: .5rem;
-        }
-
-        .redeem-table-card {
-            display: none;
-        }
-
-        .redeem-mobile-list {
-            display: block;
-        }
-
-        .rr-mobile-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .modal-dialog {
-            margin: .75rem;
-        }
-
-        #rejectReasonModal .modal-footer {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-        }
-
-        #rejectReasonModal .modal-footer .btn {
-            width: 100%;
-            margin: 0;
-        }
+    .rr-mobile-value {
+        font-size: .72rem;
     }
 
-    /* =========================================================
-       VERY SMALL PHONES
-       ========================================================= */
-
-    @media (max-width: 380px) {
-
-        .redeem-page-container {
-            padding-left: .55rem !important;
-            padding-right: .55rem !important;
-        }
-
-        .rr-mobile-top,
-        .rr-mobile-body {
-            padding: .85rem;
-        }
-
-        .rr-mobile-footer {
-            padding: .8rem .85rem .85rem;
-        }
-
-        .rr-mobile-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .rr-mobile-field.full {
-            grid-column: auto;
-        }
-
-        .rr-mobile-actions {
-            grid-template-columns: 1fr;
-        }
-
-        .rr-mobile-user-name {
-            font-size: .94rem;
-        }
-
-        .rr-mobile-user-email {
-            font-size: .7rem;
-        }
+    .rr-mobile-points-label {
+        font-size: .63rem;
     }
 
-    /* =========================================================
-       ACCESSIBILITY / TOUCH
-       ========================================================= */
-
-    @media (hover: none) {
-        .rr-action-btn:hover,
-        .rr-mobile-action:hover {
-            transform: none;
-        }
+    .rr-mobile-points {
+        font-size: 1.08rem;
     }
 
-    button,
-    .btn {
-        -webkit-tap-highlight-color: transparent;
+    .rr-mobile-action {
+        min-height: 41px;
+        font-size: .75rem;
     }
+
+    #rejectReasonModal .modal-dialog {
+        margin: .45rem;
+    }
+
+    #rejectReasonModal .modal-header {
+        padding: .85rem .9rem;
+    }
+
+    #rejectReasonModal .modal-body {
+        padding: .9rem;
+    }
+
+    #rejectReasonModal .modal-footer {
+        padding: .75rem .9rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    #rejectReasonModal .modal-footer .btn {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .rr-mobile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rr-mobile-field.full {
+        grid-column: auto;
+    }
+
+    .rr-mobile-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .rr-mobile-top {
+        gap: .45rem;
+    }
+
+    .rr-mobile-points-box {
+        flex-direction: row;
+    }
+}
+
+/* =========================================================
+   TOUCH / ACCESSIBILITY
+   ========================================================= */
+
+@media (hover: none) {
+
+    .rr-action-btn:hover {
+        transform: none;
+    }
+}
+
+button,
+.btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+button:focus-visible,
+.btn:focus-visible {
+    outline: 3px solid rgba(13, 110, 253, .25);
+    outline-offset: 2px;
+}
+
+/* =========================================================
+   DARK THEME
+   ========================================================= */
+
+[data-theme="dark"] .redeem-page-title,
+[data-theme="dark"] .rr-user-name,
+[data-theme="dark"] .rr-mobile-user-name,
+[data-theme="dark"] .rr-payment-details,
+[data-theme="dark"] .rr-mobile-value,
+[data-theme="dark"] .rr-empty h5,
+[data-theme="dark"] #rejectReasonModal .modal-title {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .redeem-table-card,
+[data-theme="dark"] .rr-mobile-card,
+[data-theme="dark"] #rejectReasonModal .modal-content {
+    background: #2d3748;
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .redeem-table thead th {
+    background: #374151;
+    color: #a0aec0;
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .redeem-table tbody td {
+    color: #e2e8f0;
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .redeem-table tbody tr:hover {
+    background: rgba(255,255,255,.025);
+}
+
+[data-theme="dark"] .rr-mobile-top,
+[data-theme="dark"] .rr-mobile-footer,
+[data-theme="dark"] #rejectReasonModal .modal-header,
+[data-theme="dark"] #rejectReasonModal .modal-footer {
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .rr-mobile-footer {
+    background: rgba(55, 65, 81, .55);
+}
+
+[data-theme="dark"] .rr-mobile-field {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .rr-mobile-id {
+    background: #374151;
+    color: #a0aec0;
+}
+
+[data-theme="dark"] .rr-mobile-points-box {
+    background: rgba(25, 135, 84, .1);
+    border-color: rgba(25, 135, 84, .2);
+}
+
+[data-theme="dark"] .rr-empty-icon {
+    background: #374151;
+    color: #718096;
+}
+
+[data-theme="dark"] #rejectReasonInput {
+    background: #374151;
+    color: #e2e8f0;
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] #rejectReasonInput::placeholder {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .rr-mobile-user-email,
+[data-theme="dark"] .rr-mobile-label,
+[data-theme="dark"] .rr-mobile-value.text-muted {
+    color: #a0aec0 !important;
+}
 </style>
 {% endblock %}
 
@@ -767,24 +956,29 @@
 {% block content %}
 
 <div class="container-fluid py-3 py-md-4 redeem-page-container">
+
     <div class="redeem-page">
 
         <!-- =====================================================
-             PAGE HEADER
+             HEADER
              ===================================================== -->
+
         <div class="redeem-page-header">
+
             <h2 class="redeem-page-title">
                 <i class="fas fa-wallet"></i>
                 <span>Redeem Requests</span>
             </h2>
+
         </div>
 
 
         {% if redeems %}
 
         <!-- =====================================================
-             DESKTOP / TABLET TABLE
+             DESKTOP TABLE
              ===================================================== -->
+
         <div class="redeem-table-card">
 
             <div class="redeem-table-wrapper">
@@ -792,6 +986,7 @@
                 <table class="table table-hover align-middle mb-0 redeem-table">
 
                     <thead>
+
                         <tr>
                             <th>ID</th>
                             <th>User Details</th>
@@ -803,11 +998,12 @@
                             <th>Reason</th>
                             <th class="text-center">Actions</th>
                         </tr>
+
                     </thead>
 
                     <tbody>
 
-                        {% for redeem in redeems|sort(attribute='id', reverse=True) %}
+                    {% for redeem in redeems|sort(attribute='id', reverse=True) %}
 
                         <tr>
 
@@ -821,7 +1017,9 @@
 
                             <!-- USER -->
                             <td>
+
                                 <div class="rr-user-info">
+
                                     <span class="rr-user-name">
                                         {{ redeem.user.name }}
                                     </span>
@@ -829,39 +1027,49 @@
                                     <span class="rr-user-email">
                                         {{ redeem.user.email }}
                                     </span>
+
                                 </div>
+
                             </td>
 
 
                             <!-- POINTS -->
                             <td>
+
                                 <span class="rr-points">
                                     {{ redeem.points }}
                                 </span>
+
                             </td>
 
 
                             <!-- PAYMENT METHOD -->
                             <td>
+
                                 <span class="rr-payment-method">
                                     {{ redeem.payment_method }}
                                 </span>
+
                             </td>
 
 
                             <!-- PAYMENT DETAILS -->
                             <td>
+
                                 <span class="rr-payment-details">
                                     {{ redeem.payment_details }}
                                 </span>
+
                             </td>
 
 
                             <!-- DATE -->
                             <td>
+
                                 <span class="rr-date">
                                     {{ redeem.created_at.strftime('%d-%m-%Y') if redeem.created_at else 'N/A' }}
                                 </span>
+
                             </td>
 
 
@@ -909,7 +1117,9 @@
 
                                 {% else %}
 
-                                    <span class="rr-no-reason">-</span>
+                                    <span class="rr-no-reason">
+                                        -
+                                    </span>
 
                                 {% endif %}
 
@@ -956,7 +1166,7 @@
 
                         </tr>
 
-                        {% endfor %}
+                    {% endfor %}
 
                     </tbody>
 
@@ -968,15 +1178,16 @@
 
 
         <!-- =====================================================
-             MOBILE CARD VIEW
+             MOBILE APP-STYLE CARDS
              ===================================================== -->
+
         <div class="redeem-mobile-list">
 
-            {% for redeem in redeems|sort(attribute='id', reverse=True) %}
+        {% for redeem in redeems|sort(attribute='id', reverse=True) %}
 
-            <div class="rr-mobile-card">
+            <article class="rr-mobile-card">
 
-                <!-- TOP -->
+                <!-- USER HEADER -->
                 <div class="rr-mobile-top">
 
                     <div class="rr-mobile-user">
@@ -1001,7 +1212,7 @@
                 <!-- BODY -->
                 <div class="rr-mobile-body">
 
-                    <!-- POINTS -->
+                    <!-- AMOUNT -->
                     <div class="rr-mobile-points-box">
 
                         <span class="rr-mobile-points-label">
@@ -1032,7 +1243,7 @@
                         </div>
 
 
-                        <!-- DATE -->
+                        <!-- REQUEST DATE -->
                         <div class="rr-mobile-field">
 
                             <span class="rr-mobile-label">
@@ -1125,7 +1336,7 @@
                 </div>
 
 
-                <!-- FOOTER / ACTIONS -->
+                <!-- ACTION FOOTER -->
                 <div class="rr-mobile-footer">
 
                     {% if redeem.status == 'In Process' or redeem.status == 'Pending' %}
@@ -1155,17 +1366,20 @@
                     {% else %}
 
                         <div class="rr-mobile-processed">
+
                             <i class="fas fa-lock me-1"></i>
+
                             Request Already Processed
+
                         </div>
 
                     {% endif %}
 
                 </div>
 
-            </div>
+            </article>
 
-            {% endfor %}
+        {% endfor %}
 
         </div>
 
@@ -1175,6 +1389,7 @@
         <!-- =====================================================
              EMPTY STATE
              ===================================================== -->
+
         <div class="redeem-table-card">
 
             <div class="rr-empty">
@@ -1183,7 +1398,9 @@
                     <i class="fas fa-inbox"></i>
                 </div>
 
-                <h5>No redeem requests found!</h5>
+                <h5>
+                    No redeem requests found!
+                </h5>
 
                 <p>
                     New redemption requests will appear here.
@@ -1196,11 +1413,12 @@
         {% endif %}
 
     </div>
+
 </div>
 
 
 <!-- =========================================================
-     REJECT REASON MODAL
+     REJECT MODAL
      ========================================================= -->
 
 <div
@@ -1217,8 +1435,11 @@
             <div class="modal-header">
 
                 <h5 class="modal-title">
+
                     <i class="fas fa-times-circle text-danger me-2"></i>
+
                     Reject Redeem Request
+
                 </h5>
 
                 <button
@@ -1237,8 +1458,11 @@
                     for="rejectReasonInput"
                     class="form-label fw-bold"
                 >
+
                     Reject karne ka reason likhein
+
                     <span class="text-danger">*</span>
+
                 </label>
 
                 <textarea
@@ -1250,7 +1474,9 @@
                 ></textarea>
 
                 <small class="text-muted d-block mt-2">
+
                     Ye reason user ko dikhega taaki use pata chale reject kyun hua.
+
                 </small>
 
             </div>
@@ -1304,23 +1530,47 @@
         rejectTargetId = redeemId;
         rejectTargetBtn = buttonElement;
 
-        const input = document.getElementById('rejectReasonInput');
+        const input =
+            document.getElementById('rejectReasonInput');
 
         if (input) {
+
             input.value = '';
-            input.focus();
+
+            setTimeout(function () {
+                input.focus();
+            }, 250);
+
         }
 
         const modalElement =
             document.getElementById('rejectReasonModal');
 
         if (!modalElement) {
-            console.error('Reject modal not found.');
+
+            console.error(
+                'Reject modal not found.'
+            );
+
+            return;
+        }
+
+        if (
+            typeof bootstrap === 'undefined' ||
+            !bootstrap.Modal
+        ) {
+
+            console.error(
+                'Bootstrap Modal is not available.'
+            );
+
             return;
         }
 
         rejectModalInstance =
-            bootstrap.Modal.getOrCreateInstance(modalElement);
+            bootstrap.Modal.getOrCreateInstance(
+                modalElement
+            );
 
         rejectModalInstance.show();
     };
@@ -1333,10 +1583,14 @@
     window.confirmReject = function () {
 
         const input =
-            document.getElementById('rejectReasonInput');
+            document.getElementById(
+                'rejectReasonInput'
+            );
 
         const reason =
-            input ? input.value.trim() : '';
+            input
+                ? input.value.trim()
+                : '';
 
         if (!reason) {
 
@@ -1351,21 +1605,23 @@
             return;
         }
 
-
         const confirmButton =
-            document.getElementById('confirmRejectBtn');
+            document.getElementById(
+                'confirmRejectBtn'
+            );
 
         if (confirmButton) {
+
             confirmButton.disabled = true;
+
             confirmButton.innerHTML =
                 '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        }
 
+        }
 
         if (rejectModalInstance) {
             rejectModalInstance.hide();
         }
-
 
         processRedeemRequest(
             rejectTargetId,
@@ -1373,25 +1629,11 @@
             rejectTargetBtn,
             reason
         );
-
-
-        setTimeout(function () {
-
-            if (confirmButton) {
-
-                confirmButton.disabled = false;
-
-                confirmButton.innerHTML =
-                    '<i class="fas fa-times"></i> Reject Request';
-
-            }
-
-        }, 1000);
     };
 
 
     /* =========================================================
-       PROCESS REQUEST
+       PROCESS REDEEM REQUEST
        ========================================================= */
 
     window.processRedeemRequest = function (
@@ -1407,18 +1649,25 @@
                 : 'Reject / Refund';
 
 
+        /* APPROVE CONFIRMATION */
+
         if (
             action === 'approve' &&
             !confirm(
                 `Are you sure you want to ${actionText} this request?`
             )
         ) {
+
             return;
         }
 
 
         if (!buttonElement) {
-            console.error('Action button not found.');
+
+            console.error(
+                'Action button not found.'
+            );
+
             return;
         }
 
@@ -1432,6 +1681,7 @@
 
 
         /* Prevent double click */
+
         buttonElement.disabled = true;
 
         buttonElement.innerHTML =
@@ -1460,11 +1710,16 @@
             let data = null;
 
             try {
-                data = await response.json();
+
+                data =
+                    await response.json();
+
             } catch (e) {
+
                 throw new Error(
                     `Server returned invalid response (${response.status})`
                 );
+
             }
 
 
@@ -1478,12 +1733,16 @@
             }
 
             return data;
+
         })
 
 
         .then(function (data) {
 
-            if (data.status === 'success') {
+            if (
+                data &&
+                data.status === 'success'
+            ) {
 
                 alert(
                     data.message ||
@@ -1492,21 +1751,14 @@
 
                 window.location.reload();
 
-            } else {
-
-                alert(
-                    '❌ Error: ' +
-                    (
-                        data.message ||
-                        'Unable to process request.'
-                    )
-                );
-
-                buttonElement.disabled = false;
-
-                buttonElement.innerHTML =
-                    originalText;
+                return;
             }
+
+
+            throw new Error(
+                data.message ||
+                'Unable to process request.'
+            );
 
         })
 
@@ -1527,6 +1779,25 @@
 
             buttonElement.innerHTML =
                 originalText;
+
+        })
+
+        .finally(function () {
+
+            const confirmButton =
+                document.getElementById(
+                    'confirmRejectBtn'
+                );
+
+            if (confirmButton) {
+
+                confirmButton.disabled = false;
+
+                confirmButton.innerHTML =
+                    '<i class="fas fa-times me-1"></i> Reject Request';
+
+            }
+
         });
 
     };
@@ -1566,6 +1837,7 @@
 
                     rejectTargetId = null;
                     rejectTargetBtn = null;
+
                 }
             );
 
