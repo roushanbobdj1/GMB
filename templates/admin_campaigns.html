@@ -4,9 +4,11 @@
 
 {% block extra_css %}
 <style>
-    /* ============================================
-       VARIABLES & GENERAL
-       ============================================ */
+    /* =========================================================
+       CAMPAIGNS PAGE
+       Desktop + Tablet + Mobile Responsive
+       ========================================================= */
+
     :root {
         --primary: #0d6efd;
         --primary-light: #0dcaf0;
@@ -17,43 +19,68 @@
         --light: #f8f9fa;
         --muted: #6c757d;
         --border: #e9ecef;
-        
+
         --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
         --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
         --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
         --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-        
-        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
-        --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
-        
-        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+        --shadow-sm: 0 2px 6px rgba(0, 0, 0, .06);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, .08);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, .12);
+        --shadow-xl: 0 20px 40px rgba(0, 0, 0, .15);
+
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 14px;
+
+        --transition-base: 250ms cubic-bezier(.4, 0, .2, 1);
     }
 
-    /* ============================================
+    /* =========================================================
+       PAGE WRAPPER
+       ========================================================= */
+
+    .campaigns-page {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .campaigns-container {
+        width: 100%;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+
+    /* =========================================================
        PAGE HEADER
-       ============================================ */
+       ========================================================= */
+
     .page-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 3rem;
-        flex-wrap: wrap;
         gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .header-content {
+        min-width: 0;
     }
 
     .header-content h1 {
         font-size: 2.2rem;
+        line-height: 1.2;
         font-weight: 800;
         color: #2d3748;
-        margin-bottom: 0.5rem;
+        margin: 0 0 .5rem;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: .75rem;
     }
 
     .header-content h1 i {
+        flex: 0 0 auto;
         background: var(--primary-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -64,41 +91,53 @@
         color: var(--muted);
         font-weight: 500;
         margin: 0;
+        line-height: 1.5;
     }
 
     .btn-new-campaign {
+        flex: 0 0 auto;
         background: var(--primary-gradient);
-        color: white;
+        color: #fff;
         border: none;
-        padding: 0.85rem 2rem;
+        padding: .85rem 1.5rem;
+        min-height: 46px;
         border-radius: 10px;
         font-weight: 700;
         transition: all var(--transition-base);
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, .3);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: center;
+        gap: .65rem;
+        white-space: nowrap;
     }
 
     .btn-new-campaign:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
-        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(13, 110, 253, .4);
+        color: #fff;
         text-decoration: none;
     }
 
-    /* ============================================
-       STATS ROW
-       ============================================ */
+    .btn-new-campaign:active {
+        transform: translateY(0);
+    }
+
+    /* =========================================================
+       STATS
+       ========================================================= */
+
     .stats-section {
-        margin-bottom: 3rem;
+        margin-bottom: 2.5rem;
     }
 
     .stat-card {
-        background: white;
-        border-radius: 14px;
-        padding: 1.5rem;
+        height: 100%;
+        min-height: 125px;
+        background: #fff;
+        border-radius: var(--radius-lg);
+        padding: 1.35rem;
         box-shadow: var(--shadow-md);
         border: 1px solid var(--border);
         text-align: center;
@@ -108,7 +147,7 @@
     }
 
     .stat-card::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
@@ -118,7 +157,7 @@
     }
 
     .stat-card:hover {
-        transform: translateY(-6px);
+        transform: translateY(-5px);
         box-shadow: var(--shadow-lg);
     }
 
@@ -136,12 +175,13 @@
 
     .stat-value {
         font-size: 2rem;
+        line-height: 1.1;
         font-weight: 800;
         background: var(--primary-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-bottom: 0.5rem;
+        margin-bottom: .55rem;
     }
 
     .stat-card.active .stat-value {
@@ -166,104 +206,152 @@
     }
 
     .stat-label {
-        font-size: 0.9rem;
+        font-size: .9rem;
         color: var(--muted);
         font-weight: 600;
         margin: 0;
     }
 
-    /* ============================================
-       CAMPAIGN CARDS
-       ============================================ */
+    /* =========================================================
+       CAMPAIGN GRID
+       ========================================================= */
+
+    .campaigns-grid {
+        width: 100%;
+    }
+
+    .campaign-column {
+        min-width: 0;
+    }
+
+    /* =========================================================
+       CAMPAIGN CARD
+       ========================================================= */
+
     .campaign-card {
-        background: white;
-        border-radius: 14px;
+        width: 100%;
+        min-width: 0;
+        height: 100%;
+        background: #fff;
+        border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md);
         border: 1px solid var(--border);
         transition: all var(--transition-base);
         overflow: hidden;
-        height: 100%;
         display: flex;
         flex-direction: column;
     }
 
     .campaign-card:hover {
-        transform: translateY(-8px);
+        transform: translateY(-6px);
         box-shadow: var(--shadow-lg);
     }
 
+    /* =========================================================
+       CARD HEADER
+       ========================================================= */
+
     .campaign-card-header {
-        background: white;
+        min-width: 0;
+        background: #fff;
         border-bottom: 1px solid var(--border);
-        padding: 1.5rem;
+        padding: 1.25rem 1.5rem;
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         gap: 1rem;
     }
 
     .campaign-title {
+        min-width: 0;
+        flex: 1 1 auto;
         font-size: 1.2rem;
+        line-height: 1.35;
         font-weight: 800;
         color: #2d3748;
         margin: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .campaign-status-badge {
+        flex: 0 0 auto;
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
+        justify-content: center;
+        gap: .45rem;
+        min-height: 34px;
+        padding: .4rem .75rem;
         border-radius: 20px;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: .75rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: .4px;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
     }
 
     .badge-active {
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(32, 201, 151, 0.12) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(25, 135, 84, .12) 0%,
+            rgba(32, 201, 151, .12) 100%
+        );
         color: #198754;
-        border: 1px solid rgba(25, 135, 84, 0.2);
+        border: 1px solid rgba(25, 135, 84, .2);
     }
 
     .badge-paused {
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(255, 193, 7, .12) 0%,
+            rgba(255, 152, 0, .12) 100%
+        );
         color: #856404;
-        border: 1px solid rgba(255, 193, 7, 0.2);
+        border: 1px solid rgba(255, 193, 7, .2);
     }
 
     .badge-stopped {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(255, 73, 94, 0.12) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(220, 53, 69, .12) 0%,
+            rgba(255, 73, 94, .12) 100%
+        );
         color: #842029;
-        border: 1px solid rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, .2);
     }
 
-    /* Card Body */
+    /* =========================================================
+       CARD BODY
+       ========================================================= */
+
     .campaign-card-body {
+        min-width: 0;
         padding: 1.5rem;
         flex: 1;
         display: flex;
         flex-direction: column;
     }
 
-    /* GMB Link */
+    /* =========================================================
+       GMB LINK
+       ========================================================= */
+
     .gmb-link-section {
+        min-width: 0;
         margin-bottom: 1.5rem;
     }
 
     .gmb-link-label {
-        font-size: 0.8rem;
+        font-size: .78rem;
         color: var(--muted);
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
+        letter-spacing: .5px;
+        margin-bottom: .55rem;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: .5rem;
     }
 
     .gmb-link-label i {
@@ -271,55 +359,81 @@
     }
 
     .gmb-link {
+        max-width: 100%;
         color: var(--primary);
         text-decoration: none;
         font-weight: 600;
-        word-break: break-all;
-        transition: all var(--transition-base);
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        transition: color var(--transition-base);
         display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
+        align-items: flex-start;
+        gap: .45rem;
     }
 
     .gmb-link:hover {
         color: var(--primary-light);
+        text-decoration: none;
     }
 
-    /* Metrics Grid */
+    .gmb-link i {
+        flex: 0 0 auto;
+        margin-top: .25rem;
+    }
+
+    /* =========================================================
+       METRICS GRID
+       ========================================================= */
+
     .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .85rem;
         margin-bottom: 1.5rem;
     }
 
     .metric-box {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-width: 0;
+        background: linear-gradient(
+            135deg,
+            #f8f9fa 0%,
+            #e9ecef 100%
+        );
         border-radius: 10px;
-        padding: 1.25rem;
+        padding: 1rem;
         border: 1px solid var(--border);
         transition: all var(--transition-base);
     }
 
     .metric-box:hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        background: linear-gradient(
+            135deg,
+            #e9ecef 0%,
+            #dee2e6 100%
+        );
         transform: translateY(-2px);
     }
 
     .metric-label {
-        font-size: 0.8rem;
+        min-width: 0;
+        font-size: .72rem;
+        line-height: 1.35;
         color: var(--muted);
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
+        letter-spacing: .35px;
+        margin-bottom: .45rem;
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        align-items: flex-start;
+        gap: .4rem;
+        overflow-wrap: anywhere;
     }
 
     .metric-label i {
-        font-size: 0.9rem;
+        flex: 0 0 auto;
+        font-size: .82rem;
+        margin-top: .1rem;
     }
 
     .metric-label.primary i {
@@ -335,9 +449,12 @@
     }
 
     .metric-value {
-        font-size: 1.4rem;
+        min-width: 0;
+        font-size: 1.35rem;
+        line-height: 1.2;
         font-weight: 800;
         color: #2d3748;
+        overflow-wrap: anywhere;
     }
 
     .metric-value.success {
@@ -347,7 +464,10 @@
         background-clip: text;
     }
 
-    /* Progress Bar */
+    /* =========================================================
+       PROGRESS
+       ========================================================= */
+
     .progress-section {
         margin-bottom: 1.5rem;
     }
@@ -356,67 +476,95 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.75rem;
+        gap: 1rem;
+        margin-bottom: .65rem;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: .85rem;
     }
 
     .progress-percentage {
+        flex: 0 0 auto;
         background: var(--primary-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        font-weight: 800;
     }
 
     .custom-progress {
-        height: 24px;
+        position: relative;
+        height: 22px;
         background: var(--border);
-        border-radius: 6px;
+        border-radius: 7px;
         overflow: hidden;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, .06);
     }
 
     .custom-progress-bar {
         height: 100%;
+        min-width: 0;
         background: var(--primary-gradient);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: .72rem;
         transition: width var(--transition-base);
         position: relative;
+        overflow: hidden;
     }
 
     .custom-progress-bar::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, .3),
+            transparent
+        );
         animation: shimmer 2s infinite;
     }
 
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+    .custom-progress-bar span {
+        position: relative;
+        z-index: 1;
     }
 
-    /* Action Buttons */
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    /* =========================================================
+       ACTION BUTTONS
+       ========================================================= */
+
     .action-buttons {
         display: grid;
-        gap: 0.75rem;
+        grid-template-columns: 1fr;
+        gap: .65rem;
         margin-top: auto;
     }
 
     .btn-action {
-        padding: 0.75rem 1rem;
+        width: 100%;
+        min-height: 44px;
+        padding: .7rem .9rem;
         border-radius: 8px;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: .88rem;
+        line-height: 1.2;
         transition: all var(--transition-base);
         border: none;
         cursor: pointer;
@@ -424,47 +572,55 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        font-family: 'Inter', sans-serif;
+        gap: .5rem;
+        font-family: inherit;
+        text-align: center;
+    }
+
+    .btn-action:hover {
+        text-decoration: none;
+    }
+
+    .btn-action:disabled {
+        opacity: .7;
+        cursor: not-allowed;
+        transform: none !important;
     }
 
     .btn-allocate {
         background: var(--primary-gradient);
-        color: white;
-        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, .2);
     }
 
     .btn-allocate:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-        color: white;
-        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, .3);
+        color: #fff;
     }
 
     .btn-warning-action {
         background: var(--warning-gradient);
-        color: white;
-        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, .2);
     }
 
     .btn-warning-action:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
-        color: white;
-        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, .3);
+        color: #fff;
     }
 
     .btn-success-action {
         background: var(--success-gradient);
-        color: white;
-        box-shadow: 0 2px 8px rgba(25, 135, 84, 0.2);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(25, 135, 84, .2);
     }
 
     .btn-success-action:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
-        color: white;
-        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(25, 135, 84, .3);
+        color: #fff;
     }
 
     .btn-danger-action {
@@ -475,36 +631,43 @@
 
     .btn-danger-action:hover {
         background: var(--danger);
-        color: white;
-        text-decoration: none;
+        color: #fff;
     }
 
-    /* ============================================
+    /* =========================================================
        MODALS
-       ============================================ */
+       ========================================================= */
+
     .modal-content {
         border-radius: 14px;
         border: 1px solid var(--border);
         box-shadow: var(--shadow-xl);
+        overflow: hidden;
     }
 
     .modal-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(
+            135deg,
+            #f8f9fa 0%,
+            #e9ecef 100%
+        );
         border-bottom: 1px solid var(--border);
-        padding: 1.5rem;
-        border-radius: 14px 14px 0 0;
+        padding: 1.25rem 1.5rem;
     }
 
     .modal-title {
+        min-width: 0;
         font-weight: 800;
         color: #2d3748;
-        font-size: 1.2rem;
+        font-size: 1.15rem;
+        line-height: 1.35;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: .65rem;
     }
 
     .modal-title i {
+        flex: 0 0 auto;
         background: var(--primary-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -512,21 +675,29 @@
     }
 
     .modal-body {
-        padding: 1.75rem;
+        padding: 1.5rem;
     }
 
     .modal-footer {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(
+            135deg,
+            #f8f9fa 0%,
+            #e9ecef 100%
+        );
         border-top: 1px solid var(--border);
-        padding: 1.5rem;
-        border-radius: 0 0 14px 14px;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .modal-footer .btn-action {
+        width: auto;
+        min-width: 120px;
     }
 
     .form-label {
         font-weight: 700;
         color: #2d3748;
-        margin-bottom: 0.75rem;
-        font-size: 0.95rem;
+        margin-bottom: .65rem;
+        font-size: .92rem;
     }
 
     .form-label i {
@@ -534,11 +705,13 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-right: 0.5rem;
+        margin-right: .4rem;
     }
 
     .form-control {
-        padding: 0.875rem 1.125rem;
+        width: 100%;
+        min-height: 46px;
+        padding: .75rem 1rem;
         border-radius: 8px;
         border: 2px solid var(--border);
         font-weight: 500;
@@ -547,57 +720,72 @@
 
     .form-control:focus {
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, .1);
     }
 
     .info-box {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 202, 240, 0.08) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(13, 110, 253, .08) 0%,
+            rgba(13, 202, 240, .08) 100%
+        );
         border-left: 4px solid var(--primary);
         border-radius: 8px;
-        padding: 1.25rem;
-        margin-top: 1.25rem;
+        padding: 1rem 1.1rem;
+        margin-top: 1.15rem;
     }
 
     .info-box-title {
         font-weight: 700;
         color: var(--primary);
-        margin-bottom: 0.75rem;
-        font-size: 0.95rem;
+        margin-bottom: .65rem;
+        font-size: .92rem;
     }
 
     .info-box ul {
         margin: 0;
-        padding-left: 1.25rem;
+        padding-left: 1.1rem;
     }
 
     .info-box li {
-        font-size: 0.9rem;
+        font-size: .85rem;
+        line-height: 1.5;
         color: #084298;
-        margin-bottom: 0.5rem;
+        margin-bottom: .4rem;
         font-weight: 500;
     }
 
-    .alert-danger-modal {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.08) 0%, rgba(255, 73, 94, 0.08) 100%);
-        border: 1px solid rgba(220, 53, 69, 0.2);
-        color: #842029;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+    .info-box li:last-child {
+        margin-bottom: 0;
     }
 
-    /* ============================================
+    .alert-danger-modal {
+        background: linear-gradient(
+            135deg,
+            rgba(220, 53, 69, .08) 0%,
+            rgba(255, 73, 94, .08) 100%
+        );
+        border: 1px solid rgba(220, 53, 69, .2);
+        color: #842029;
+        border-radius: 8px;
+        padding: .9rem 1rem;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    /* =========================================================
        EMPTY STATE
-       ============================================ */
+       ========================================================= */
+
     .empty-state-card {
-        background: white;
-        border-radius: 14px;
+        background: #fff;
+        border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md);
         border: 1px solid var(--border);
     }
 
     .empty-state-body {
-        padding: 3rem 2rem;
+        padding: 4rem 2rem;
         text-align: center;
     }
 
@@ -605,129 +793,395 @@
         font-size: 4rem;
         color: var(--muted);
         margin-bottom: 1rem;
-        opacity: 0.4;
+        opacity: .4;
     }
 
     .empty-state-title {
         font-size: 1.5rem;
         font-weight: 800;
         color: #2d3748;
-        margin-bottom: 0.75rem;
+        margin-bottom: .75rem;
     }
 
     .empty-state-text {
+        max-width: 650px;
+        margin: 0 auto 1.75rem;
         color: var(--muted);
         font-size: 1rem;
-        margin-bottom: 1.75rem;
+        line-height: 1.6;
         font-weight: 500;
     }
 
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 1200px) {
-        .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
+    /* =========================================================
+       TABLET
+       ========================================================= */
+
+    @media (max-width: 1199.98px) {
+        .header-content h1 {
+            font-size: 2rem;
+        }
+
+        .campaign-card-body {
+            padding: 1.35rem;
         }
     }
 
-    @media (max-width: 992px) {
+    /* =========================================================
+       SMALL TABLET / LARGE PHONE
+       ========================================================= */
+
+    @media (max-width: 991.98px) {
         .page-header {
-            flex-direction: column;
             align-items: flex-start;
         }
 
         .btn-new-campaign {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .header-content h1 {
-            font-size: 1.8rem;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .page-header {
-            margin-bottom: 2rem;
-        }
-
-        .header-content h1 {
-            font-size: 1.5rem;
-        }
-
-        .campaign-card-body {
-            padding: 1.25rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
         }
 
         .campaign-card-header {
-            padding: 1.25rem;
+            align-items: flex-start;
+        }
+    }
+
+    /* =========================================================
+       MOBILE
+       ========================================================= */
+
+    @media (max-width: 767.98px) {
+
+        .campaigns-container {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .page-header {
+            display: flex;
             flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-content h1 {
+            font-size: 1.55rem;
+            line-height: 1.25;
+            gap: .55rem;
+            margin-bottom: .35rem;
+        }
+
+        .header-content h1 i {
+            font-size: 1.35rem;
+        }
+
+        .header-content p {
+            font-size: .88rem;
+            line-height: 1.45;
+        }
+
+        .btn-new-campaign {
+            width: 100%;
+            min-height: 46px;
+            padding: .75rem 1rem;
+        }
+
+        /* Stats */
+        .stats-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-section .row {
+            --bs-gutter-x: .65rem;
+            --bs-gutter-y: .65rem;
+        }
+
+        .stat-card {
+            min-height: 105px;
+            padding: 1rem .65rem;
+            border-radius: 11px;
+        }
+
+        .stat-value {
+            font-size: 1.55rem;
+            margin-bottom: .35rem;
+        }
+
+        .stat-label {
+            font-size: .72rem;
+            line-height: 1.25;
+        }
+
+        /* Campaign card */
+        .campaign-card {
+            border-radius: 12px;
+        }
+
+        .campaign-card:hover {
+            transform: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        .campaign-card-header {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: .75rem;
+            padding: 1rem;
+        }
+
+        .campaign-title {
+            font-size: 1rem;
+            line-height: 1.4;
         }
 
         .campaign-status-badge {
             width: 100%;
-            justify-content: center;
+            min-height: 32px;
+            font-size: .7rem;
+            padding: .4rem .65rem;
         }
 
+        .campaign-card-body {
+            padding: 1rem;
+        }
+
+        /* GMB link */
+        .gmb-link-section {
+            margin-bottom: 1.15rem;
+        }
+
+        .gmb-link-label {
+            font-size: .7rem;
+            margin-bottom: .4rem;
+        }
+
+        .gmb-link {
+            display: flex;
+            width: 100%;
+            font-size: .8rem;
+            line-height: 1.45;
+            gap: .35rem;
+        }
+
+        .gmb-link i {
+            font-size: .7rem;
+        }
+
+        /* Metrics */
         .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .6rem;
+            margin-bottom: 1.15rem;
         }
 
         .metric-box {
-            padding: 1rem;
+            padding: .8rem .7rem;
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-size: .62rem;
+            line-height: 1.3;
+            margin-bottom: .35rem;
+        }
+
+        .metric-label i {
+            font-size: .7rem;
         }
 
         .metric-value {
-            font-size: 1.2rem;
+            font-size: 1.05rem;
         }
 
+        /* Progress */
+        .progress-section {
+            margin-bottom: 1.15rem;
+        }
+
+        .progress-info {
+            font-size: .76rem;
+            margin-bottom: .5rem;
+        }
+
+        .custom-progress {
+            height: 20px;
+            border-radius: 6px;
+        }
+
+        .custom-progress-bar {
+            font-size: .65rem;
+        }
+
+        /* Buttons */
         .action-buttons {
-            gap: 0.5rem;
+            gap: .55rem;
         }
 
         .btn-action {
-            padding: 0.65rem 0.875rem;
-            font-size: 0.85rem;
+            min-height: 43px;
+            padding: .65rem .75rem;
+            font-size: .78rem;
+            border-radius: 8px;
         }
 
-        .modal-body {
-            padding: 1.25rem;
+        /* Empty */
+        .empty-state-body {
+            padding: 3rem 1.25rem;
         }
 
-        .modal-footer {
-            padding: 1.25rem;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .campaign-title {
-            font-size: 1rem;
+        .empty-state-icon {
+            font-size: 3.25rem;
         }
 
-        .metrics-grid {
-            grid-template-columns: 1fr;
+        .empty-state-title {
+            font-size: 1.25rem;
         }
 
-        .modal-title {
-            font-size: 1rem;
+        .empty-state-text {
+            font-size: .88rem;
         }
 
-        .form-label {
-            font-size: 0.85rem;
+        /* Modal */
+        .modal-dialog {
+            margin: .75rem;
         }
 
-        .info-box {
+        .modal-content {
+            border-radius: 12px;
+        }
+
+        .modal-header {
             padding: 1rem;
         }
 
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer {
+            padding: .85rem 1rem;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: .55rem;
+        }
+
+        .modal-footer .btn-action,
+        .modal-footer form,
+        .modal-footer form .btn-action {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .modal-footer form {
+            margin: 0 !important;
+        }
+
+        .modal-title {
+            font-size: .98rem;
+        }
+
+        .form-label {
+            font-size: .84rem;
+        }
+
+        .form-control {
+            min-height: 44px;
+            font-size: .9rem;
+        }
+
+        .info-box {
+            padding: .85rem .9rem;
+        }
+
+        .info-box-title {
+            font-size: .84rem;
+        }
+
         .info-box li {
-            font-size: 0.8rem;
+            font-size: .76rem;
+            line-height: 1.45;
+        }
+
+        .alert-danger-modal {
+            font-size: .82rem;
         }
     }
 
-    /* Dark Theme Support */
+    /* =========================================================
+       EXTRA SMALL PHONES
+       ========================================================= */
+
+    @media (max-width: 399.98px) {
+
+        .header-content h1 {
+            font-size: 1.35rem;
+        }
+
+        .header-content h1 i {
+            font-size: 1.15rem;
+        }
+
+        .header-content p {
+            font-size: .8rem;
+        }
+
+        .stat-card {
+            min-height: 98px;
+            padding: .85rem .45rem;
+        }
+
+        .stat-value {
+            font-size: 1.35rem;
+        }
+
+        .stat-label {
+            font-size: .65rem;
+        }
+
+        .campaign-card-header,
+        .campaign-card-body {
+            padding: .85rem;
+        }
+
+        .campaign-title {
+            font-size: .92rem;
+        }
+
+        .metrics-grid {
+            gap: .5rem;
+        }
+
+        .metric-box {
+            padding: .7rem .55rem;
+        }
+
+        .metric-label {
+            font-size: .58rem;
+        }
+
+        .metric-value {
+            font-size: .95rem;
+        }
+
+        .btn-action {
+            min-height: 42px;
+            font-size: .74rem;
+        }
+
+        .custom-progress {
+            height: 18px;
+        }
+
+        .modal-dialog {
+            margin: .5rem;
+        }
+    }
+
+    /* =========================================================
+       DARK THEME
+       ========================================================= */
+
     [data-theme="dark"] .stat-card,
     [data-theme="dark"] .campaign-card,
     [data-theme="dark"] .empty-state-card,
@@ -736,11 +1190,17 @@
         border-color: #4b5563;
     }
 
+    [data-theme="dark"] .campaign-card-header {
+        background: #2d3748;
+        border-color: #4b5563;
+    }
+
     [data-theme="dark"] .campaign-title,
     [data-theme="dark"] .empty-state-title,
     [data-theme="dark"] .modal-title,
     [data-theme="dark"] .form-label,
-    [data-theme="dark"] .header-content h1 {
+    [data-theme="dark"] .header-content h1,
+    [data-theme="dark"] .metric-value {
         color: #e2e8f0;
     }
 
@@ -752,13 +1212,29 @@
     }
 
     [data-theme="dark"] .metric-box {
-        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+        background: linear-gradient(
+            135deg,
+            #374151 0%,
+            #2d3748 100%
+        );
         border-color: #4b5563;
+    }
+
+    [data-theme="dark"] .metric-box:hover {
+        background: linear-gradient(
+            135deg,
+            #404b5d 0%,
+            #374151 100%
+        );
     }
 
     [data-theme="dark"] .modal-header,
     [data-theme="dark"] .modal-footer {
-        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+        background: linear-gradient(
+            135deg,
+            #374151 0%,
+            #2d3748 100%
+        );
         border-color: #4b5563;
     }
 
@@ -778,463 +1254,1090 @@
     }
 
     [data-theme="dark"] .info-box {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(13, 110, 253, .1) 0%,
+            rgba(13, 202, 240, .1) 100%
+        );
+    }
+
+    /* =========================================================
+       ACCESSIBILITY / TOUCH
+       ========================================================= */
+
+    @media (hover: none) {
+        .stat-card:hover,
+        .campaign-card:hover,
+        .metric-box:hover,
+        .btn-action:hover,
+        .btn-new-campaign:hover {
+            transform: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
-<div class="container-fluid py-4 py-lg-5">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-content">
-            <h1>
-                <i class="fas fa-megaphone"></i> All Campaigns
-            </h1>
-            <p>Manage and monitor your active campaigns efficiently</p>
-        </div>
-        <a href="/admin/create_campaign" class="btn-new-campaign">
-            <i class="fas fa-plus-circle"></i> New Campaign
-        </a>
-    </div>
 
-    {% if campaigns %}
-        <!-- Stats Section -->
-        <div class="stats-section">
-            <div class="row g-3">
-                <div class="col-md-6 col-lg-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ campaigns | length }}</div>
-                        <p class="stat-label">Total Campaigns</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <div class="stat-card active">
-                        <div class="stat-value">
-                            {{ campaigns | selectattr('status', 'equalto', 'Active') | list | length }}
-                        </div>
-                        <p class="stat-label">Active Now</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <div class="stat-card paused">
-                        <div class="stat-value">
-                            {{ campaigns | selectattr('status', 'equalto', 'Paused') | list | length }}
-                        </div>
-                        <p class="stat-label">Paused</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3">
-                    <div class="stat-card stopped">
-                        <div class="stat-value">
-                            {{ campaigns | selectattr('status', 'equalto', 'Stopped') | list | length }}
-                        </div>
-                        <p class="stat-label">Stopped</p>
-                    </div>
-                </div>
+<div class="container-fluid py-3 py-lg-5">
+    <div class="campaigns-container campaigns-page">
+
+        <!-- =====================================================
+             PAGE HEADER
+             ===================================================== -->
+
+        <div class="page-header">
+
+            <div class="header-content">
+                <h1>
+                    <i class="fas fa-megaphone"></i>
+                    <span>All Campaigns</span>
+                </h1>
+
+                <p>
+                    Manage and monitor your active campaigns efficiently
+                </p>
             </div>
+
+            <a href="/admin/create_campaign" class="btn-new-campaign">
+                <i class="fas fa-plus-circle"></i>
+                <span>New Campaign</span>
+            </a>
+
         </div>
 
-        <!-- Campaigns Grid -->
-        <div class="row g-4">
+
+        {% if campaigns %}
+
+        <!-- =====================================================
+             STATS
+             ===================================================== -->
+
+        <div class="stats-section">
+
+            <div class="row g-3">
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            {{ campaigns | length }}
+                        </div>
+
+                        <p class="stat-label">
+                            Total Campaigns
+                        </p>
+                    </div>
+                </div>
+
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card active">
+
+                        <div class="stat-value">
+                            {{
+                                campaigns
+                                | selectattr('status', 'equalto', 'Active')
+                                | list
+                                | length
+                            }}
+                        </div>
+
+                        <p class="stat-label">
+                            Active Now
+                        </p>
+
+                    </div>
+                </div>
+
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card paused">
+
+                        <div class="stat-value">
+                            {{
+                                campaigns
+                                | selectattr('status', 'equalto', 'Paused')
+                                | list
+                                | length
+                            }}
+                        </div>
+
+                        <p class="stat-label">
+                            Paused
+                        </p>
+
+                    </div>
+                </div>
+
+
+                <div class="col-6 col-lg-3">
+                    <div class="stat-card stopped">
+
+                        <div class="stat-value">
+                            {{
+                                campaigns
+                                | selectattr('status', 'equalto', 'Stopped')
+                                | list
+                                | length
+                            }}
+                        </div>
+
+                        <p class="stat-label">
+                            Stopped
+                        </p>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             CAMPAIGNS GRID
+             ===================================================== -->
+
+        <div class="row g-3 g-lg-4 campaigns-grid">
+
             {% for campaign in campaigns %}
-            <div class="col-lg-6 col-12">
+
+            <div class="col-12 col-lg-6 campaign-column">
+
                 <div class="campaign-card">
-                    <!-- Card Header -->
+
+                    <!-- =================================================
+                         CARD HEADER
+                         ================================================= -->
+
                     <div class="campaign-card-header">
-                        <h5 class="campaign-title">{{ campaign.name }}</h5>
-                        <span class="campaign-status-badge {% if campaign.status == 'Active' %}badge-active{% elif campaign.status == 'Paused' %}badge-paused{% else %}badge-stopped{% endif %}">
-                            <i class="fas fa-{% if campaign.status == 'Active' %}circle-notch fa-spin{% elif campaign.status == 'Paused' %}pause-circle{% else %}stop-circle{% endif %}"></i>
-                            {{ campaign.status }}
+
+                        <h5 class="campaign-title">
+                            {{ campaign.name }}
+                        </h5>
+
+                        <span class="campaign-status-badge
+                            {% if campaign.status == 'Active' %}
+                                badge-active
+                            {% elif campaign.status == 'Paused' %}
+                                badge-paused
+                            {% else %}
+                                badge-stopped
+                            {% endif %}
+                        ">
+
+                            <i class="fas fa-{%
+                                if campaign.status == 'Active'
+                            %}circle-notch fa-spin{%
+                                elif campaign.status == 'Paused'
+                            %}pause-circle{%
+                                else
+                            %}stop-circle{%
+                                endif
+                            %}"></i>
+
+                            <span>{{ campaign.status }}</span>
+
                         </span>
+
                     </div>
 
-                    <!-- Card Body -->
+
+                    <!-- =================================================
+                         CARD BODY
+                         ================================================= -->
+
                     <div class="campaign-card-body">
-                        <!-- GMB Link -->
+
+                        <!-- GMB LINK -->
+
                         <div class="gmb-link-section">
+
                             <div class="gmb-link-label">
-                                <i class="fas fa-link"></i> GMB Link
+                                <i class="fas fa-link"></i>
+                                <span>GMB Link</span>
                             </div>
-                            <a href="{{ campaign.gmb_link }}" target="_blank" class="gmb-link">
-                                {{ campaign.gmb_link[:45] }}{% if campaign.gmb_link | length > 45 %}...{% endif %}
+
+                            <a
+                                href="{{ campaign.gmb_link }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="gmb-link"
+                                title="{{ campaign.gmb_link }}"
+                            >
+                                <span>
+                                    {{ campaign.gmb_link[:45] }}
+                                    {% if campaign.gmb_link | length > 45 %}
+                                        ...
+                                    {% endif %}
+                                </span>
+
                                 <i class="fas fa-external-link-alt"></i>
                             </a>
+
                         </div>
 
-                        <!-- Metrics Grid -->
+
+                        <!-- =================================================
+                             METRICS
+                             ================================================= -->
+
                         <div class="metrics-grid">
+
                             <div class="metric-box">
+
                                 <div class="metric-label primary">
-                                    <i class="fas fa-list-ol"></i> Reviews Required
+                                    <i class="fas fa-list-ol"></i>
+                                    <span>Reviews Required</span>
                                 </div>
-                                <div class="metric-value">{{ campaign.total_reviews_required }}</div>
+
+                                <div class="metric-value">
+                                    {{ campaign.total_reviews_required }}
+                                </div>
+
                             </div>
+
+
                             <div class="metric-box">
+
                                 <div class="metric-label warning">
-                                    <i class="fas fa-coins"></i> Points/Review
+                                    <i class="fas fa-coins"></i>
+                                    <span>Points/Review</span>
                                 </div>
-                                <div class="metric-value">{{ campaign.points_per_review }}</div>
+
+                                <div class="metric-value">
+                                    {{ campaign.points_per_review }}
+                                </div>
+
                             </div>
+
+
                             <div class="metric-box">
+
                                 <div class="metric-label success">
-                                    <i class="fas fa-calendar-alt"></i> Duration
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Duration</span>
                                 </div>
-                                <div class="metric-value">{{ campaign.duration_months }}M</div>
+
+                                <div class="metric-value">
+                                    {{ campaign.duration_months }}M
+                                </div>
+
                             </div>
+
+
                             <div class="metric-box">
+
                                 <div class="metric-label success">
-                                    <i class="fas fa-money-bill-wave"></i> Total Reward
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    <span>Total Reward</span>
                                 </div>
+
                                 <div class="metric-value success">
-                                    ₹{{ (campaign.total_reviews_required * campaign.points_per_review) | int }}
+                                    ₹{{
+                                        (
+                                            campaign.total_reviews_required
+                                            * campaign.points_per_review
+                                        ) | int
+                                    }}
                                 </div>
+
                             </div>
+
                         </div>
 
-                        <!-- Progress Bar -->
+
+                        <!-- =================================================
+                             PROGRESS
+                             ================================================= -->
+
                         {% if campaign.reviews_completed is defined %}
-                        <div class="progress-section">
-                            <div class="progress-info">
-                                <span>Progress</span>
-                                <span class="progress-percentage">
-                                    {{ (campaign.reviews_completed / campaign.total_reviews_required * 100) | int }}%
-                                </span>
-                            </div>
-                            <div class="custom-progress">
-                                <div class="custom-progress-bar" style="width: {{ (campaign.reviews_completed / campaign.total_reviews_required * 100) | int }}%;">
-                                    {% if (campaign.reviews_completed / campaign.total_reviews_required * 100) | int > 10 %}
-                                        <span>{{ campaign.reviews_completed }}/{{ campaign.total_reviews_required }}</span>
-                                    {% endif %}
+
+                            {% set progress =
+                                (
+                                    campaign.reviews_completed
+                                    / campaign.total_reviews_required
+                                    * 100
+                                ) | int
+                            %}
+
+                            {% if progress < 0 %}
+                                {% set progress = 0 %}
+                            {% endif %}
+
+                            {% if progress > 100 %}
+                                {% set progress = 100 %}
+                            {% endif %}
+
+                            <div class="progress-section">
+
+                                <div class="progress-info">
+
+                                    <span>
+                                        Progress
+                                    </span>
+
+                                    <span class="progress-percentage">
+                                        {{ progress }}%
+                                    </span>
+
                                 </div>
+
+                                <div class="custom-progress">
+
+                                    <div
+                                        class="custom-progress-bar"
+                                        style="width: {{ progress }}%;"
+                                    >
+
+                                        {% if progress > 10 %}
+                                            <span>
+                                                {{ campaign.reviews_completed }}/{{ campaign.total_reviews_required }}
+                                            </span>
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
                             </div>
-                        </div>
+
                         {% endif %}
 
-                        <!-- Action Buttons -->
+
+                        <!-- =================================================
+                             ACTION BUTTONS
+                             ================================================= -->
+
                         <div class="action-buttons">
-                            <button 
-                                type="button" 
-                                class="btn-action btn-allocate" 
-                                data-bs-toggle="modal" 
+
+                            <!-- Allocate -->
+
+                            <button
+                                type="button"
+                                class="btn-action btn-allocate"
+                                data-bs-toggle="modal"
                                 data-bs-target="#allocateModal{{ campaign.id }}"
                             >
-                                <i class="fas fa-users"></i> Allocate Tasks
+                                <i class="fas fa-users"></i>
+                                <span>Allocate Tasks</span>
                             </button>
-                            
+
+
+                            <!-- Pause / Resume -->
+
                             {% if campaign.status == 'Active' %}
-                                <button 
-                                    type="button" 
-                                    class="btn-action btn-warning-action" 
-                                    data-bs-toggle="modal" 
+
+                                <button
+                                    type="button"
+                                    class="btn-action btn-warning-action"
+                                    data-bs-toggle="modal"
                                     data-bs-target="#pauseModal{{ campaign.id }}"
                                 >
-                                    <i class="fas fa-pause-circle"></i> Pause Campaign
+                                    <i class="fas fa-pause-circle"></i>
+                                    <span>Pause Campaign</span>
                                 </button>
+
                             {% elif campaign.status == 'Paused' %}
-                                <a 
-                                    href="/admin/campaign/{{ campaign.id }}/resume" 
+
+                                <a
+                                    href="/admin/campaign/{{ campaign.id }}/resume"
                                     class="btn-action btn-success-action"
                                 >
-                                    <i class="fas fa-play-circle"></i> Resume Campaign
+                                    <i class="fas fa-play-circle"></i>
+                                    <span>Resume Campaign</span>
                                 </a>
+
                             {% endif %}
-                            
-                            <button 
-                                type="button" 
-                                class="btn-action btn-danger-action" 
-                                data-bs-toggle="modal" 
+
+
+                            <!-- Stop -->
+
+                            <button
+                                type="button"
+                                class="btn-action btn-danger-action"
+                                data-bs-toggle="modal"
                                 data-bs-target="#stopModal{{ campaign.id }}"
                             >
-                                <i class="fas fa-stop-circle"></i> Stop Campaign
+                                <i class="fas fa-stop-circle"></i>
+                                <span>Stop Campaign</span>
                             </button>
+
+
+                            <!-- Delete -->
 
                             {% if campaign.created_by == session.get('admin_id') %}
-                            <button 
-                                type="button" 
-                                class="btn-action btn-danger-action" 
-                                style="background: var(--danger-gradient); color: white; border: none;"
-                                data-bs-toggle="modal" 
-                                data-bs-target="#deleteModal{{ campaign.id }}"
-                            >
-                                <i class="fas fa-trash-alt"></i> Delete Campaign
-                            </button>
+
+                                <button
+                                    type="button"
+                                    class="btn-action"
+                                    style="
+                                        background: var(--danger-gradient);
+                                        color: white;
+                                        border: none;
+                                    "
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal{{ campaign.id }}"
+                                >
+                                    <i class="fas fa-trash-alt"></i>
+                                    <span>Delete Campaign</span>
+                                </button>
+
                             {% endif %}
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
 
-            <!-- ALLOCATE TASKS MODAL -->
-            <div class="modal fade" id="allocateModal{{ campaign.id }}" tabindex="-1">
+
+            <!-- =====================================================
+                 ALLOCATE TASKS MODAL
+                 ===================================================== -->
+
+            <div
+                class="modal fade"
+                id="allocateModal{{ campaign.id }}"
+                tabindex="-1"
+                aria-hidden="true"
+            >
+
                 <div class="modal-dialog modal-dialog-centered">
+
                     <div class="modal-content">
+
                         <div class="modal-header">
+
                             <h5 class="modal-title">
-                                <i class="fas fa-users"></i> Allocate Tasks to Users
+                                <i class="fas fa-users"></i>
+                                <span>Allocate Tasks to Users</span>
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                            ></button>
+
                         </div>
-                        <form method="POST" action="/admin/allocate_tasks/{{ campaign.id }}" class="allocate-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+                        <form
+                            method="POST"
+                            action="/admin/allocate_tasks/{{ campaign.id }}"
+                            class="allocate-form"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+
                             <div class="modal-body">
+
                                 <div class="mb-3">
-                                    <label for="totalUsers{{ campaign.id }}" class="form-label">
-                                        <i class="fas fa-users"></i> Total Tasks to Create (1 task = 1 user)
+
+                                    <label
+                                        for="totalUsers{{ campaign.id }}"
+                                        class="form-label"
+                                    >
+                                        <i class="fas fa-users"></i>
+                                        Total Tasks to Create
                                     </label>
-                                    <input 
-                                        type="number" 
-                                        class="form-control" 
-                                        id="totalUsers{{ campaign.id }}" 
-                                        name="total_tasks" 
-                                        min="1" 
+
+                                    <input
+                                        type="number"
+                                        class="form-control"
+                                        id="totalUsers{{ campaign.id }}"
+                                        name="total_tasks"
+                                        min="1"
                                         max="100000"
                                         value="{{ campaign.total_reviews_required }}"
                                         placeholder="Enter total number of tasks"
                                         required
                                     >
+
                                     <small class="text-muted d-block mt-2">
-                                        <i class="fas fa-info-circle"></i> Each existing user will get 1 task now; extra tasks queue up and auto-assign to new users as they register
+                                        <i class="fas fa-info-circle"></i>
+                                        Each existing user will get 1 task now;
+                                        extra tasks queue up and auto-assign
+                                        to new users as they register.
                                     </small>
+
                                 </div>
-                                
+
+
                                 <div class="info-box">
+
                                     <div class="info-box-title">
-                                        <i class="fas fa-lightbulb"></i> How Task Allocation Works
+                                        <i class="fas fa-lightbulb"></i>
+                                        How Task Allocation Works
                                     </div>
+
                                     <ul>
-                                        <li>✅ Each user gets <strong>1 task</strong> per campaign</li>
-                                        <li>✅ Extra tasks wait in a <strong>queue</strong> for new users</li>
-                                        <li>✅ Users without a task from this campaign get <strong>priority</strong></li>
-                                        <li>✅ Each task = <strong>{{ campaign.points_per_review }} points = ₹{{ campaign.points_per_review }}</strong></li>
-                                        <li>✅ Conversion: <strong>1 Point = ₹1</strong></li>
-                                        <li>✅ Notifications sent automatically</li>
+                                        <li>
+                                            Each user gets
+                                            <strong>1 task</strong> per campaign
+                                        </li>
+
+                                        <li>
+                                            Extra tasks wait in a
+                                            <strong>queue</strong>
+                                        </li>
+
+                                        <li>
+                                            Users without a task from this
+                                            campaign get <strong>priority</strong>
+                                        </li>
+
+                                        <li>
+                                            Each task =
+                                            <strong>
+                                                {{ campaign.points_per_review }}
+                                                points = ₹{{ campaign.points_per_review }}
+                                            </strong>
+                                        </li>
+
+                                        <li>
+                                            Conversion:
+                                            <strong>1 Point = ₹1</strong>
+                                        </li>
+
+                                        <li>
+                                            Notifications sent automatically
+                                        </li>
                                     </ul>
+
                                 </div>
+
                             </div>
+
+
                             <div class="modal-footer">
-                                <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
-                                    <i class="fas fa-times"></i> Cancel
+
+                                <button
+                                    type="button"
+                                    class="btn-action btn-danger-action"
+                                    data-bs-dismiss="modal"
+                                >
+                                    <i class="fas fa-times"></i>
+                                    <span>Cancel</span>
                                 </button>
-                                <button type="submit" class="btn-action btn-allocate">
-                                    <i class="fas fa-check-circle"></i> Allocate Tasks
+
+                                <button
+                                    type="submit"
+                                    class="btn-action btn-allocate"
+                                >
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Allocate Tasks</span>
                                 </button>
+
                             </div>
+
                         </form>
+
                     </div>
+
                 </div>
+
             </div>
 
-            <!-- PAUSE MODAL -->
+
+            <!-- =====================================================
+                 PAUSE MODAL
+                 ===================================================== -->
+
             {% if campaign.status == 'Active' %}
-            <div class="modal fade" id="pauseModal{{ campaign.id }}" tabindex="-1">
+
+            <div
+                class="modal fade"
+                id="pauseModal{{ campaign.id }}"
+                tabindex="-1"
+                aria-hidden="true"
+            >
+
                 <div class="modal-dialog modal-dialog-centered">
+
                     <div class="modal-content">
+
                         <div class="modal-header">
+
                             <h5 class="modal-title">
-                                <i class="fas fa-pause-circle"></i> Pause Campaign
+                                <i class="fas fa-pause-circle"></i>
+                                <span>Pause Campaign</span>
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                            ></button>
+
                         </div>
+
+
                         <div class="modal-body">
+
                             <p class="mb-2">
-                                Are you sure you want to pause <strong>{{ campaign.name }}</strong>?
+                                Are you sure you want to pause
+                                <strong>{{ campaign.name }}</strong>?
                             </p>
+
                             <p class="text-muted small mb-0">
-                                <i class="fas fa-info-circle"></i> Users won't receive new tasks, but existing tasks will remain active.
+                                <i class="fas fa-info-circle"></i>
+                                Users won't receive new tasks, but existing
+                                tasks will remain active.
                             </p>
+
                         </div>
+
+
                         <div class="modal-footer">
-                            <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
+
+                            <button
+                                type="button"
+                                class="btn-action btn-danger-action"
+                                data-bs-dismiss="modal"
+                            >
                                 Cancel
                             </button>
-                            <a 
-                                href="/admin/campaign/{{ campaign.id }}/pause" 
+
+                            <a
+                                href="/admin/campaign/{{ campaign.id }}/pause"
                                 class="btn-action btn-warning-action"
                             >
-                                <i class="fas fa-pause-circle"></i> Pause Campaign
+                                <i class="fas fa-pause-circle"></i>
+                                <span>Pause Campaign</span>
                             </a>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+
             {% endif %}
 
-            <!-- STOP MODAL -->
-            <div class="modal fade" id="stopModal{{ campaign.id }}" tabindex="-1">
+
+            <!-- =====================================================
+                 STOP MODAL
+                 ===================================================== -->
+
+            <div
+                class="modal fade"
+                id="stopModal{{ campaign.id }}"
+                tabindex="-1"
+                aria-hidden="true"
+            >
+
                 <div class="modal-dialog modal-dialog-centered">
+
                     <div class="modal-content">
+
                         <div class="modal-header">
+
                             <h5 class="modal-title">
-                                <i class="fas fa-stop-circle"></i> Stop Campaign
+                                <i class="fas fa-stop-circle"></i>
+                                <span>Stop Campaign</span>
                             </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                            ></button>
+
                         </div>
+
+
                         <div class="modal-body">
+
                             <div class="alert-danger-modal">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                <strong>This action cannot be undone!</strong>
+                                <strong>
+                                    This action cannot be undone!
+                                </strong>
                             </div>
+
                             <p class="mb-2">
-                                Are you sure you want to stop <strong>{{ campaign.name }}</strong>?
+                                Are you sure you want to stop
+                                <strong>{{ campaign.name }}</strong>?
                             </p>
+
                             <p class="text-muted small mb-0">
-                                <i class="fas fa-info-circle"></i> No new tasks will be assigned and the campaign will be archived.
+                                <i class="fas fa-info-circle"></i>
+                                No new tasks will be assigned and the
+                                campaign will be archived.
                             </p>
+
                         </div>
+
+
                         <div class="modal-footer">
-                            <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
-                                Cancel
-                            </button>
-                            <a 
-                                href="/admin/campaign/{{ campaign.id }}/stop" 
+
+                            <button
+                                type="button"
                                 class="btn-action btn-danger-action"
-                                style="background: var(--danger-gradient); color: white; border: none;"
+                                data-bs-dismiss="modal"
                             >
-                                <i class="fas fa-stop-circle"></i> Stop Campaign
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DELETE MODAL -->
-            {% if campaign.created_by == session.get('admin_id') %}
-            <div class="modal fade" id="deleteModal{{ campaign.id }}" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fas fa-trash-alt"></i> Delete Campaign
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert-danger-modal">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <strong>This action is permanent and cannot be undone!</strong>
-                            </div>
-                            <p class="mb-2">
-                                Are you sure you want to permanently delete <strong>{{ campaign.name }}</strong>?
-                            </p>
-                            <p class="text-muted small mb-0">
-                                <i class="fas fa-info-circle"></i> All tasks, submissions, allocations and review texts linked to this campaign will also be deleted.
-                            </p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
                                 Cancel
                             </button>
-                            <!-- MAIN FIX: Wrapped the delete button in its own safe form structure -->
-                            <form method="POST" action="{{ url_for('delete_campaign', campaign_id=campaign.id) }}" class="m-0 p-0 d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button 
-                                    type="submit" 
-                                    class="btn-action btn-danger-action"
-                                    style="background: var(--danger-gradient); color: white; border: none;"
-                                >
-                                    <i class="fas fa-trash-alt"></i> Delete Permanently
-                                </button>
-                            </form>
+
+                            <a
+                                href="/admin/campaign/{{ campaign.id }}/stop"
+                                class="btn-action"
+                                style="
+                                    background: var(--danger-gradient);
+                                    color: white;
+                                    border: none;
+                                "
+                            >
+                                <i class="fas fa-stop-circle"></i>
+                                <span>Stop Campaign</span>
+                            </a>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+
+
+            <!-- =====================================================
+                 DELETE MODAL
+                 ===================================================== -->
+
+            {% if campaign.created_by == session.get('admin_id') %}
+
+            <div
+                class="modal fade"
+                id="deleteModal{{ campaign.id }}"
+                tabindex="-1"
+                aria-hidden="true"
+            >
+
+                <div class="modal-dialog modal-dialog-centered">
+
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+
+                            <h5 class="modal-title">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>Delete Campaign</span>
+                            </h5>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                            ></button>
+
+                        </div>
+
+
+                        <div class="modal-body">
+
+                            <div class="alert-danger-modal">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>
+                                    This action is permanent and cannot
+                                    be undone!
+                                </strong>
+                            </div>
+
+                            <p class="mb-2">
+                                Are you sure you want to permanently delete
+                                <strong>{{ campaign.name }}</strong>?
+                            </p>
+
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-info-circle"></i>
+                                All tasks, submissions, allocations and
+                                review texts linked to this campaign will
+                                also be deleted.
+                            </p>
+
+                        </div>
+
+
+                        <div class="modal-footer">
+
+                            <button
+                                type="button"
+                                class="btn-action btn-danger-action"
+                                data-bs-dismiss="modal"
+                            >
+                                Cancel
+                            </button>
+
+
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'delete_campaign',
+                                    campaign_id=campaign.id
+                                ) }}"
+                                class="m-0 p-0 d-inline"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn-action"
+                                    style="
+                                        background: var(--danger-gradient);
+                                        color: white;
+                                        border: none;
+                                    "
+                                >
+                                    <i class="fas fa-trash-alt"></i>
+                                    <span>Delete Permanently</span>
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
             {% endif %}
+
             {% endfor %}
+
         </div>
 
+
     {% else %}
-        <!-- Empty State -->
+
+        <!-- =====================================================
+             EMPTY STATE
+             ===================================================== -->
+
         <div class="row">
+
             <div class="col-12">
+
                 <div class="empty-state-card">
+
                     <div class="empty-state-body">
+
                         <div class="empty-state-icon">
                             <i class="fas fa-inbox"></i>
                         </div>
-                        <h3 class="empty-state-title">No Campaigns Yet</h3>
+
+                        <h3 class="empty-state-title">
+                            No Campaigns Yet
+                        </h3>
+
                         <p class="empty-state-text">
-                            You haven't created any campaigns. Start by creating your first campaign to begin collecting reviews.
+                            You haven't created any campaigns.
+                            Start by creating your first campaign to begin
+                            collecting reviews.
                         </p>
-                        <a href="/admin/create_campaign" class="btn-new-campaign">
-                            <i class="fas fa-plus-circle"></i> Create First Campaign
+
+                        <a
+                            href="/admin/create_campaign"
+                            class="btn-new-campaign"
+                        >
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create First Campaign</span>
                         </a>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
     {% endif %}
+
+    </div>
 </div>
 
-<script>
-    (function() {
-        'use strict';
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const allocateForms = document.querySelectorAll('.allocate-form');
-            
-            allocateForms.forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const campaignId = form.action.split('/').pop();
-                    const totalUsersField = form.querySelector('input[name="total_tasks"]');
-                    const totalUsers = totalUsersField ? totalUsersField.value.trim() : '';
-                    console.log("Current Tasks Count:", totalUsers);
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    
-                    if (!totalUsers || parseInt(totalUsers) < 1) {
-                        alert('❌ Please enter a valid number of tasks (minimum 1)');
-                        return;
+<!-- =============================================================
+     ALLOCATION AJAX
+     ============================================================= -->
+
+<script>
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const allocateForms =
+            document.querySelectorAll('.allocate-form');
+
+        allocateForms.forEach(function (form) {
+
+            form.addEventListener('submit', function (e) {
+
+                e.preventDefault();
+
+                const totalTasksField =
+                    form.querySelector('input[name="total_tasks"]');
+
+                const totalTasks =
+                    totalTasksField
+                        ? totalTasksField.value.trim()
+                        : '';
+
+                const submitBtn =
+                    form.querySelector('button[type="submit"]');
+
+                if (!totalTasks || parseInt(totalTasks, 10) < 1) {
+
+                    alert(
+                        '❌ Please enter a valid number of tasks (minimum 1)'
+                    );
+
+                    return;
+                }
+
+                if (parseInt(totalTasks, 10) > 100000) {
+
+                    alert(
+                        '❌ Maximum allowed tasks is 100,000.'
+                    );
+
+                    return;
+                }
+
+                const originalText =
+                    submitBtn.innerHTML;
+
+                submitBtn.disabled = true;
+
+                submitBtn.innerHTML =
+                    '<i class="fas fa-spinner fa-spin"></i>' +
+                    '<span>Processing...</span>';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
-                    
-                    // Show loading state
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                    
-                    // Submit form
-                    fetch(form.action, {
-                        method: 'POST',
-                        body: new FormData(form),
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+                })
+
+                .then(function (response) {
+
+                    if (!response.ok) {
+                        throw new Error(
+                            'Server returned HTTP ' +
+                            response.status
+                        );
+                    }
+
+                    return response.json();
+                })
+
+                .then(function (data) {
+
+                    if (data.status === 'success') {
+
+                        alert(
+                            '✅ ' +
+                            (data.message ||
+                                'Tasks allocated successfully.')
+                        );
+
+                        const modalElement =
+                            form.closest('.modal');
+
+                        if (modalElement &&
+                            typeof bootstrap !== 'undefined') {
+
+                            const modal =
+                                bootstrap.Modal.getInstance(
+                                    modalElement
+                                );
+
+                            if (modal) {
+                                modal.hide();
+                            }
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            alert(`✅ ${data.message}`);
-                            
-                            // Close modal
-                            const modalElement = document.getElementById('allocateModal' + campaignId);
-                            const modal = bootstrap.Modal.getInstance(modalElement);
-                            if (modal) modal.hide();
-                            
-                            // Reset form
-                            form.reset();
-                            
-                            // Reload page
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1500);
-                        } else {
-                            alert(`❌ Error: ${data.message}`);
-                        }
-                    })
-                    .catch(error => {
-                        alert(`❌ Error: ${error.message}`);
-                        console.error(error);
-                    })
-                    .finally(() => {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
+
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 800);
+
+                    } else {
+
+                        alert(
+                            '❌ Error: ' +
+                            (data.message ||
+                                'Unable to allocate tasks.')
+                        );
+                    }
+
+                })
+
+                .catch(function (error) {
+
+                    console.error(
+                        'Allocation error:',
+                        error
+                    );
+
+                    alert(
+                        '❌ Error: ' +
+                        error.message
+                    );
+
+                })
+
+                .finally(function () {
+
+                    submitBtn.disabled = false;
+
+                    submitBtn.innerHTML =
+                        originalText;
                 });
+
             });
+
         });
-    })();
+
+    });
+
+})();
 </script>
 
 {% endblock %}
