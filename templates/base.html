@@ -1852,9 +1852,10 @@
         }
 
         @media (max-width: 400px) {
-            /* Chote mobile screen par logo text hide, sirf icon show hoga */
+            /* ✅ BUG FIX: Navbar brand text ab hide nahi hoga, bas thoda chhota ho jayega taaki fit ho sake */
             .navbar-brand span { 
-                display: none; 
+                display: inline-block !important; 
+                font-size: 16px;
             }
             
             /* Points ko chota kiya gaya hai taki navbar overflow na ho */
@@ -4390,6 +4391,12 @@
             } finally {
                 navigationInFlight = false;
                 setLoading(false);
+                
+                // ✅ BUG FIX: White screen hatane aur page wapas show karne ke liye
+                document.body.classList.remove("page-transitioning");
+                if (typeof window.hideLoading === 'function') {
+                    window.hideLoading();
+                }
             }
         }
 
