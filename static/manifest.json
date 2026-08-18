@@ -2,7 +2,7 @@
   "name": "GMB Review Earning Platform",
   "short_name": "GMB Earn",
   "description": "Complete task management and earning app",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
