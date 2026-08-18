@@ -298,19 +298,18 @@ with app.app_context():
     
 @app.route("/")
 def index():
-    # Authentication-aware redirect to directly serve PWA entry needs
+    # Agar user already logged in hai to seedha dashboard
     if 'user_id' in session:
         return redirect(url_for('user_dashboard'))
     elif 'admin_id' in session:
         return redirect(url_for('admin_dashboard'))
     
-    return redirect(url_for('user_login'))
+    # Agar PWA App se website open ho rahi hai, to seedha login par bhej do
+    if request.args.get('source') == 'pwa':
+        return redirect(url_for('user_login'))
 
-@app.route("/landing")
-def landing():
-    # If landing page is still needed externally
+    # Normal website visitors ke liye landing page (index.html) dikhao
     return render_template("index.html")
-
 
 @app.route("/register", methods=["GET"])
 def user_register():
