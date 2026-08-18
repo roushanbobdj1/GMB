@@ -1,0 +1,3 @@
+{% for campaign in campaigns %}
+<tr><td>{{ campaign.id }}</td><td>{{ campaign.name }}</td><td>{{ campaign.status }}</td><td>{{ campaign.points_per_review }}</td></tr>
+{% else %}<tr><td colspan="4">No campaigns found.</td></tr>{% endfor %}
