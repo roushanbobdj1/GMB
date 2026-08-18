@@ -4,1411 +4,2095 @@
 
 {% block extra_css %}
 <style>
-    .hero-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        background: rgba(255, 255, 255, 0.18);
-        padding: 0.3rem 0.7rem;
-        border-radius: var(--radius-full);
-        margin-bottom: 0.75rem;
+/* =========================================================
+   GMB EARN — DASHBOARD
+   Clean consolidated version
+   ========================================================= */
+
+.dashboard-shell {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.hero-section {
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+    border-radius: 22px;
+    padding: 2.75rem 2.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 14px 35px rgba(37, 99, 235, 0.20);
+}
+
+.hero-section::before {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    right: -230px;
+    top: -280px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255,255,255,.18) 0%,
+        rgba(255,255,255,0) 70%
+    );
+    pointer-events: none;
+}
+
+.hero-section::after {
+    content: "";
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    right: 100px;
+    bottom: -210px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.06);
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: calc(100% - 80px);
+}
+
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .75rem;
+    margin-bottom: .8rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.15);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    backdrop-filter: blur(6px);
+}
+
+.hero-section h1 {
+    margin: 0 0 .55rem;
+    color: #fff;
+    font-size: 2.15rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    overflow-wrap: anywhere;
+}
+
+.hero-name {
+    background: linear-gradient(135deg, #fff 0%, #dbeafe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-section p {
+    margin: 0;
+    color: rgba(255,255,255,.90);
+    font-size: .98rem;
+    font-weight: 500;
+}
+
+.hero-icon {
+    position: absolute;
+    z-index: 1;
+    right: 1.75rem;
+    bottom: -.6rem;
+    color: #fff;
+    opacity: .13;
+    font-size: 6rem;
+    transform: rotate(-8deg);
+    pointer-events: none;
+}
+
+/* =========================================================
+   SECTION HEADERS
+   ========================================================= */
+
+.section-header {
+    margin-bottom: 1rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    margin-bottom: .45rem;
+    color: #172033;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.section-title i {
+    color: #2563eb;
+}
+
+.section-divider {
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2563eb, #06b6d4);
+}
+
+/* =========================================================
+   STAT CARDS
+   ========================================================= */
+
+.stat-card-enhanced {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    padding: 1.35rem 1rem;
+    border: 1px solid #e7edf5;
+    border-radius: 16px;
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(15,23,42,.045);
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.stat-card-enhanced::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg,#2563eb,#06b6d4);
+}
+
+.stat-card-enhanced.stat-success::before {
+    background: linear-gradient(90deg,#10b981,#34d399);
+}
+
+.stat-card-enhanced.stat-warning::before {
+    background: linear-gradient(90deg,#f59e0b,#fbbf24);
+}
+
+.stat-card-enhanced.stat-info::before {
+    background: linear-gradient(90deg,#0ea5e9,#38bdf8);
+}
+
+.stat-card-enhanced:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15,23,42,.09);
+}
+
+.stat-icon-bg {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto .8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    font-size: 21px;
+}
+
+.stat-icon-bg.primary {
+    background: rgba(37,99,235,.11);
+    color: #2563eb;
+}
+
+.stat-icon-bg.success {
+    background: rgba(16,185,129,.11);
+    color: #10b981;
+}
+
+.stat-icon-bg.warning {
+    background: rgba(245,158,11,.12);
+    color: #d97706;
+}
+
+.stat-icon-bg.info {
+    background: rgba(14,165,233,.11);
+    color: #0284c7;
+}
+
+.stat-value-enhanced {
+    margin-bottom: .25rem;
+    color: #172033;
+    font-size: 1.65rem;
+    line-height: 1.1;
+    font-weight: 850;
+    word-break: break-word;
+}
+
+.stat-label {
+    margin-top: .25rem;
+    color: #64748b;
+    font-size: .78rem;
+    line-height: 1.25;
+    font-weight: 650;
+}
+
+/* =========================================================
+   QUICK ACTIONS
+   ========================================================= */
+
+.quick-actions-section {
+    margin-bottom: 1.5rem;
+}
+
+.action-btn {
+    position: relative;
+    height: 100%;
+    min-height: 94px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem .75rem;
+    border: 0;
+    border-radius: 15px;
+    color: #fff !important;
+    text-decoration: none !important;
+    box-shadow: 0 6px 16px rgba(15,23,42,.10);
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.action-btn::before {
+    content: "";
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    top: -95px;
+    right: -70px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    pointer-events: none;
+}
+
+.action-btn:hover {
+    color: #fff !important;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(15,23,42,.14);
+}
+
+.action-btn:active {
+    transform: scale(.98);
+}
+
+.action-btn-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    text-align: center;
+}
+
+.action-btn-icon {
+    font-size: 1.45rem;
+}
+
+.action-btn-text {
+    font-size: .78rem;
+    line-height: 1.2;
+    font-weight: 750;
+}
+
+.action-btn-primary {
+    background: linear-gradient(135deg,#2563eb,#1d4ed8);
+}
+
+.action-btn-success {
+    background: linear-gradient(135deg,#10b981,#059669);
+}
+
+.action-btn-warning {
+    background: linear-gradient(135deg,#f59e0b,#d97706);
+}
+
+.action-btn-info {
+    background: linear-gradient(135deg,#0ea5e9,#0284c7);
+}
+
+.action-btn-secondary {
+    background: linear-gradient(135deg,#64748b,#475569);
+}
+
+/* Notification badge */
+
+.notif-badge-enhanced {
+    position: absolute;
+    z-index: 5;
+    top: 7px;
+    right: 7px;
+
+    min-width: 25px;
+    height: 25px;
+    padding: 0 6px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.8);
+
+    background: #dc2626;
+    color: #fff;
+
+    font-size: .68rem;
+    line-height: 1;
+    font-weight: 800;
+
+    box-shadow: 0 3px 10px rgba(220,38,38,.30);
+    animation: dashboardPulse 2s infinite;
+}
+
+@keyframes dashboardPulse {
+    0%,100% {
+        box-shadow: 0 3px 10px rgba(220,38,38,.28);
+    }
+    50% {
+        box-shadow: 0 4px 17px rgba(220,38,38,.48);
+    }
+}
+
+/* =========================================================
+   CAMPAIGNS
+   ========================================================= */
+
+.campaign-desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 1.25rem;
+}
+
+.campaign-grid-item {
+    min-width: 0;
+}
+
+.campaign-card-enhanced {
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    border: 1px solid #e7edf5;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(15,23,42,.045);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.campaign-card-enhanced:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15,23,42,.09);
+}
+
+.campaign-header {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: 1rem 1.1rem;
+
+    border-bottom: 1px solid #e9eef5;
+    background: #f8fafc;
+}
+
+.campaign-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+    background: linear-gradient(135deg,#2563eb,#06b6d4);
+    color: #fff;
+    font-size: 1.15rem;
+
+    box-shadow: 0 4px 10px rgba(37,99,235,.18);
+}
+
+.campaign-title-wrap {
+    min-width: 0;
+    flex: 1;
+}
+
+.campaign-title {
+    margin: 0;
+    color: #172033;
+    font-size: .98rem;
+    line-height: 1.3;
+    font-weight: 800;
+
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+
+.campaign-body {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 1.1rem;
+}
+
+.campaign-stat {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+
+    margin-bottom: .7rem;
+    padding-bottom: .7rem;
+
+    border-bottom: 1px solid #edf1f5;
+}
+
+.campaign-stat:last-of-type {
+    margin-bottom: 0;
+}
+
+.campaign-stat-icon {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+    font-size: .78rem;
+}
+
+.campaign-stat-icon.primary {
+    background: rgba(37,99,235,.11);
+    color: #2563eb;
+}
+
+.campaign-stat-icon.warning {
+    background: rgba(245,158,11,.12);
+    color: #d97706;
+}
+
+.campaign-stat-icon.secondary {
+    background: rgba(100,116,139,.12);
+    color: #64748b;
+}
+
+.campaign-stat-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.campaign-stat-label {
+    margin-bottom: .15rem;
+    color: #64748b;
+    font-size: .72rem;
+    line-height: 1.2;
+    font-weight: 650;
+}
+
+.campaign-stat-value {
+    color: #172033;
+    font-size: .9rem;
+    line-height: 1.25;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.campaign-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+
+    padding: .3rem .55rem;
+    border-radius: 999px;
+
+    font-size: .72rem;
+    line-height: 1.2;
+    font-weight: 750;
+    white-space: normal;
+}
+
+.campaign-badge-primary {
+    background: rgba(37,99,235,.11);
+    color: #1d4ed8;
+}
+
+.campaign-badge-warning {
+    background: rgba(245,158,11,.13);
+    color: #b45309;
+}
+
+.campaign-badge-secondary {
+    background: rgba(100,116,139,.12);
+    color: #475569;
+}
+
+.campaign-actions {
+    margin-top: auto;
+    padding-top: .95rem;
+}
+
+.campaign-btn {
+    width: 100%;
+    min-height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+
+    padding: .7rem .9rem;
+
+    border-radius: 10px;
+    border: 0;
+
+    color: #fff !important;
+    text-decoration: none !important;
+
+    font-size: .82rem;
+    font-weight: 750;
+
+    background: linear-gradient(135deg,#2563eb,#1d4ed8);
+    box-shadow: 0 4px 12px rgba(37,99,235,.20);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.campaign-btn:hover {
+    color: #fff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 16px rgba(37,99,235,.25);
+}
+
+.campaign-btn-primary {
+    background: linear-gradient(135deg,#2563eb,#0891b2);
+}
+
+/* =========================================================
+   MOBILE CAMPAIGN CAROUSEL
+   ========================================================= */
+
+.campaign-mobile-carousel {
+    display: none;
+}
+
+.campaign-mobile-track {
+    display: flex;
+    gap: 12px;
+
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding: 4px 3px 14px;
+
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+}
+
+.campaign-mobile-track::-webkit-scrollbar {
+    display: none;
+}
+
+.campaign-mobile-slide {
+    flex: 0 0 calc(78% - 6px);
+    min-width: calc(78% - 6px);
+
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.campaign-swipe-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+
+    margin-top: 2px;
+
+    color: #94a3b8;
+    font-size: .7rem;
+    font-weight: 650;
+}
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.empty-state {
+    padding: 2.5rem 1.5rem;
+
+    border: 2px dashed #93c5fd;
+    border-radius: 16px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(37,99,235,.045),
+        rgba(6,182,212,.045)
+    );
+
+    text-align: center;
+}
+
+.empty-state-icon {
+    margin-bottom: .75rem;
+    color: #2563eb;
+    font-size: 2.5rem;
+    opacity: .55;
+}
+
+.empty-state-title {
+    margin-bottom: .4rem;
+    color: #172033;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.empty-state-text {
+    margin: 0;
+    color: #64748b;
+    font-size: .85rem;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.dash-side-card {
+    overflow: hidden;
+    padding: 1.35rem;
+
+    border: 1px solid #e7edf5;
+    border-radius: 18px;
+
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(15,23,42,.045);
+}
+
+.profile-side-header {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+
+    margin-bottom: 1rem;
+}
+
+.profile-avatar {
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: linear-gradient(135deg,#2563eb,#06b6d4);
+    color: #fff;
+
+    font-size: 1.55rem;
+
+    box-shadow: 0 6px 15px rgba(37,99,235,.20);
+}
+
+.profile-name {
+    margin: 0 0 .2rem;
+
+    color: #172033;
+    font-size: 1.08rem;
+    line-height: 1.25;
+    font-weight: 800;
+
+    overflow-wrap: anywhere;
+}
+
+.profile-id-tag {
+    display: inline-block;
+
+    padding: .2rem .45rem;
+
+    border-radius: 6px;
+
+    background: #f1f5f9;
+    color: #64748b;
+
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.profile-side-card .profile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+
+    padding-top: .9rem;
+
+    border-top: 1px dashed #dce4ed;
+}
+
+.profile-meta-item {
+    min-width: 0;
+
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+
+    color: #475569;
+    font-size: .82rem;
+    line-height: 1.35;
+    font-weight: 550;
+
+    overflow-wrap: anywhere;
+}
+
+.profile-meta-item i {
+    width: 17px;
+    flex: 0 0 17px;
+    margin-top: 2px;
+    text-align: center;
+}
+
+/* Sidebar links */
+
+.side-card-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+
+    margin-bottom: .85rem;
+
+    color: #172033;
+    font-size: .98rem;
+    font-weight: 800;
+}
+
+.side-card-title i {
+    color: #2563eb;
+}
+
+.side-link-list {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+
+.side-link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: .65rem .7rem;
+
+    border-radius: 9px;
+
+    color: #334155;
+    text-decoration: none !important;
+
+    font-size: .82rem;
+    font-weight: 650;
+
+    transition:
+        background .18s ease,
+        color .18s ease;
+}
+
+.side-link-item:hover {
+    background: rgba(37,99,235,.07);
+    color: #2563eb;
+}
+
+.side-link-item > span {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.side-link-item span i {
+    width: 18px;
+    margin-right: .55rem;
+    color: #2563eb;
+    text-align: center;
+}
+
+.side-link-item > .fa-chevron-right {
+    margin-left: .5rem;
+    color: #94a3b8;
+    font-size: .65rem;
+}
+
+/* Help */
+
+.help-side-card {
+    border-color: #bae6fd;
+    background: linear-gradient(
+        135deg,
+        #f0f9ff 0%,
+        #e0f2fe 100%
+    );
+}
+
+.help-side-text {
+    margin-bottom: 1rem;
+
+    color: #64748b;
+    font-size: .82rem;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+[data-theme="dark"] .stat-card-enhanced,
+[data-theme="dark"] .campaign-card-enhanced,
+[data-theme="dark"] .dash-side-card {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+[data-theme="dark"] .section-title,
+[data-theme="dark"] .profile-name,
+[data-theme="dark"] .campaign-title,
+[data-theme="dark"] .campaign-stat-value,
+[data-theme="dark"] .empty-state-title,
+[data-theme="dark"] .side-card-title {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .stat-value-enhanced {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .campaign-stat-label,
+[data-theme="dark"] .profile-meta-item,
+[data-theme="dark"] .help-side-text,
+[data-theme="dark"] .empty-state-text {
+    color: #aeb9c8;
+}
+
+[data-theme="dark"] .campaign-header {
+    background: #273244;
+    border-color: #374151;
+}
+
+[data-theme="dark"] .campaign-stat {
+    border-color: #374151;
+}
+
+[data-theme="dark"] .profile-id-tag {
+    background: #374151;
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .profile-side-card .profile-meta {
+    border-color: #374151;
+}
+
+[data-theme="dark"] .side-link-item {
+    color: #dbe4ef;
+}
+
+[data-theme="dark"] .side-link-item:hover {
+    background: rgba(59,130,246,.14);
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .help-side-card {
+    border-color: rgba(56,189,248,.25);
+    background: linear-gradient(
+        135deg,
+        rgba(14,165,233,.10),
+        rgba(6,182,212,.08)
+    );
+}
+
+[data-theme="dark"] .empty-state {
+    border-color: #2563eb;
+    background: rgba(37,99,235,.08);
+}
+
+[data-theme="dark"] .campaign-badge-primary {
+    background: rgba(59,130,246,.16);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .campaign-badge-warning {
+    background: rgba(245,158,11,.16);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .campaign-badge-secondary {
+    background: rgba(148,163,184,.14);
+    color: #cbd5e1;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (min-width: 992px) {
+
+    .dashboard-shell {
+        padding-left: 8px;
+        padding-right: 8px;
     }
 
-    .hero-name {
-        background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .mobile-quick-actions {
+        display: none !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+
+    .campaign-desktop-grid {
+        display: none;
     }
 
-    /* ---------------- Sidebar cards ---------------- */
-    .dash-side-card {
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-sm);
-        padding: 1.5rem;
+    .campaign-mobile-carousel {
+        display: block;
     }
 
-    [data-theme="dark"] .dash-side-card {
-        background: #1a1f2e;
+    .desktop-quick-actions {
+        display: none !important;
     }
+}
 
-    .profile-side-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
+@media (max-width: 767.98px) {
 
-    .profile-id-tag {
-        font-size: 0.78rem;
-        color: var(--muted);
-        font-weight: 600;
-    }
-
-    .profile-side-card .profile-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--border);
-    }
-
-    .profile-side-card .profile-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        font-size: 0.9rem;
-        color: var(--dark);
-        word-break: break-word;
-    }
-
-    [data-theme="dark"] .profile-side-card .profile-meta-item {
-        color: #e2e8f0;
-    }
-
-    .side-card-title {
-        font-size: 1rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        color: var(--dark);
-    }
-
-    [data-theme="dark"] .side-card-title {
-        color: #e2e8f0;
-    }
-
-    .side-card-title i {
-        color: var(--primary);
-    }
-
-    .side-link-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .side-link-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.7rem 0.85rem;
-        border-radius: var(--radius-md);
-        color: var(--dark);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.92rem;
-        transition: background var(--transition-fast), color var(--transition-fast);
-    }
-
-    [data-theme="dark"] .side-link-item {
-        color: #e2e8f0;
-    }
-
-    .side-link-item i:first-child {
-        color: var(--primary);
-        width: 1.2rem;
-        text-align: center;
-        margin-right: 0.6rem;
-    }
-
-    .side-link-item:hover {
-        background: rgba(13, 110, 253, 0.08);
-        color: var(--primary);
-    }
-
-    .side-link-item .fa-chevron-right {
-        font-size: 0.75rem;
-        color: var(--muted);
-    }
-
-    .help-side-card {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.06) 0%, rgba(13, 202, 240, 0.06) 100%);
-        border: 1px solid rgba(13, 110, 253, 0.15);
-    }
-
-    .help-side-text {
-        font-size: 0.88rem;
-        color: var(--muted);
-        margin-bottom: 1rem;
-    }
-
-    /* Desktop = generous multi-column layout (PC style) */
-    @media (min-width: 992px) {
-        .dashboard-shell {
-            max-width: 1320px;
-            margin: 0 auto;
-        }
-
-        .hero-section {
-            padding: 3rem 2.5rem;
-        }
-    }
-
-    /* Mobile = compact single-column, app-card style */
-    @media (max-width: 767.98px) {
-        .hero-section {
-            padding: 1.75rem 1.25rem;
-            border-radius: var(--radius-lg);
-        }
-
-        .hero-section h1 {
-            font-size: 1.6rem;
-        }
-
-        .hero-section p {
-            font-size: 0.92rem;
-        }
-
-        .hero-icon {
-            display: none;
-        }
+    .dashboard-shell {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
     }
 
     .hero-section {
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        border-radius: 16px;
-        padding: 3rem 2rem;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 12px 28px rgba(13, 110, 253, 0.2);
-        position: relative;
-        overflow: hidden;
+        padding: 1.65rem 1.2rem;
+        border-radius: 18px;
     }
 
-    .hero-section::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-        border-radius: 50%;
-    }
-
-    .hero-section .hero-content {
-        position: relative;
-        z-index: 1;
-        max-width: 90%;
+    .hero-content {
+        max-width: 82%;
     }
 
     .hero-section h1 {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        line-height: 1.2;
+        font-size: 1.55rem;
     }
 
     .hero-section p {
-        font-size: 1.1rem;
-        opacity: 0.95;
-        margin-bottom: 0;
-        font-weight: 500;
+        font-size: .86rem;
     }
 
     .hero-icon {
-        font-size: 3rem;
-        opacity: 0.2;
-        position: absolute;
+        right: .7rem;
         top: 1rem;
-        right: 2rem;
-    }
-
-    /* Stat Cards Enhancement */
-    .stat-card-enhanced {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid #e9ecef;
-        position: relative;
-        overflow: hidden;
-        height: 100%;
-    }
-
-    .stat-card-enhanced::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, #0d6efd 0%, #0dcaf0 100%);
-    }
-
-    .stat-card-enhanced.stat-success::before {
-        background: linear-gradient(90deg, #198754 0%, #20c997 100%);
-    }
-
-    .stat-card-enhanced.stat-warning::before {
-        background: linear-gradient(90deg, #ffc107 0%, #ff9800 100%);
-    }
-
-    .stat-card-enhanced.stat-info::before {
-        background: linear-gradient(90deg, #0dcaf0 0%, #00d4ff 100%);
-    }
-
-    .stat-card-enhanced:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .stat-icon-bg {
-        width: 60px;
-        height: 60px;
-        margin: 0 auto 1rem;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-    .stat-icon-bg.primary {
-        background: rgba(13, 110, 253, 0.12);
-        color: #0d6efd;
-    }
-
-    .stat-icon-bg.success {
-        background: rgba(25, 135, 84, 0.12);
-        color: #198754;
-    }
-
-    .stat-icon-bg.warning {
-        background: rgba(255, 193, 7, 0.12);
-        color: #ffc107;
-    }
-
-    .stat-icon-bg.info {
-        background: rgba(13, 202, 240, 0.12);
-        color: #0dcaf0;
-    }
-
-    .stat-value-enhanced {
-        font-size: 2rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
-        word-break: break-word;
-    }
-
-    .stat-card-enhanced.stat-success .stat-value-enhanced {
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .stat-card-enhanced.stat-warning .stat-value-enhanced {
-        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .stat-card-enhanced.stat-info .stat-value-enhanced {
-        background: linear-gradient(135deg, #0dcaf0 0%, #00d4ff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .stat-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-        font-weight: 500;
-        margin-top: 0.5rem;
-    }
-
-    /* Quick Actions */
-    .quick-actions-section {
-        margin-bottom: 2.5rem;
-    }
-
-    .action-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem 1rem;
-        border-radius: 12px;
-        text-decoration: none;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        font-weight: 600;
-        color: white;
-        height: 100%;
-        min-height: 120px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-
-    .action-btn::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200px;
-        height: 200px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
-        border-radius: 50%;
-        transition: all 0.3s ease;
-    }
-
-    .action-btn:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .action-btn:hover::before {
-        top: -30%;
-        right: -30%;
-    }
-
-    .action-btn:active {
-        transform: translateY(-1px) scale(0.98);
-    }
-
-    .action-btn-content {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
-        text-align: center;
-    }
-
-    .action-btn-icon {
-        font-size: 1.8rem;
-    }
-
-    .action-btn-text {
-        font-size: 0.95rem;
-        font-weight: 600;
-    }
-
-    .action-btn-primary {
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-    }
-
-    .action-btn-success {
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-    }
-
-    .action-btn-warning {
-        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    }
-
-    .action-btn-info {
-        background: linear-gradient(135deg, #0dcaf0 0%, #00d4ff 100%);
-    }
-
-    .action-btn-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    }
-
-    /* Section Headers */
-    .section-header {
-        margin-bottom: 2rem;
+        bottom: auto;
+        font-size: 3rem;
+        transform: none;
     }
 
     .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.02rem;
     }
 
-    .section-title i {
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .stat-card-enhanced {
+        padding: 1rem .7rem;
+        border-radius: 14px;
     }
 
-    .section-divider {
-        height: 3px;
-        background: linear-gradient(90deg, #0d6efd 0%, #0dcaf0 100%);
-        border-radius: 2px;
-        width: 50px;
-        margin-bottom: 1rem;
-    }
-
-    /* --- NAYA CSS: Profile Card Styling --- */
-    .profile-card-enhanced {
-        background: white;
-        border-radius: 12px;
-        padding: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 2rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e9ecef;
-        transition: all 0.3s ease;
-        flex-wrap: wrap;
-    }
-    
-    .profile-card-enhanced:hover {
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-        transform: translateY(-4px);
-    }
-    
-    .profile-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        box-shadow: 0 8px 16px rgba(13, 110, 253, 0.2);
-        flex-shrink: 0;
-    }
-    
-    .profile-details {
-        flex: 1;
-        min-width: 250px;
-    }
-    
-    .profile-name {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-    
-    .profile-meta {
-        display: flex;
-        gap: 1.5rem;
-        flex-wrap: wrap;
-    }
-    
-    .profile-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #6c757d;
-        font-weight: 500;
-        font-size: 0.95rem;
-    }
-
-    /* Campaign Cards */
-    .campaign-card-enhanced {
-        background: white;
-        border-radius: 12px;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid #e9ecef;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        height: 100%;
-    }
-
-    .campaign-card-enhanced:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .campaign-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        padding: 1.5rem;
-        border-bottom: 1px solid #e9ecef;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .campaign-icon {
-        width: 50px;
-        height: 50px;
+    .stat-icon-bg {
+        width: 43px;
+        height: 43px;
+        margin-bottom: .55rem;
         border-radius: 10px;
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.5rem;
-        flex-shrink: 0;
+        font-size: 18px;
     }
 
-    .campaign-title {
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0;
+    .stat-value-enhanced {
+        font-size: 1.28rem;
+    }
+
+    .stat-label {
+        font-size: .7rem;
+    }
+
+    .mobile-quick-actions {
+        display: flex !important;
+    }
+
+    .mobile-action-btn {
+        min-height: 62px !important;
+        height: auto !important;
+    }
+
+    .mobile-action-btn .action-btn-content {
+        flex-direction: row;
+        gap: .55rem;
+    }
+
+    .mobile-action-btn .action-btn-icon {
+        font-size: 1.15rem;
+    }
+
+    .mobile-action-btn .action-btn-text {
+        font-size: .75rem;
+    }
+
+    .dash-side-card {
+        padding: 1.15rem;
+        border-radius: 16px;
+    }
+
+    .profile-avatar {
+        width: 53px;
+        height: 53px;
+        flex-basis: 53px;
+        font-size: 1.4rem;
+    }
+
+    .profile-name {
+        font-size: 1rem;
+    }
+
+    .profile-meta-item {
+        font-size: .78rem;
+    }
+
+    .campaign-mobile-slide {
+        flex-basis: calc(82% - 6px);
+        min-width: calc(82% - 6px);
+    }
+
+    .campaign-mobile-slide .campaign-header {
+        padding: .8rem;
+    }
+
+    .campaign-mobile-slide .campaign-icon {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+        font-size: 1rem;
+    }
+
+    .campaign-mobile-slide .campaign-body {
+        padding: .85rem;
+    }
+
+    .campaign-mobile-slide .campaign-title {
+        font-size: .84rem;
+    }
+
+    .campaign-mobile-slide .campaign-stat-label {
+        font-size: .64rem;
+    }
+
+    .campaign-mobile-slide .campaign-stat-value {
+        font-size: .78rem;
+    }
+
+    .campaign-mobile-slide .campaign-badge {
+        padding: .25rem .45rem;
+        font-size: .62rem;
+    }
+
+    .campaign-mobile-slide .campaign-btn {
+        min-height: 39px;
+        padding: .55rem .5rem;
+        font-size: .7rem;
+    }
+}
+
+@media (max-width: 420px) {
+
+    .hero-section {
+        padding: 1.4rem 1rem;
+    }
+
+    .hero-content {
+        max-width: 76%;
+    }
+
+    .hero-section h1 {
+        font-size: 1.32rem;
+    }
+
+    .hero-section p {
+        font-size: .78rem;
+    }
+
+    .hero-icon {
+        font-size: 2.3rem;
+    }
+
+    .stat-card-enhanced {
+        padding: .85rem .55rem;
+    }
+
+    .stat-icon-bg {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+
+    .stat-value-enhanced {
         font-size: 1.1rem;
-        word-break: break-word;
     }
 
-    .campaign-body {
-        padding: 1.5rem;
+    .stat-label {
+        font-size: .66rem;
     }
 
-    .campaign-stat {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #e9ecef;
+    .campaign-mobile-slide {
+        flex-basis: 88%;
+        min-width: 88%;
     }
-
-    .campaign-stat:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-    }
-
-    .campaign-stat-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-    }
-
-    .campaign-stat-icon.primary {
-        background: rgba(13, 110, 253, 0.12);
-        color: #0d6efd;
-    }
-
-    .campaign-stat-icon.warning {
-        background: rgba(255, 193, 7, 0.12);
-        color: #ffc107;
-    }
-
-    .campaign-stat-icon.secondary {
-        background: rgba(107, 114, 128, 0.12);
-        color: #6b7280;
-    }
-
-    .campaign-stat-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .campaign-stat-label {
-        font-size: 0.8rem;
-        color: #6c757d;
-        font-weight: 500;
-        margin-bottom: 0.25rem;
-    }
-
-    .campaign-stat-value {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #2d3748;
-    }
-
-    .campaign-badge {
-        display: inline-block;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .campaign-badge-primary {
-        background: rgba(13, 110, 253, 0.15);
-        color: #0d6efd;
-    }
-
-    .campaign-badge-warning {
-        background: rgba(255, 193, 7, 0.15);
-        color: #856404;
-    }
-
-    .campaign-badge-secondary {
-        background: rgba(107, 114, 128, 0.15);
-        color: #374151;
-    }
-
-    .campaign-actions {
-        display: grid;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
-    }
-
-    .campaign-btn {
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-        text-align: center;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        min-height: 44px;
-    }
-
-    .campaign-btn-primary {
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        color: white;
-        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
-    }
-
-    .campaign-btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-        color: white;
-        text-decoration: none;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 2rem;
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 202, 240, 0.05) 100%);
-        border-radius: 12px;
-        border: 2px dashed #0d6efd;
-    }
-
-    .empty-state-icon {
-        font-size: 3rem;
-        color: #0d6efd;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-
-    .empty-state-title {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-state-text {
-        color: #6c757d;
-        margin-bottom: 0;
-        font-size: 0.95rem;
-    }
-
-    /* Notification Badge */
-    .notif-badge-enhanced {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        color: white;
-        border-radius: 50%;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 700;
-        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% {
-            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-        }
-        50% {
-            box-shadow: 0 2px 16px rgba(220, 53, 69, 0.5);
-        }
-    }
-
-    /* ============ AVAILABLE CAMPAIGNS RESPONSIVE CAROUSEL ============ */
-    .campaign-desktop-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1.5rem;
-    }
-
-    .campaign-grid-item { min-width: 0; }
-    .campaign-mobile-carousel { display: none; }
-
-    @media (max-width: 767.98px) {
-        .campaign-desktop-grid { display: none; }
-        .campaign-mobile-carousel {
-            display: block;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .campaign-mobile-track {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding: 2px 2px 10px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior-x: contain;
-            scrollbar-width: none;
-            touch-action: pan-x;
-        }
-
-        .campaign-mobile-track::-webkit-scrollbar { display: none; }
-
-        .campaign-mobile-slide {
-            flex: 0 0 calc(50% - 6px);
-            min-width: calc(50% - 6px);
-            scroll-snap-align: start;
-            scroll-snap-stop: always;
-        }
-
-        .campaign-mobile-slide .campaign-card-enhanced {
-            height: 100%;
-            margin: 0;
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 14px rgba(0,0,0,.07);
-        }
-
-        .campaign-mobile-slide .campaign-header {
-            padding: 12px;
-            gap: 9px;
-            min-height: 70px;
-        }
-
-        .campaign-mobile-slide .campaign-icon {
-            width: 38px; height: 38px; flex: 0 0 38px;
-            border-radius: 10px; font-size: 1rem;
-        }
-
-        .campaign-mobile-slide .campaign-title {
-            font-size: .82rem;
-            line-height: 1.25;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .campaign-mobile-slide .campaign-body {
-            padding: 11px;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        .campaign-mobile-slide .campaign-stat {
-            gap: 8px;
-            margin-bottom: 9px;
-            padding-bottom: 9px;
-        }
-
-        .campaign-mobile-slide .campaign-stat-icon {
-            width: 30px; height: 30px; flex: 0 0 30px;
-            border-radius: 7px; font-size: .72rem;
-        }
-
-        .campaign-mobile-slide .campaign-stat-label {
-            font-size: .62rem; line-height: 1.2; margin-bottom: 2px;
-        }
-
-        .campaign-mobile-slide .campaign-badge {
-            padding: 3px 6px; font-size: .6rem; border-radius: 6px;
-            white-space: nowrap;
-        }
-
-        .campaign-mobile-slide .campaign-actions { margin-top: auto; padding-top: 4px; }
-
-        .campaign-mobile-slide .campaign-btn {
-            width: 100%; min-height: 40px; padding: 8px 6px;
-            font-size: .68rem; border-radius: 8px; white-space: nowrap;
-        }
-
-        .campaign-swipe-hint {
-            display: flex; justify-content: center; align-items: center;
-            gap: 6px; margin-top: 4px; color: #94a3b8;
-            font-size: .65rem; font-weight: 600;
-        }
-
-        .campaign-swipe-hint i { font-size: .7rem; }
-    }
-
-    @media (max-width: 380px) {
-        .campaign-mobile-slide { flex-basis: 72%; min-width: 72%; }
-        .campaign-mobile-slide .campaign-title { font-size: .86rem; }
-        .campaign-mobile-slide .campaign-body { padding: 12px; }
-        .campaign-mobile-slide .campaign-stat-label { font-size: .65rem; }
-        .campaign-mobile-slide .campaign-btn { font-size: .7rem; }
-    }
-
-    /* ============ RESPONSIVE (mobile improvements; desktop untouched above this) ============ */
-
-    /* Tablets and below */
-    @media (max-width: 768px) {
-        .hero-section {
-            padding: 1.75rem 1.25rem;
-        }
-
-        .hero-section h1 {
-            font-size: 1.6rem;
-        }
-
-        .hero-section .hero-content {
-            max-width: 78%;
-        }
-
-        .hero-section p {
-            font-size: 0.9rem;
-        }
-
-        .hero-icon {
-            font-size: 2rem;
-            top: 0.9rem;
-            right: 1rem;
-            opacity: 0.15;
-        }
-
-        .section-title {
-            font-size: 1.15rem;
-        }
-
-        .section-header {
-            margin-bottom: 1.25rem;
-        }
-
-        /* Stat cards: tighter padding, smaller icon/number so 2-per-row fits comfortably */
-        .stat-card-enhanced {
-            padding: 1rem 0.75rem;
-        }
-
-        .stat-icon-bg {
-            width: 44px;
-            height: 44px;
-            font-size: 18px;
-            margin-bottom: 0.6rem;
-        }
-
-        .stat-value-enhanced {
-            font-size: 1.35rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            margin-top: 0.15rem;
-        }
-
-        /* Quick action tiles: smaller, still 2-per-row */
-        .action-btn {
-            min-height: 92px;
-            padding: 0.9rem 0.5rem;
-        }
-
-        .action-btn-icon {
-            font-size: 1.4rem;
-        }
-
-        .action-btn-text {
-            font-size: 0.78rem;
-        }
-
-        .action-btn-content {
-            gap: 0.5rem;
-        }
-        
-        /* Mobile adjustment for Profile */
-        .profile-card-enhanced {
-            padding: 1.5rem;
-            gap: 1.25rem;
-            flex-direction: column;
-            text-align: center;
-        }
-        .profile-meta {
-            justify-content: center;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        .profile-actions {
-            width: 100%;
-        }
-        .profile-actions .campaign-btn-primary {
-            width: 100%;
-        }
-
-        .campaign-header {
-            padding: 1rem 1.1rem;
-            gap: 0.75rem;
-        }
-
-        .campaign-icon {
-            width: 42px;
-            height: 42px;
-            font-size: 1.2rem;
-        }
-
-        .campaign-title {
-            font-size: 1rem;
-        }
-
-        .campaign-body {
-            padding: 1.1rem;
-        }
-
-        .campaign-card-enhanced {
-            margin-bottom: 0;
-        }
-
-        .empty-state {
-            padding: 2.25rem 1.25rem;
-        }
-
-        .empty-state-icon {
-            font-size: 2.25rem;
-        }
-
-        .empty-state-title {
-            font-size: 1.1rem;
-        }
-    }
-
-    /* Small phones */
-    @media (max-width: 420px) {
-        .hero-section h1 {
-            font-size: 1.35rem;
-        }
-
-        .hero-section .hero-content {
-            max-width: 72%;
-        }
-
-        .hero-icon {
-            font-size: 1.6rem;
-        }
-
-        .stat-value-enhanced {
-            font-size: 1.15rem;
-        }
-
-        .stat-icon-bg {
-            width: 38px;
-            height: 38px;
-            font-size: 16px;
-        }
-
-        .action-btn {
-            min-height: 84px;
-        }
-
-        .action-btn-icon {
-            font-size: 1.25rem;
-        }
-
-        .action-btn-text {
-            font-size: 0.72rem;
-        }
-    }
-
-    [data-theme="dark"] .hero-section {
-        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-    }
-
-    [data-theme="dark"] .stat-card-enhanced,
-    [data-theme="dark"] .campaign-card-enhanced,
-    [data-theme="dark"] .profile-card-enhanced {
-        background: #2d3748;
-        border-color: #4b5563;
-    }
-
-    [data-theme="dark"] .section-title,
-    [data-theme="dark"] .profile-name {
-        color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .stat-label,
-    [data-theme="dark"] .campaign-stat-label,
-    [data-theme="dark"] .empty-state-text,
-    [data-theme="dark"] .profile-meta-item {
-        color: #a0aec0;
-    }
-
-    [data-theme="dark"] .campaign-stat-value,
-    [data-theme="dark"] .campaign-title {
-        color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .campaign-header {
-        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
-        border-color: #4b5563;
-    }
-
-    [data-theme="dark"] .campaign-stat {
-        border-color: #4b5563;
-    }
-
-    [data-theme="dark"] .empty-state {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
-        border-color: #0d6efd;
-    }
-
-    [data-theme="dark"] .empty-state-title {
-        color: #e2e8f0;
-    }
+}
 </style>
 {% endblock %}
 
+
 {% block content %}
-<div class="container-fluid pt-4 pb-5 dashboard-shell">
+
+<div class="container-fluid pt-3 pb-5 dashboard-shell">
 
     <div class="row g-4">
-        <!-- ================= MAIN COLUMN ================= -->
+
+        <!-- =====================================================
+             MAIN COLUMN
+             ===================================================== -->
         <div class="col-lg-8">
 
-            <!-- HERO SECTION -->
-            <div class="hero-section mb-4">
-                <div class="hero-content">
-                    <div class="hero-eyebrow"><i class="fas fa-circle-check"></i> Account Active</div>
-                    <h1>Welcome back, <span class="hero-name">{{ user.name }}</span></h1>
-                    <p>Here is your performance overview and available earning opportunities.</p>
-                </div>
-                <i class="fas fa-chart-line hero-icon"></i>
-            </div>
+            <!-- HERO -->
+            <section class="hero-section">
 
-            <!-- STATISTICS CARDS -->
+                <div class="hero-content">
+
+                    <div class="hero-eyebrow">
+                        <i class="fas fa-circle-check"></i>
+                        Account Active
+                    </div>
+
+                    <h1>
+                        Welcome,
+                        <span class="hero-name">
+                            {{ user.name.split(' ')[0] }}
+                        </span>
+                        👋
+                    </h1>
+
+                    <p>
+                        Here is your performance overview and available earning opportunities.
+                    </p>
+
+                </div>
+
+                <i class="fas fa-chart-line hero-icon"></i>
+
+            </section>
+
+
+            <!-- =================================================
+                 STATISTICS
+                 ================================================= -->
+
             <div class="row g-2 g-md-3 mb-4">
+
+                <!-- Total Points -->
                 <div class="col-6 col-md-3">
-                    <div class="card stat-card-enhanced">
+                    <div class="stat-card-enhanced">
+
                         <div class="stat-icon-bg primary">
                             <i class="fas fa-coins"></i>
                         </div>
-                        <div class="stat-value-enhanced" id="dashTotalPoints">{{ wallet.total_points if wallet else 0 }}</div>
-                        <div class="stat-label">Total Points</div>
+
+                        <div
+                            class="stat-value-enhanced"
+                            id="dashTotalPoints"
+                        >
+                            {{ wallet.total_points if wallet else 0 }}
+                        </div>
+
+                        <div class="stat-label">
+                            Total Points
+                        </div>
+
                     </div>
                 </div>
+
+
+                <!-- Completed -->
                 <div class="col-6 col-md-3">
-                    <div class="card stat-card-enhanced stat-success">
+                    <div class="stat-card-enhanced stat-success">
+
                         <div class="stat-icon-bg success">
                             <i class="fas fa-check-circle"></i>
                         </div>
-                        <div class="stat-value-enhanced" id="dashCompletedTasks">{{ completed_tasks }}</div>
-                        <div class="stat-label">Completed Tasks</div>
+
+                        <div
+                            class="stat-value-enhanced"
+                            id="dashCompletedTasks"
+                        >
+                            {{ completed_tasks }}
+                        </div>
+
+                        <div class="stat-label">
+                            Completed Tasks
+                        </div>
+
                     </div>
                 </div>
+
+
+                <!-- Pending -->
                 <div class="col-6 col-md-3">
-                    <div class="card stat-card-enhanced stat-warning">
+                    <div class="stat-card-enhanced stat-warning">
+
                         <div class="stat-icon-bg warning">
                             <i class="fas fa-hourglass-half"></i>
                         </div>
-                        <div class="stat-value-enhanced" id="dashPendingTasks">{{ pending_tasks }}</div>
-                        <div class="stat-label">Pending Tasks</div>
+
+                        <div
+                            class="stat-value-enhanced"
+                            id="dashPendingTasks"
+                        >
+                            {{ pending_tasks }}
+                        </div>
+
+                        <div class="stat-label">
+                            Pending Tasks
+                        </div>
+
                     </div>
                 </div>
+
+
+                <!-- Total Tasks -->
                 <div class="col-6 col-md-3">
-                    <div class="card stat-card-enhanced stat-info">
+                    <div class="stat-card-enhanced stat-info">
+
                         <div class="stat-icon-bg info">
                             <i class="fas fa-list-check"></i>
                         </div>
-                        <div class="stat-value-enhanced" id="dashTotalTasks">{{ total_tasks }}</div>
-                        <div class="stat-label">Total Tasks</div>
+
+                        <div
+                            class="stat-value-enhanced"
+                            id="dashTotalTasks"
+                        >
+                            {{ total_tasks }}
+                        </div>
+
+                        <div class="stat-label">
+                            Total Tasks
+                        </div>
+
                     </div>
                 </div>
+
             </div>
 
-            <!-- QUICK ACTIONS (hidden on mobile - bottom app nav covers these) -->
-            <div class="quick-actions-section mb-4 d-none d-lg-block">
+
+            <!-- =================================================
+                 DESKTOP QUICK ACTIONS
+                 ================================================= -->
+
+            <div class="quick-actions-section desktop-quick-actions d-none d-lg-block">
+
                 <div class="section-header">
+
                     <div class="section-title">
-                        <i class="fas fa-bolt"></i> Quick Actions
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
                     </div>
+
                     <div class="section-divider"></div>
+
                 </div>
+
+
                 <div class="row g-3">
+
+                    <!-- Tasks -->
                     <div class="col-6 col-md-3">
-                        <a href="/tasks" class="action-btn action-btn-primary">
+                        <a
+                            href="/tasks"
+                            class="action-btn action-btn-primary"
+                        >
                             <div class="action-btn-content">
-                                <div class="action-btn-icon"><i class="fas fa-tasks"></i></div>
-                                <div class="action-btn-text">My Tasks</div>
+
+                                <div class="action-btn-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+
+                                <div class="action-btn-text">
+                                    My Tasks
+                                </div>
+
                             </div>
                         </a>
                     </div>
+
+
+                    <!-- Wallet -->
                     <div class="col-6 col-md-3">
-                        <a href="/wallet" class="action-btn action-btn-success">
+                        <a
+                            href="/wallet"
+                            class="action-btn action-btn-success"
+                        >
                             <div class="action-btn-content">
-                                <div class="action-btn-icon"><i class="fas fa-wallet"></i></div>
-                                <div class="action-btn-text">My Wallet</div>
+
+                                <div class="action-btn-icon">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+
+                                <div class="action-btn-text">
+                                    My Wallet
+                                </div>
+
                             </div>
                         </a>
                     </div>
+
+
+                    <!-- Redeem -->
                     <div class="col-6 col-md-3">
-                        <a href="/wallet" class="action-btn action-btn-warning">
+                        <a
+                            href="/wallet"
+                            class="action-btn action-btn-warning"
+                        >
                             <div class="action-btn-content">
-                                <div class="action-btn-icon"><i class="fas fa-money-bill-wave"></i></div>
-                                <div class="action-btn-text">Redeem</div>
+
+                                <div class="action-btn-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+
+                                <div class="action-btn-text">
+                                    Redeem
+                                </div>
+
                             </div>
                         </a>
                     </div>
+
+
+                    <!-- Notifications -->
                     <div class="col-6 col-md-3">
-                        <a href="/notifications" class="action-btn action-btn-info position-relative">
+
+                        <a
+                            href="/notifications"
+                            class="action-btn action-btn-info position-relative"
+                        >
+
                             <div class="action-btn-content">
-                                <div class="action-btn-icon"><i class="fas fa-bell"></i></div>
-                                <div class="action-btn-text">Notifications</div>
+
+                                <div class="action-btn-icon">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+
+                                <div class="action-btn-text">
+                                    Notifications
+                                </div>
+
                             </div>
-                            <span class="notif-badge-enhanced" id="notifBadge" style="display:none;">
+
+                            <span
+                                class="notif-badge-enhanced"
+                                id="notifBadge"
+                                style="display:none;"
+                            >
                                 <span id="notifCount">0</span>
                             </span>
+
                         </a>
+
                     </div>
+
                 </div>
+
             </div>
 
-            <!-- Mobile-only quick action row (compact, app-style) -->
-            <div class="row g-2 mb-4 d-lg-none">
+
+            <!-- =================================================
+                 MOBILE QUICK ACTIONS
+                 ================================================= -->
+
+            <div class="row g-2 mb-4 mobile-quick-actions d-lg-none">
+
                 <div class="col-6">
-                    <a href="/support" class="action-btn action-btn-secondary" style="height: auto; min-height: 64px;">
-                        <div class="action-btn-content" style="flex-direction: row; gap: 0.6rem;">
-                            <div class="action-btn-icon" style="font-size: 1.2rem;"><i class="fas fa-headset"></i></div>
-                            <div class="action-btn-text">Support</div>
+                    <a
+                        href="/support"
+                        class="action-btn action-btn-secondary mobile-action-btn"
+                    >
+                        <div class="action-btn-content">
+
+                            <div class="action-btn-icon">
+                                <i class="fas fa-headset"></i>
+                            </div>
+
+                            <div class="action-btn-text">
+                                Support
+                            </div>
+
                         </div>
                     </a>
                 </div>
+
+
                 <div class="col-6">
-                    <a href="/leaderboard" class="action-btn action-btn-primary" style="height: auto; min-height: 64px;">
-                        <div class="action-btn-content" style="flex-direction: row; gap: 0.6rem;">
-                            <div class="action-btn-icon" style="font-size: 1.2rem;"><i class="fas fa-trophy"></i></div>
-                            <div class="action-btn-text">Leaderboard</div>
+                    <a
+                        href="/leaderboard"
+                        class="action-btn action-btn-primary mobile-action-btn"
+                    >
+                        <div class="action-btn-content">
+
+                            <div class="action-btn-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+
+                            <div class="action-btn-text">
+                                Leaderboard
+                            </div>
+
                         </div>
                     </a>
                 </div>
+
             </div>
 
-            <!-- AVAILABLE CAMPAIGNS -->
-            <div class="section-header mb-3 mb-md-4">
+
+            <!-- =================================================
+                 CAMPAIGNS
+                 ================================================= -->
+
+            <div class="section-header mb-3">
+
                 <div class="section-title">
-                    <i class="fas fa-bullhorn"></i> Available Campaigns
+                    <i class="fas fa-bullhorn"></i>
+                    Available Campaigns
                 </div>
+
                 <div class="section-divider"></div>
+
             </div>
+
 
             {% if campaigns %}
-                <!-- Desktop: normal 2-column grid -->
+
+                <!-- ================= DESKTOP ================= -->
+
                 <div class="campaign-desktop-grid">
+
                     {% for campaign in campaigns %}
+
                     <div class="campaign-grid-item">
-                        <div class="card campaign-card-enhanced">
+
+                        <article class="campaign-card-enhanced">
+
                             <div class="campaign-header">
+
                                 <div class="campaign-icon">
+
                                     {% if campaign.icon %}
                                         <i class="{{ campaign.icon }}"></i>
                                     {% else %}
                                         <i class="fas fa-bullhorn"></i>
                                     {% endif %}
+
                                 </div>
-                                <div>
-                                    <h5 class="campaign-title">{{ campaign.name }}</h5>
+
+                                <div class="campaign-title-wrap">
+
+                                    <h5 class="campaign-title">
+                                        {{ campaign.name }}
+                                    </h5>
+
                                 </div>
+
                             </div>
+
+
                             <div class="campaign-body">
+
+                                <!-- Points -->
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon primary"><i class="fas fa-star"></i></div>
-                                    <div class="campaign-stat-content">
-                                        <div class="campaign-stat-label">Points Per Review</div>
-                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-primary">{{ campaign.points_per_review }} pts</span></div>
+
+                                    <div class="campaign-stat-icon primary">
+                                        <i class="fas fa-star"></i>
                                     </div>
+
+                                    <div class="campaign-stat-content">
+
+                                        <div class="campaign-stat-label">
+                                            Points Per Review
+                                        </div>
+
+                                        <div class="campaign-stat-value">
+                                            <span class="campaign-badge campaign-badge-primary">
+                                                {{ campaign.points_per_review }} pts
+                                            </span>
+                                        </div>
+
+                                    </div>
+
                                 </div>
+
+
+                                <!-- Reviews -->
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon warning"><i class="fas fa-file-lines"></i></div>
-                                    <div class="campaign-stat-content">
-                                        <div class="campaign-stat-label">Total Reviews Required</div>
-                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-warning">{{ campaign.total_reviews_required }} reviews</span></div>
+
+                                    <div class="campaign-stat-icon warning">
+                                        <i class="fas fa-file-lines"></i>
                                     </div>
+
+                                    <div class="campaign-stat-content">
+
+                                        <div class="campaign-stat-label">
+                                            Total Reviews Required
+                                        </div>
+
+                                        <div class="campaign-stat-value">
+                                            <span class="campaign-badge campaign-badge-warning">
+                                                {{ campaign.total_reviews_required }} reviews
+                                            </span>
+                                        </div>
+
+                                    </div>
+
                                 </div>
+
+
+                                <!-- Duration -->
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon secondary"><i class="fas fa-calendar-days"></i></div>
-                                    <div class="campaign-stat-content">
-                                        <div class="campaign-stat-label">Campaign Duration</div>
-                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-secondary">{{ campaign.duration_months }} month(s)</span></div>
+
+                                    <div class="campaign-stat-icon secondary">
+                                        <i class="fas fa-calendar-days"></i>
                                     </div>
+
+                                    <div class="campaign-stat-content">
+
+                                        <div class="campaign-stat-label">
+                                            Campaign Duration
+                                        </div>
+
+                                        <div class="campaign-stat-value">
+                                            <span class="campaign-badge campaign-badge-secondary">
+                                                {{ campaign.duration_months }} month(s)
+                                            </span>
+                                        </div>
+
+                                    </div>
+
                                 </div>
+
+
+                                <!-- Start -->
                                 <div class="campaign-actions">
-                                    <a href="/tasks?campaign={{ campaign.id }}" class="campaign-btn campaign-btn-primary"><i class="fas fa-play-circle"></i> Start Task</a>
+
+                                    <a
+                                        href="/tasks?campaign={{ campaign.id }}"
+                                        class="campaign-btn campaign-btn-primary"
+                                    >
+                                        <i class="fas fa-play-circle"></i>
+                                        Start Task
+                                    </a>
+
                                 </div>
+
                             </div>
-                        </div>
+
+                        </article>
+
                     </div>
+
                     {% endfor %}
+
                 </div>
 
-                <!-- Mobile: horizontal swipe carousel -->
+
+                <!-- ================= MOBILE ================= -->
+
                 <div class="campaign-mobile-carousel">
+
                     <div class="campaign-mobile-track">
+
                         {% for campaign in campaigns %}
+
                         <div class="campaign-mobile-slide">
-                            <div class="card campaign-card-enhanced">
+
+                            <article class="campaign-card-enhanced">
+
                                 <div class="campaign-header">
+
                                     <div class="campaign-icon">
-                                        {% if campaign.icon %}<i class="{{ campaign.icon }}"></i>{% else %}<i class="fas fa-bullhorn"></i>{% endif %}
+
+                                        {% if campaign.icon %}
+                                            <i class="{{ campaign.icon }}"></i>
+                                        {% else %}
+                                            <i class="fas fa-bullhorn"></i>
+                                        {% endif %}
+
                                     </div>
+
                                     <div class="campaign-title-wrap">
-                                        <h5 class="campaign-title">{{ campaign.name }}</h5>
+
+                                        <h5 class="campaign-title">
+                                            {{ campaign.name }}
+                                        </h5>
+
                                     </div>
+
                                 </div>
+
+
                                 <div class="campaign-body">
+
+                                    <!-- Points -->
                                     <div class="campaign-stat">
-                                        <div class="campaign-stat-icon primary"><i class="fas fa-star"></i></div>
-                                        <div class="campaign-stat-content">
-                                            <div class="campaign-stat-label">Points Per Review</div>
-                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-primary">{{ campaign.points_per_review }} pts</span></div>
+
+                                        <div class="campaign-stat-icon primary">
+                                            <i class="fas fa-star"></i>
                                         </div>
+
+                                        <div class="campaign-stat-content">
+
+                                            <div class="campaign-stat-label">
+                                                Points Per Review
+                                            </div>
+
+                                            <div class="campaign-stat-value">
+
+                                                <span class="campaign-badge campaign-badge-primary">
+                                                    {{ campaign.points_per_review }} pts
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
                                     </div>
+
+
+                                    <!-- Reviews -->
                                     <div class="campaign-stat">
-                                        <div class="campaign-stat-icon warning"><i class="fas fa-file-lines"></i></div>
-                                        <div class="campaign-stat-content">
-                                            <div class="campaign-stat-label">Reviews Required</div>
-                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-warning">{{ campaign.total_reviews_required }}</span></div>
+
+                                        <div class="campaign-stat-icon warning">
+                                            <i class="fas fa-file-lines"></i>
                                         </div>
+
+                                        <div class="campaign-stat-content">
+
+                                            <div class="campaign-stat-label">
+                                                Reviews Required
+                                            </div>
+
+                                            <div class="campaign-stat-value">
+
+                                                <span class="campaign-badge campaign-badge-warning">
+                                                    {{ campaign.total_reviews_required }}
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
                                     </div>
+
+
+                                    <!-- Duration -->
                                     <div class="campaign-stat">
-                                        <div class="campaign-stat-icon secondary"><i class="fas fa-calendar-days"></i></div>
-                                        <div class="campaign-stat-content">
-                                            <div class="campaign-stat-label">Duration</div>
-                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-secondary">{{ campaign.duration_months }} month(s)</span></div>
+
+                                        <div class="campaign-stat-icon secondary">
+                                            <i class="fas fa-calendar-days"></i>
                                         </div>
+
+                                        <div class="campaign-stat-content">
+
+                                            <div class="campaign-stat-label">
+                                                Duration
+                                            </div>
+
+                                            <div class="campaign-stat-value">
+
+                                                <span class="campaign-badge campaign-badge-secondary">
+                                                    {{ campaign.duration_months }} month(s)
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
                                     </div>
+
+
                                     <div class="campaign-actions">
-                                        <a href="/tasks?campaign={{ campaign.id }}" class="campaign-btn campaign-btn-primary"><i class="fas fa-play-circle"></i> Start Task</a>
+
+                                        <a
+                                            href="/tasks?campaign={{ campaign.id }}"
+                                            class="campaign-btn campaign-btn-primary"
+                                        >
+                                            <i class="fas fa-play-circle"></i>
+                                            Start Task
+                                        </a>
+
                                     </div>
+
                                 </div>
-                            </div>
+
+                            </article>
+
                         </div>
+
                         {% endfor %}
+
                     </div>
+
+
                     {% if campaigns|length > 1 %}
-                    <div class="campaign-swipe-hint"><i class="fas fa-arrows-left-right"></i><span>Swipe to see more campaigns</span></div>
+
+                    <div class="campaign-swipe-hint">
+                        <i class="fas fa-arrows-left-right"></i>
+                        <span>Swipe to see more campaigns</span>
+                    </div>
+
                     {% endif %}
+
                 </div>
+
             {% else %}
+
                 <div class="empty-state">
+
                     <div class="empty-state-icon">
                         <i class="fas fa-inbox"></i>
                     </div>
-                    <div class="empty-state-title">No Campaigns Available</div>
-                    <div class="empty-state-text">Check back soon for new earning opportunities.</div>
+
+                    <div class="empty-state-title">
+                        No Campaigns Available
+                    </div>
+
+                    <div class="empty-state-text">
+                        Check back soon for new earning opportunities.
+                    </div>
+
                 </div>
+
             {% endif %}
 
         </div>
-        <!-- ================= END MAIN COLUMN ================= -->
 
-        <!-- ================= SIDEBAR (desktop) / stacked (mobile) ================= -->
+
+        <!-- =====================================================
+             SIDEBAR
+             ===================================================== -->
+
         <div class="col-lg-4">
 
-            <!-- PROFILE CARD -->
+            <!-- PROFILE -->
             <div class="dash-side-card profile-side-card mb-4">
+
                 <div class="profile-side-header">
+
                     <div class="profile-avatar">
                         <i class="fas fa-user"></i>
                     </div>
+
                     <div>
-                        <h3 class="profile-name mb-0">{{ user.name }}</h3>
-                        <span class="profile-id-tag">Member ID #{{ user.id }}</span>
+
+                        <h3 class="profile-name">
+                            {{ user.name }}
+                        </h3>
+
+                        <span class="profile-id-tag">
+                            Member ID #{{ user.id }}
+                        </span>
+
                     </div>
+
                 </div>
+
+
                 <div class="profile-meta">
+
                     <div class="profile-meta-item">
+
                         <i class="fas fa-envelope text-primary"></i>
-                        <span>{{ user.email }}</span>
+
+                        <span>
+                            {{ user.email }}
+                        </span>
+
                     </div>
+
+
                     <div class="profile-meta-item">
+
                         <i class="fas fa-phone-alt text-success"></i>
-                        <span>{{ user.mobile if user.mobile else 'Not provided' }}</span>
+
+                        <span>
+                            {{ user.mobile if user.mobile else 'Not provided' }}
+                        </span>
+
                     </div>
+
                 </div>
-                <a href="/profile" class="campaign-btn campaign-btn-primary w-100 justify-content-center mt-3">
-                    <i class="fas fa-user-pen"></i> View Profile
+
+
+                <a
+                    href="/profile"
+                    class="campaign-btn campaign-btn-primary mt-3"
+                >
+                    <i class="fas fa-user-pen"></i>
+                    View Profile
                 </a>
+
             </div>
 
-            <!-- QUICK LINKS (desktop sidebar) -->
+
+            <!-- QUICK LINKS -->
             <div class="dash-side-card d-none d-lg-block mb-4">
-                <div class="side-card-title"><i class="fas fa-compass"></i> Quick Links</div>
-                <div class="side-link-list">
-                    <a href="/tasks" class="side-link-item">
-                        <span><i class="fas fa-tasks"></i> My Tasks</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="/wallet" class="side-link-item">
-                        <span><i class="fas fa-wallet"></i> My Wallet</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="/leaderboard" class="side-link-item">
-                        <span><i class="fas fa-trophy"></i> Leaderboard</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="/notifications" class="side-link-item position-relative">
-                        <span><i class="fas fa-bell"></i> Notifications</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="/support" class="side-link-item">
-                        <span><i class="fas fa-headset"></i> Support Center</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
+
+                <div class="side-card-title">
+                    <i class="fas fa-compass"></i>
+                    Quick Links
                 </div>
+
+
+                <div class="side-link-list">
+
+                    <a
+                        href="/tasks"
+                        class="side-link-item"
+                    >
+                        <span>
+                            <i class="fas fa-tasks"></i>
+                            My Tasks
+                        </span>
+
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+
+
+                    <a
+                        href="/wallet"
+                        class="side-link-item"
+                    >
+                        <span>
+                            <i class="fas fa-wallet"></i>
+                            My Wallet
+                        </span>
+
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+
+
+                    <a
+                        href="/leaderboard"
+                        class="side-link-item"
+                    >
+                        <span>
+                            <i class="fas fa-trophy"></i>
+                            Leaderboard
+                        </span>
+
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+
+
+                    <a
+                        href="/notifications"
+                        class="side-link-item"
+                    >
+                        <span>
+                            <i class="fas fa-bell"></i>
+                            Notifications
+                        </span>
+
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+
+
+                    <a
+                        href="/support"
+                        class="side-link-item"
+                    >
+                        <span>
+                            <i class="fas fa-headset"></i>
+                            Support Center
+                        </span>
+
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+
+                </div>
+
             </div>
 
-            <!-- HELP CARD -->
+
+            <!-- HELP -->
             <div class="dash-side-card help-side-card">
-                <div class="side-card-title"><i class="fas fa-circle-question"></i> Need Assistance</div>
-                <p class="help-side-text">Our support team is available to help with tasks, payments, or account questions.</p>
-                <a href="/support" class="campaign-btn campaign-btn-primary w-100 justify-content-center">
-                    <i class="fas fa-headset"></i> Contact Support
+
+                <div class="side-card-title">
+                    <i class="fas fa-circle-question"></i>
+                    Need Assistance
+                </div>
+
+                <p class="help-side-text">
+                    Our support team is available to help with tasks,
+                    payments, or account questions.
+                </p>
+
+                <a
+                    href="/support"
+                    class="campaign-btn campaign-btn-primary"
+                >
+                    <i class="fas fa-headset"></i>
+                    Contact Support
                 </a>
+
             </div>
 
         </div>
-        <!-- ================= END SIDEBAR ================= -->
+
     </div>
+
 </div>
 
+
+<!-- =========================================================
+     NOTIFICATION COUNT
+     ========================================================= -->
+
 <script>
-    (function() {
-        'use strict';
+(function () {
 
-        function loadNotificationCount() {
-            fetch('/api/notifications')
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('notifBadge');
-                    const count = document.getElementById('notifCount');
+    "use strict";
 
-                    if (data.unread_count && data.unread_count > 0) {
-                        count.textContent = data.unread_count;
-                        badge.style.display = 'flex';
-                    } else {
-                        badge.style.display = 'none';
-                    }
-                })
-                .catch(err => console.log('Notification load error:', err));
+    const NOTIFICATION_ENDPOINT = "/api/notifications";
+
+    function loadNotificationCount() {
+
+        const badge = document.getElementById("notifBadge");
+        const count = document.getElementById("notifCount");
+
+        if (!badge || !count) {
+            return;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadNotificationCount();
-            setInterval(loadNotificationCount, 30000);
+        fetch(NOTIFICATION_ENDPOINT, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json"
+            },
+            cache: "no-store"
+        })
+        .then(function (response) {
+
+            if (!response.ok) {
+                throw new Error(
+                    "Notification request failed: " + response.status
+                );
+            }
+
+            return response.json();
+
+        })
+        .then(function (data) {
+
+            const unread = Number(data.unread_count || 0);
+
+            if (unread > 0) {
+
+                count.textContent =
+                    unread > 99 ? "99+" : String(unread);
+
+                badge.style.display = "flex";
+
+            } else {
+
+                badge.style.display = "none";
+
+            }
+
+        })
+        .catch(function (error) {
+
+            console.warn(
+                "Notification count unavailable:",
+                error
+            );
+
+            /*
+             * Do not break the dashboard if the API
+             * is temporarily unavailable.
+             */
         });
-    })();
+    }
+
+
+    function initDashboardNotifications() {
+
+        loadNotificationCount();
+
+        /*
+         * Refresh every 30 seconds.
+         */
+        window.setInterval(
+            loadNotificationCount,
+            30000
+        );
+    }
+
+
+    if (document.readyState === "loading") {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initDashboardNotifications,
+            { once: true }
+        );
+
+    } else {
+
+        initDashboardNotifications();
+
+    }
+
+})();
 </script>
 
 {% endblock %}
