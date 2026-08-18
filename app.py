@@ -6,6 +6,7 @@ import random
 import logging
 import hashlib
 import secrets
+from flask import make_response
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -308,8 +309,15 @@ def index():
     if request.args.get('source') == 'pwa':
         return redirect(url_for('user_login'))
 
-    # Normal website visitors ke liye landing page (index.html) dikhao
-    return render_template("index.html")
+    # Normal website visitors ke liye landing page (index.html) bina cache ke dikhao
+    resp = make_response(render_template("index.html"))
+    
+    # BROWSER CACHE FIX (Ye mobile browser ko purana page yaad rakhne se rokega)
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    
+    return resp
 
 @app.route("/register", methods=["GET"])
 def user_register():
