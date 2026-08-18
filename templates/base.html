@@ -356,6 +356,8 @@
 
         .navbar .container-fluid {
             min-width: 0;
+            flex-wrap: nowrap;
+            gap: 0.25rem;
         }
 
         /* =========================================================
@@ -1758,188 +1760,115 @@
         }
 
         /* =========================================================
-           RESPONSIVE
+           RESPONSIVE (FIXED MOBILE UI)
         ========================================================= */
 
         @media (max-width: 991.98px) {
-
             .navbar-brand {
                 font-size: 21px;
             }
-
             .nav-user-pill {
-                margin:
-                    0.5rem
-                    0;
+                margin: 0.5rem 0;
             }
-
             .navbar-collapse {
                 max-height: calc(100vh - 100px);
                 overflow-y: auto;
                 padding-top: 0.5rem;
                 padding-bottom: 0.5rem;
             }
-
             .nav-link {
                 margin: 2px 0;
             }
-
             .stat-card h3 {
                 font-size: 26px;
             }
         }
 
         @media (max-width: 768px) {
-
             :root {
                 --spacing-xl: 1.5rem;
                 --spacing-2xl: 2rem;
             }
-
             .navbar {
-                padding:
-                    calc(0.65rem + env(safe-area-inset-top, 0px))
-                    0
-                    0.65rem;
+                padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 0.25rem 0.5rem;
             }
-
             .navbar-brand {
-                font-size: 19px;
+                font-size: 18px;
+                gap: 4px;
             }
-
             .navbar-brand i {
-                font-size: 22px;
+                font-size: 20px;
             }
-
             #globalBackBtn {
-                width: 34px;
-                height: 34px;
+                width: 32px;
+                height: 32px;
             }
-
+            
+            /* User Pill ko mobile ke liye optimize kiya gaya hai */
             .nav-user-pill {
-                max-width: 190px;
+                max-width: 140px;
+                margin-right: 0.25rem;
+                padding: 0.2rem;
+                gap: 0.2rem;
             }
-
             .nav-user-name {
-                max-width: 65px;
+                display: none; /* Space bachane ke liye mobile par naam hide kar diya gaya hai */
             }
-
+            .nav-user-divider {
+                display: none; /* Divider hide */
+            }
+            
             .container-main {
                 margin-top: var(--spacing-lg);
                 margin-bottom: var(--spacing-lg);
-
                 padding-left: 0.65rem;
                 padding-right: 0.65rem;
             }
-
-            .card {
-                margin-bottom: var(--spacing-lg);
-            }
-
-            .card:hover,
-            .stat-card:hover {
-                transform: none;
-            }
-
-            .card-body,
-            .card-header,
-            .card-footer {
-                padding: var(--spacing-lg);
-            }
-
-            .table {
-                font-size: 13px;
-            }
-
-            .table thead th,
-            .table tbody td {
-                padding:
-                    0.75rem
-                    0.5rem;
-            }
-
-            .btn {
-                padding:
-                    0.5rem
-                    1rem;
-
-                font-size: 13px;
-            }
-
-            .stat-card {
-                padding: var(--spacing-lg);
-            }
-
-            footer {
-                padding:
-                    var(--spacing-lg)
-                    var(--spacing-md);
-            }
-
-            footer p {
-                font-size: 12px;
-            }
-
+            .card { margin-bottom: var(--spacing-lg); }
+            .card:hover, .stat-card:hover { transform: none; }
+            .card-body, .card-header, .card-footer { padding: var(--spacing-lg); }
+            .table { font-size: 13px; }
+            .table thead th, .table tbody td { padding: 0.75rem 0.5rem; }
+            .btn { padding: 0.5rem 1rem; font-size: 13px; }
+            .stat-card { padding: var(--spacing-lg); }
+            
+            footer { padding: var(--spacing-lg) var(--spacing-md); }
+            footer p { font-size: 12px; }
+            
             #backToTop {
-                width: 44px;
-                height: 44px;
-
-                right: 1rem;
-                bottom: calc(
-                    var(--mobile-nav-height) +
-                    1rem +
-                    env(safe-area-inset-bottom, 0px)
-                );
+                width: 44px; height: 44px; right: 1rem;
+                bottom: calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom, 0px));
             }
-
             #globalRefreshBtn {
-                width: 44px;
-                height: 44px;
-
-                right: 4.25rem;
-                bottom: calc(
-                    var(--mobile-nav-height) +
-                    1rem +
-                    env(safe-area-inset-bottom, 0px)
-                );
+                width: 44px; height: 44px; right: 4.25rem;
+                bottom: calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom, 0px));
             }
-
-            #globalRefreshBtn .refresh-tooltip {
-                display: none;
-            }
-
-            .navbar,
-            #loadingOverlay,
-            .dropdown-menu {
+            #globalRefreshBtn .refresh-tooltip { display: none; }
+            
+            .navbar, #loadingOverlay, .dropdown-menu {
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
             }
         }
 
         @media (max-width: 400px) {
-
-            .navbar-brand span {
-                font-size: 16px;
+            /* Chote mobile screen par logo text hide, sirf icon show hoga */
+            .navbar-brand span { 
+                display: none; 
             }
-
-            .nav-user-name,
-            .nav-user-divider {
-                font-size: 18px;
+            
+            /* Points ko chota kiya gaya hai taki navbar overflow na ho */
+            .nav-user-pill { 
+                max-width: 110px;
+                padding: 0.15rem; 
             }
-
-            .nav-user-pill {
-                padding: 0.25rem;
-                gap: 0.3rem;
+            .nav-user-points { 
+                font-size: 0.7rem; 
+                padding: 0.2rem 0.4rem; 
             }
-
-            .nav-user-points {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.45rem;
-            }
-
-            .bottom-nav-item {
-                font-size: 0.62rem;
-            }
+            
+            .bottom-nav-item { font-size: 0.62rem; }
+            .navbar-toggler { padding: 0.2rem; }
         }
 
         /* =========================================================
