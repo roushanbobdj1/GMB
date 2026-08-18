@@ -268,84 +268,314 @@
     <!-- Transaction History Section -->
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 py-md-4">
-                    <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center">
-                        <span class="icon-circle bg-success-soft text-success me-2"><i class="fas fa-exchange-alt"></i></span>
-                        Transaction History
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    {% if transactions %}
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 custom-table">
-                                <thead class="table-light text-secondary font-xs text-uppercase">
-                                    <tr>
-                                        <th class="fw-600 ps-4">Type</th>
-                                        <th class="fw-600">Points/Amount</th>
-                                        <th class="fw-600">Details</th>
-                                        <th class="fw-600">Date</th>
-                                        <th class="fw-600 pe-4">Ref ID</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for txn in transactions %}
-                                    <tr>
-                                        <td class="ps-4">
-                                            {% if txn.transaction_type == 'Earn' %}
-                                                <div class="icon-circle bg-success-soft text-success" style="width:36px;height:36px;">
-                                                    <i class="fas fa-arrow-down"></i>
-                                                </div>
-                                            {% else %}
-                                                <div class="icon-circle bg-danger-soft text-danger" style="width:36px;height:36px;">
-                                                    <i class="fas fa-arrow-up"></i>
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column">
-                                                <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %} fs-6">
-                                                    {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}₹{{ txn.points }}
-                                                </strong>
-                                                <span class="text-muted font-xs">
-                                                    {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}{{ txn.points }} Pts
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="text-dark fw-600 font-sm">
-                                                {% if txn.transaction_type == 'Earn' %}Task Reward{% else %}Wallet Redeem{% endif %}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="text-secondary font-sm">
-                                                {{ txn.transaction_date.strftime('%d %b %y, %H:%M') }}
-                                            </span>
-                                        </td>
-                                        <td class="pe-4">
-                                            <code class="text-muted bg-light px-2 py-1 rounded">{{ txn.reference_id }}</code>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            <div class="transaction-card">
+
+                <div class="transaction-header">
+                    <div class="transaction-title-wrap">
+                        <div class="transaction-title-icon">
+                            <i class="fas fa-exchange-alt"></i>
                         </div>
+                        <div>
+                            <h5 class="transaction-title mb-0">Transaction History</h5>
+                            <p class="transaction-subtitle mb-0">Your recent wallet activity</p>
+                        </div>
+                    </div>
+
+                    {% if transactions %}
+                    <span class="transaction-count">
+                        {{ transactions|length }} transaction{% if transactions|length != 1 %}s{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="transaction-list">
+                    {% if transactions %}
+
+                        {% for txn in transactions %}
+                        <div class="transaction-item">
+
+                            <div class="transaction-icon {% if txn.transaction_type == 'Earn' %}transaction-earn{% else %}transaction-spend{% endif %}">
+                                {% if txn.transaction_type == 'Earn' %}
+                                    <i class="fas fa-arrow-down"></i>
+                                {% else %}
+                                    <i class="fas fa-arrow-up"></i>
+                                {% endif %}
+                            </div>
+
+                            <div class="transaction-main">
+                                <div class="transaction-top">
+
+                                    <div class="transaction-info">
+                                        <h6 class="transaction-name mb-1">
+                                            {% if txn.transaction_type == 'Earn' %}
+                                                Task Reward
+                                            {% else %}
+                                                Wallet Redeem
+                                            {% endif %}
+                                        </h6>
+
+                                        <span class="transaction-date">
+                                            <i class="far fa-clock me-1"></i>
+                                            {{ txn.transaction_date.strftime('%d %b %Y, %H:%M') }}
+                                        </span>
+                                    </div>
+
+                                    <div class="transaction-amount-wrap">
+                                        <strong class="transaction-amount {% if txn.transaction_type == 'Earn' %}amount-earn{% else %}amount-spend{% endif %}">
+                                            {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}₹{{ txn.points }}
+                                        </strong>
+                                        <span class="transaction-points">
+                                            {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}{{ txn.points }} Points
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="transaction-bottom">
+                                    <span class="transaction-type-badge {% if txn.transaction_type == 'Earn' %}badge-earn{% else %}badge-spend{% endif %}">
+                                        {% if txn.transaction_type == 'Earn' %}
+                                            <i class="fas fa-plus-circle me-1"></i> Earned
+                                        {% else %}
+                                            <i class="fas fa-minus-circle me-1"></i> Redeemed
+                                        {% endif %}
+                                    </span>
+
+                                    <span class="transaction-reference">
+                                        <span class="reference-label">Ref</span>
+                                        <code title="{{ txn.reference_id }}">{{ txn.reference_id }}</code>
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                        {% endfor %}
+
                     {% else %}
-                        <div class="text-center py-5">
-                            <div class="icon-circle bg-light text-muted mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem;">
+                        <div class="transaction-empty">
+                            <div class="transaction-empty-icon">
                                 <i class="fas fa-receipt"></i>
                             </div>
-                            <p class="text-dark fw-600 mb-1">No transactions yet</p>
-                            <small class="text-secondary">Earn points to see history</small>
+                            <h6>No transactions yet</h6>
+                            <p>Earn points from tasks to see your wallet activity here.</p>
                         </div>
                     {% endif %}
                 </div>
+
             </div>
         </div>
     </div>
-</div>
 
 <style>
+
+    /* =========================================
+       PROFESSIONAL TRANSACTION HISTORY
+    ========================================= */
+
+    .transaction-card {
+        background: #fff;
+        border: 1px solid #e8edf3;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .transaction-header {
+        min-height: 76px;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid #eef2f6;
+    }
+
+    .transaction-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .transaction-title-icon {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(16, 185, 129, .10);
+        color: #10b981;
+        font-size: 16px;
+    }
+
+    .transaction-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .transaction-subtitle {
+        margin-top: 3px !important;
+        font-size: .76rem;
+        color: #94a3b8;
+    }
+
+    .transaction-count {
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: .72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .transaction-list { width: 100%; }
+
+    .transaction-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background .18s ease;
+    }
+
+    .transaction-item:last-child { border-bottom: 0; }
+    .transaction-item:hover { background: #fafcff; }
+
+    .transaction-icon {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 13px;
+        font-size: 15px;
+    }
+
+    .transaction-earn { background: #ecfdf5; color: #10b981; }
+    .transaction-spend { background: #fef2f2; color: #ef4444; }
+
+    .transaction-main { min-width: 0; flex: 1; }
+
+    .transaction-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .transaction-name {
+        font-size: .9rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .transaction-date {
+        display: inline-flex;
+        align-items: center;
+        color: #94a3b8;
+        font-size: .73rem;
+    }
+
+    .transaction-amount-wrap {
+        min-width: 110px;
+        text-align: right;
+    }
+
+    .transaction-amount {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.2;
+        font-weight: 800;
+    }
+
+    .amount-earn { color: #059669; }
+    .amount-spend { color: #dc2626; }
+
+    .transaction-points {
+        display: block;
+        margin-top: 3px;
+        color: #94a3b8;
+        font-size: .7rem;
+    }
+
+    .transaction-bottom {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 9px;
+    }
+
+    .transaction-type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 7px;
+        font-size: .68rem;
+        font-weight: 700;
+    }
+
+    .badge-earn { color: #047857; background: #ecfdf5; }
+    .badge-spend { color: #b91c1c; background: #fef2f2; }
+
+    .transaction-reference {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .reference-label {
+        color: #94a3b8;
+        font-size: .68rem;
+        font-weight: 600;
+    }
+
+    .transaction-reference code {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: .67rem;
+    }
+
+    .transaction-empty {
+        text-align: center;
+        padding: 55px 20px;
+    }
+
+    .transaction-empty-icon {
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18px;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 22px;
+    }
+
+    .transaction-empty h6 {
+        margin-bottom: 5px;
+        color: #1e293b;
+        font-weight: 700;
+    }
+
+    .transaction-empty p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: .8rem;
+    }
+
     /* =========================================
        GLOBAL UI TWEAKS (App-Like)
     ========================================= */
@@ -440,6 +670,94 @@
         .custom-table th, .custom-table td { padding-left: 12px !important; padding-right: 12px !important; }
         .custom-table td { padding-top: 12px; padding-bottom: 12px; }
         .font-sm { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 768px) {
+        .transaction-header { padding: 16px; }
+        .transaction-item { padding: 16px; gap: 12px; }
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            flex-basis: 40px;
+            border-radius: 11px;
+            font-size: 13px;
+        }
+        .transaction-top { gap: 12px; }
+        .transaction-amount-wrap { min-width: 95px; }
+        .transaction-amount { font-size: .92rem; }
+    }
+
+    @media (max-width: 576px) {
+        .transaction-card { border-radius: 15px; }
+        .transaction-header {
+            padding: 15px;
+            min-height: 68px;
+        }
+        .transaction-title-icon {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .transaction-title { font-size: .92rem; }
+        .transaction-subtitle { font-size: .68rem; }
+        .transaction-count { display: none; }
+
+        .transaction-item {
+            align-items: flex-start;
+            padding: 15px;
+            gap: 11px;
+        }
+
+        .transaction-icon {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+            border-radius: 10px;
+        }
+
+        .transaction-main {
+            width: calc(100% - 49px);
+        }
+
+        .transaction-top {
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .transaction-name { font-size: .82rem; }
+        .transaction-date {
+            margin-top: 2px;
+            font-size: .67rem;
+        }
+
+        .transaction-amount-wrap {
+            min-width: 75px;
+            flex-shrink: 0;
+        }
+
+        .transaction-amount { font-size: .88rem; }
+        .transaction-points { font-size: .64rem; }
+
+        .transaction-bottom {
+            margin-top: 8px;
+            gap: 7px;
+        }
+
+        .transaction-type-badge {
+            padding: 4px 7px;
+            font-size: .62rem;
+        }
+
+        .transaction-reference { max-width: 100%; }
+        .reference-label { font-size: .62rem; }
+
+        .transaction-reference code {
+            max-width: 115px;
+            font-size: .6rem;
+            padding: 3px 5px;
+        }
     }
 </style>
 
