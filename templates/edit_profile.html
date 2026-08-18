@@ -1,20 +1,1334 @@
 {% extends 'base.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+/* =========================================================
+   EDIT PROFILE - PROFESSIONAL RESPONSIVE UI
+   Mobile App + Desktop + Dark Mode
+   ========================================================= */
+
+:root {
+    --profile-bg: #f5f7fb;
+    --profile-card: #ffffff;
+    --profile-surface: #f8fafc;
+    --profile-border: #e5e7eb;
+
+    --profile-text: #111827;
+    --profile-text-secondary: #4b5563;
+    --profile-muted: #6b7280;
+
+    --profile-primary: #2563eb;
+    --profile-primary-hover: #1d4ed8;
+    --profile-primary-soft: rgba(37, 99, 235, 0.10);
+
+    --profile-success: #16a34a;
+    --profile-danger: #dc2626;
+
+    --profile-radius: 18px;
+    --profile-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+    --profile-transition: 180ms ease;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+[data-theme="dark"] {
+    --profile-bg: #0b1120;
+    --profile-card: #111827;
+    --profile-surface: #172033;
+    --profile-border: #263244;
+
+    --profile-text: #f3f4f6;
+    --profile-text-secondary: #d1d5db;
+    --profile-muted: #9ca3af;
+
+    --profile-primary-soft: rgba(59, 130, 246, 0.15);
+
+    --profile-shadow: 0 15px 40px rgba(0, 0, 0, 0.30);
+}
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.profile-page {
+    min-height: calc(100vh - 70px);
+    padding: 28px 16px 60px;
+    background: var(--profile-bg);
+    color: var(--profile-text);
+    transition:
+        background var(--profile-transition),
+        color var(--profile-transition);
+}
+
+.profile-container {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.profile-header {
+    margin-bottom: 20px;
+}
+
+.profile-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    color: var(--profile-text);
+    font-size: clamp(1.45rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.profile-title-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 44px;
+    border-radius: 13px;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb, #06b6d4);
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.22);
+}
+
+.profile-subtitle {
+    margin: 8px 0 0 56px;
+    color: var(--profile-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* =========================================================
+   MAIN CARD
+   ========================================================= */
+
+.profile-card {
+    overflow: hidden;
+    border: 1px solid var(--profile-border);
+    border-radius: var(--profile-radius);
+    background: var(--profile-card);
+    box-shadow: var(--profile-shadow);
+}
+
+/* =========================================================
+   CARD TOP
+   ========================================================= */
+
+.profile-card-top {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 22px;
+    border-bottom: 1px solid var(--profile-border);
+    background:
+        linear-gradient(
+            135deg,
+            var(--profile-surface),
+            var(--profile-card)
+        );
+}
+
+.profile-avatar {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 58px;
+    border-radius: 16px;
+    color: var(--profile-primary);
+    background: var(--profile-primary-soft);
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.profile-card-name {
+    margin: 0;
+    color: var(--profile-text);
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.profile-card-email {
+    margin: 4px 0 0;
+    color: var(--profile-muted);
+    font-size: 0.82rem;
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.profile-form {
+    padding: 24px;
+}
+
+.form-section {
+    margin-bottom: 25px;
+}
+
+.form-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 17px;
+}
+
+.section-heading-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: var(--profile-primary);
+    background: var(--profile-primary-soft);
+}
+
+.section-heading h3 {
+    margin: 0;
+    color: var(--profile-text);
+    font-size: 0.98rem;
+    font-weight: 800;
+}
+
+.section-heading p {
+    margin: 2px 0 0;
+    color: var(--profile-muted);
+    font-size: 0.75rem;
+}
+
+/* =========================================================
+   INPUT GROUP
+   ========================================================= */
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--profile-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 750;
+}
+
+.required {
+    color: var(--profile-danger);
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.profile-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 13px;
+    border: 1px solid var(--profile-border);
+    border-radius: 10px;
+    outline: none;
+    color: var(--profile-text);
+    background: var(--profile-surface);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition:
+        border-color var(--profile-transition),
+        box-shadow var(--profile-transition),
+        background var(--profile-transition);
+    box-sizing: border-box;
+}
+
+.profile-input:focus {
+    border-color: var(--profile-primary);
+    background: var(--profile-card);
+    box-shadow:
+        0 0 0 3px var(--profile-primary-soft);
+}
+
+.profile-input::placeholder {
+    color: var(--profile-muted);
+}
+
+.profile-input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Password input */
+
+.password-input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    color: var(--profile-muted);
+    background: transparent;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: all var(--profile-transition);
+}
+
+.password-toggle:hover {
+    color: var(--profile-primary);
+    background: var(--profile-primary-soft);
+}
+
+/* =========================================================
+   PASSWORD STRENGTH
+   ========================================================= */
+
+.password-strength {
+    display: none;
+    margin-top: 8px;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--profile-border);
+}
+
+.strength-progress {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    transition: width 180ms ease;
+}
+
+.strength-text {
+    margin-top: 5px;
+    color: var(--profile-muted);
+    font-size: 0.7rem;
+    font-weight: 650;
+}
+
+/* =========================================================
+   PASSWORD INFO
+   ========================================================= */
+
+.password-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--profile-border);
+    border-radius: 10px;
+    color: var(--profile-muted);
+    background: var(--profile-surface);
+    font-size: 0.74rem;
+    line-height: 1.5;
+}
+
+.password-info i {
+    margin-top: 2px;
+    color: var(--profile-primary);
+}
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.form-divider {
+    height: 1px;
+    margin: 25px 0;
+    border: 0;
+    background: var(--profile-border);
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 24px;
+    margin-top: 25px;
+    border-top: 1px solid var(--profile-border);
+}
+
+.profile-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 17px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 750;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        transform var(--profile-transition),
+        box-shadow var(--profile-transition),
+        background var(--profile-transition);
+}
+
+.profile-btn:hover {
+    transform: translateY(-1px);
+}
+
+.profile-btn-primary {
+    border: 1px solid var(--profile-primary);
+    color: #fff;
+    background: var(--profile-primary);
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.20);
+}
+
+.profile-btn-primary:hover {
+    background: var(--profile-primary-hover);
+    box-shadow: 0 7px 18px rgba(37, 99, 235, 0.28);
+}
+
+.profile-btn-secondary {
+    border: 1px solid var(--profile-border);
+    color: var(--profile-text-secondary);
+    background: var(--profile-surface);
+}
+
+.profile-btn-secondary:hover {
+    color: var(--profile-text);
+    background: var(--profile-card);
+}
+
+/* Loading */
+
+.profile-btn.loading {
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.profile-btn .spinner {
+    display: none;
+}
+
+.profile-btn.loading .spinner {
+    display: inline-block;
+}
+
+.profile-btn.loading .btn-text {
+    display: none;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .profile-page {
+        padding: 14px 10px 85px;
+    }
+
+    .profile-header {
+        margin-bottom: 14px;
+    }
+
+    .profile-title {
+        font-size: 1.3rem;
+    }
+
+    .profile-title-icon {
+        width: 39px;
+        height: 39px;
+        flex-basis: 39px;
+        border-radius: 11px;
+    }
+
+    .profile-subtitle {
+        margin-left: 51px;
+        font-size: 0.78rem;
+    }
+
+    .profile-card {
+        border-radius: 15px;
+    }
+
+    .profile-card-top {
+        padding: 16px;
+    }
+
+    .profile-avatar {
+        width: 50px;
+        height: 50px;
+        flex-basis: 50px;
+        border-radius: 13px;
+    }
+
+    .profile-card-name {
+        font-size: 0.95rem;
+    }
+
+    .profile-card-email {
+        font-size: 0.72rem;
+    }
+
+    .profile-form {
+        padding: 17px;
+    }
+
+    .section-heading {
+        margin-bottom: 14px;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .profile-input {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .profile-btn {
+        width: 100%;
+        min-height: 46px;
+    }
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.profile-btn:focus-visible,
+.password-toggle:focus-visible,
+.profile-input:focus-visible {
+    outline: 3px solid var(--profile-primary-soft);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
-<div class="container py-4">
-  <div class="card p-4 mx-auto" style="max-width:720px;">
-    <h2 class="mb-3">Edit Profile</h2>
-    <form method="POST" action="{{ url_for('edit_profile') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-3"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ user.name or '' }}" required></div>
-      <div class="mb-3"><label class="form-label">Mobile</label><input class="form-control" name="phone" value="{{ user.mobile or '' }}" maxlength="10"></div>
-      <hr>
-      <h5>Change Password</h5>
-      <div class="mb-3"><label class="form-label">Current password</label><input class="form-control" type="password" name="current_password"></div>
-      <div class="mb-3"><label class="form-label">New password</label><input class="form-control" type="password" name="new_password"></div>
-      <div class="mb-3"><label class="form-label">Confirm new password</label><input class="form-control" type="password" name="confirm_password"></div>
-      <button class="btn btn-primary" type="submit">Save changes</button>
-      <a class="btn btn-secondary" href="{{ url_for('user_profile') }}">Cancel</a>
-    </form>
-  </div>
+
+<div class="profile-page">
+
+    <div class="profile-container">
+
+        <!-- =========================================
+             PAGE HEADER
+             ========================================= -->
+
+        <div class="profile-header">
+
+            <h1 class="profile-title">
+
+                <span class="profile-title-icon">
+                    <i class="fas fa-user-edit"></i>
+                </span>
+
+                Edit Profile
+
+            </h1>
+
+            <p class="profile-subtitle">
+                Update your personal information and account password
+            </p>
+
+        </div>
+
+
+        <!-- =========================================
+             PROFILE CARD
+             ========================================= -->
+
+        <div class="profile-card">
+
+            <!-- User Header -->
+
+            <div class="profile-card-top">
+
+                <div class="profile-avatar">
+
+                    {% if user.name %}
+                        {{ user.name[:1]|upper }}
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+
+                </div>
+
+                <div>
+
+                    <h2 class="profile-card-name">
+                        {{ user.name or 'Your Profile' }}
+                    </h2>
+
+                    {% if user.email %}
+                    <p class="profile-card-email">
+                        {{ user.email }}
+                    </p>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 FORM
+                 ===================================== -->
+
+            <form
+                method="POST"
+                action="{{ url_for('edit_profile') }}"
+                class="profile-form"
+                id="profileForm"
+                novalidate
+            >
+
+                <!-- CSRF -->
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+
+                <!-- =================================
+                     PERSONAL INFORMATION
+                     ================================= -->
+
+                <section class="form-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-heading-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Personal Information
+                            </h3>
+
+                            <p>
+                                Keep your profile details up to date
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Name -->
+
+                    <div class="form-group">
+
+                        <label
+                            for="profileName"
+                            class="form-label"
+                        >
+                            Name
+                            <span class="required">*</span>
+                        </label>
+
+                        <input
+                            id="profileName"
+                            class="profile-input"
+                            type="text"
+                            name="name"
+                            value="{{ user.name or '' }}"
+                            placeholder="Enter your name"
+                            autocomplete="name"
+                            maxlength="100"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Mobile -->
+
+                    <div class="form-group">
+
+                        <label
+                            for="profilePhone"
+                            class="form-label"
+                        >
+                            Mobile Number
+                        </label>
+
+                        <input
+                            id="profilePhone"
+                            class="profile-input"
+                            type="tel"
+                            name="phone"
+                            value="{{ user.mobile or '' }}"
+                            placeholder="Enter 10 digit mobile number"
+                            autocomplete="tel"
+                            inputmode="numeric"
+                            maxlength="10"
+                            pattern="[0-9]{10}"
+                        >
+
+                    </div>
+
+                </section>
+
+
+                <hr class="form-divider">
+
+
+                <!-- =================================
+                     PASSWORD
+                     ================================= -->
+
+                <section class="form-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-heading-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Change Password
+                            </h3>
+
+                            <p>
+                                Leave these fields empty if you don't want to change it
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Current Password -->
+
+                    <div class="form-group">
+
+                        <label
+                            for="currentPassword"
+                            class="form-label"
+                        >
+                            Current Password
+                        </label>
+
+                        <div class="input-wrapper">
+
+                            <input
+                                id="currentPassword"
+                                class="profile-input password-input"
+                                type="password"
+                                name="current_password"
+                                placeholder="Enter current password"
+                                autocomplete="current-password"
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-target="currentPassword"
+                                aria-label="Show current password"
+                                title="Show password"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- New Password -->
+
+                    <div class="form-group">
+
+                        <label
+                            for="newPassword"
+                            class="form-label"
+                        >
+                            New Password
+                        </label>
+
+                        <div class="input-wrapper">
+
+                            <input
+                                id="newPassword"
+                                class="profile-input password-input"
+                                type="password"
+                                name="new_password"
+                                placeholder="Enter new password"
+                                autocomplete="new-password"
+                                minlength="8"
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-target="newPassword"
+                                aria-label="Show new password"
+                                title="Show password"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                        </div>
+
+
+                        <!-- Strength -->
+
+                        <div
+                            class="password-strength"
+                            id="passwordStrength"
+                        >
+
+                            <div class="strength-bar">
+
+                                <div
+                                    class="strength-progress"
+                                    id="strengthProgress"
+                                ></div>
+
+                            </div>
+
+                            <div
+                                class="strength-text"
+                                id="strengthText"
+                            >
+                                Password strength
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Confirm Password -->
+
+                    <div class="form-group">
+
+                        <label
+                            for="confirmPassword"
+                            class="form-label"
+                        >
+                            Confirm New Password
+                        </label>
+
+                        <div class="input-wrapper">
+
+                            <input
+                                id="confirmPassword"
+                                class="profile-input password-input"
+                                type="password"
+                                name="confirm_password"
+                                placeholder="Re-enter new password"
+                                autocomplete="new-password"
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-target="confirmPassword"
+                                aria-label="Show confirm password"
+                                title="Show password"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Password Info -->
+
+                    <div class="password-info">
+
+                        <i class="fas fa-shield-alt"></i>
+
+                        <span>
+                            For better security, use at least 8 characters
+                            with a combination of letters, numbers and symbols.
+                        </span>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                     ACTIONS
+                     ================================= -->
+
+                <div class="form-actions">
+
+                    <a
+                        class="profile-btn profile-btn-secondary"
+                        href="{{ url_for('user_profile') }}"
+                    >
+
+                        <i class="fas fa-arrow-left"></i>
+
+                        Cancel
+
+                    </a>
+
+
+                    <button
+                        class="profile-btn profile-btn-primary"
+                        type="submit"
+                        id="saveButton"
+                    >
+
+                        <i class="fas fa-spinner fa-spin spinner"></i>
+
+                        <i class="fas fa-save btn-icon"></i>
+
+                        <span class="btn-text">
+                            Save Changes
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
 </div>
+
+
+<script>
+(function () {
+
+    "use strict";
+
+
+    /* =====================================================
+       PASSWORD SHOW / HIDE
+       ===================================================== */
+
+    const toggleButtons =
+        document.querySelectorAll(".password-toggle");
+
+
+    toggleButtons.forEach(function (button) {
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                const targetId =
+                    button.dataset.target;
+
+                const input =
+                    document.getElementById(targetId);
+
+                if (!input) {
+                    return;
+                }
+
+
+                const icon =
+                    button.querySelector("i");
+
+
+                if (input.type === "password") {
+
+                    input.type = "text";
+
+                    icon.classList.remove(
+                        "fa-eye"
+                    );
+
+                    icon.classList.add(
+                        "fa-eye-slash"
+                    );
+
+                    button.setAttribute(
+                        "aria-label",
+                        "Hide password"
+                    );
+
+                    button.setAttribute(
+                        "title",
+                        "Hide password"
+                    );
+
+                } else {
+
+                    input.type = "password";
+
+                    icon.classList.remove(
+                        "fa-eye-slash"
+                    );
+
+                    icon.classList.add(
+                        "fa-eye"
+                    );
+
+                    button.setAttribute(
+                        "aria-label",
+                        "Show password"
+                    );
+
+                    button.setAttribute(
+                        "title",
+                        "Show password"
+                    );
+
+                }
+
+            }
+        );
+
+    });
+
+
+    /* =====================================================
+       PASSWORD STRENGTH
+       ===================================================== */
+
+    const newPassword =
+        document.getElementById("newPassword");
+
+    const strengthBox =
+        document.getElementById("passwordStrength");
+
+    const strengthProgress =
+        document.getElementById("strengthProgress");
+
+    const strengthText =
+        document.getElementById("strengthText");
+
+
+    function calculatePasswordStrength(password) {
+
+        let score = 0;
+
+        if (!password) {
+            return 0;
+        }
+
+        if (password.length >= 8) {
+            score++;
+        }
+
+        if (password.length >= 12) {
+            score++;
+        }
+
+        if (/[a-z]/.test(password)) {
+            score++;
+        }
+
+        if (/[A-Z]/.test(password)) {
+            score++;
+        }
+
+        if (/[0-9]/.test(password)) {
+            score++;
+        }
+
+        if (/[^A-Za-z0-9]/.test(password)) {
+            score++;
+        }
+
+        return Math.min(score, 6);
+
+    }
+
+
+    function updatePasswordStrength() {
+
+        if (!newPassword) {
+            return;
+        }
+
+
+        const password =
+            newPassword.value;
+
+
+        if (!password) {
+
+            strengthBox.style.display =
+                "none";
+
+            return;
+
+        }
+
+
+        strengthBox.style.display =
+            "block";
+
+
+        const score =
+            calculatePasswordStrength(
+                password
+            );
+
+
+        const percentage =
+            Math.round(
+                (score / 6) * 100
+            );
+
+
+        strengthProgress.style.width =
+            percentage + "%";
+
+
+        if (score <= 2) {
+
+            strengthText.textContent =
+                "Weak password";
+
+        } else if (score <= 4) {
+
+            strengthText.textContent =
+                "Medium password";
+
+        } else {
+
+            strengthText.textContent =
+                "Strong password";
+
+        }
+
+    }
+
+
+    if (newPassword) {
+
+        newPassword.addEventListener(
+            "input",
+            updatePasswordStrength
+        );
+
+    }
+
+
+    /* =====================================================
+       MOBILE NUMBER INPUT
+       ===================================================== */
+
+    const phoneInput =
+        document.getElementById("profilePhone");
+
+
+    if (phoneInput) {
+
+        phoneInput.addEventListener(
+            "input",
+            function () {
+
+                this.value =
+                    this.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       FORM VALIDATION
+       ===================================================== */
+
+    const form =
+        document.getElementById("profileForm");
+
+    const saveButton =
+        document.getElementById("saveButton");
+
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            function (event) {
+
+                const name =
+                    document
+                        .getElementById("profileName")
+                        .value
+                        .trim();
+
+
+                const currentPassword =
+                    document
+                        .getElementById("currentPassword")
+                        .value;
+
+
+                const newPasswordValue =
+                    document
+                        .getElementById("newPassword")
+                        .value;
+
+
+                const confirmPassword =
+                    document
+                        .getElementById("confirmPassword")
+                        .value;
+
+
+                /* Name */
+
+                if (!name) {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Please enter your name."
+                    );
+
+                    document
+                        .getElementById("profileName")
+                        .focus();
+
+                    return;
+
+                }
+
+
+                /* Password validation */
+
+                if (
+                    newPasswordValue ||
+                    confirmPassword ||
+                    currentPassword
+                ) {
+
+                    if (!currentPassword) {
+
+                        event.preventDefault();
+
+                        alert(
+                            "Please enter your current password."
+                        );
+
+                        document
+                            .getElementById("currentPassword")
+                            .focus();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        newPasswordValue.length < 8
+                    ) {
+
+                        event.preventDefault();
+
+                        alert(
+                            "New password must be at least 8 characters."
+                        );
+
+                        document
+                            .getElementById("newPassword")
+                            .focus();
+
+                        return;
+
+                    }
+
+
+                    if (
+                        newPasswordValue !==
+                        confirmPassword
+                    ) {
+
+                        event.preventDefault();
+
+                        alert(
+                            "New password and confirmation do not match."
+                        );
+
+                        document
+                            .getElementById("confirmPassword")
+                            .focus();
+
+                        return;
+
+                    }
+
+                }
+
+
+                /* Loading state */
+
+                if (saveButton) {
+
+                    saveButton.classList.add(
+                        "loading"
+                    );
+
+                    saveButton.setAttribute(
+                        "aria-disabled",
+                        "true"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+})();
+</script>
+
 {% endblock %}
