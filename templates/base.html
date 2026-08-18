@@ -2800,20 +2800,6 @@
                 ) {
                     return;
                 }
-
-                // Sirf same-origin internal links
-                let url;
-                try {
-                    url = new URL(href, window.location.href);
-                } catch (err) {
-                    return;
-                }
-                if (url.origin !== window.location.origin) return;
-
-                // Turant overlay dikhao + body fade-out — browser navigation
-                // apna normal kaam karta rahega, hum sirf transition dikha rahe hain
-                window.showLoading();
-                document.body.classList.add("page-transitioning");
             });
 
             /* =====================================================
