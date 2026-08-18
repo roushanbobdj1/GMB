@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <div class="card p-4 mx-auto" style="max-width:720px;">
+    <h2 class="mb-3">Edit Profile</h2>
+    <form method="POST" action="{{ url_for('edit_profile') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3"><label class="form-label">Name</label><input class="form-control" name="name" value="{{ user.name or '' }}" required></div>
+      <div class="mb-3"><label class="form-label">Mobile</label><input class="form-control" name="phone" value="{{ user.mobile or '' }}" maxlength="10"></div>
+      <hr>
+      <h5>Change Password</h5>
+      <div class="mb-3"><label class="form-label">Current password</label><input class="form-control" type="password" name="current_password"></div>
+      <div class="mb-3"><label class="form-label">New password</label><input class="form-control" type="password" name="new_password"></div>
+      <div class="mb-3"><label class="form-label">Confirm new password</label><input class="form-control" type="password" name="confirm_password"></div>
+      <button class="btn btn-primary" type="submit">Save changes</button>
+      <a class="btn btn-secondary" href="{{ url_for('user_profile') }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
