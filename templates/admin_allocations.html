@@ -581,49 +581,6 @@
     }
 
     /* =========================================================
-       STATUS BADGES
-    ========================================================== */
-
-    .allocation-task-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-
-        padding: 6px 10px;
-
-        border-radius: 999px;
-
-        font-size: 11px;
-        line-height: 1;
-        font-weight: 800;
-
-        white-space: nowrap;
-    }
-
-    .allocation-task-status::before {
-        content: "";
-
-        width: 6px;
-        height: 6px;
-
-        border-radius: 50%;
-
-        background: currentColor;
-    }
-
-    .status-Assigned {
-        background: #ecfeff;
-        color: #0891b2;
-        border: 1px solid #a5f3fc;
-    }
-
-    .status-Completed {
-        background: #ecfdf3;
-        color: #15803d;
-        border: 1px solid #bbf7d0;
-    }
-
-    /* =========================================================
        NO DATA
     ========================================================== */
 
@@ -1048,11 +1005,15 @@
 
 
                                                     <td>
-
-                                                        <span class="allocation-task-status status-{{ user.status }}">
-                                                            {{ user.status }}
-                                                        </span>
-
+                                                        {% if user.status == 'Approved' %}
+                                                            <span class="badge bg-success px-2 py-2" style="font-size: 12px; border-radius: 8px;">✅ Completed</span>
+                                                        {% elif user.status == 'Submitted' %}
+                                                            <span class="badge bg-info text-dark px-2 py-2" style="font-size: 12px; border-radius: 8px;">⏳ Pending Verification</span>
+                                                        {% elif user.status == 'Rejected' %}
+                                                            <span class="badge bg-danger px-2 py-2" style="font-size: 12px; border-radius: 8px;">❌ Rejected</span>
+                                                        {% else %}
+                                                            <span class="badge bg-warning text-dark px-2 py-2" style="font-size: 12px; border-radius: 8px;">📝 Not Completed</span>
+                                                        {% endif %}
                                                     </td>
 
                                                 </tr>
