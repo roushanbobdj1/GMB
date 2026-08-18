@@ -1266,7 +1266,14 @@ def allocate_tasks(campaign_id):
             return jsonify({'status': 'error', 'message': 'Campaign not found'}), 404
 
         now = datetime.now(timezone.utc)
-        assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).filter_by(campaign_id=campaign_id)
+
+        # ✅ FIX 1: Sirf CURRENT MONTH ke already-assigned users exclude karo
+        # (pehle poore campaign lifetime ke liye exclude ho jaate the, isliye
+        # ek baar task milne ke baad user permanently dobara eligible nahi hota tha)
+        assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).\
+            filter(UserCampaignTaskAssignment.campaign_id == campaign_id).\
+            filter(func.extract('month', UserCampaignTaskAssignment.assigned_at) == now.month).\
+            filter(func.extract('year', UserCampaignTaskAssignment.assigned_at) == now.year)
 
         eligible_query = db.session.query(User.id).\
             outerjoin(Task, and_(
@@ -1335,9 +1342,33 @@ def allocate_tasks(campaign_id):
 
         db.session.add_all(assignments_to_insert)
         db.session.add_all(notifications_to_insert)
+
+        # ✅ FIX 2: Baaki bacha hua quota CampaignAllocationProgress mein save karo,
+        # taaki naye users register karte hi unhe auto-assign ho jaaye
+        # (yeh auto-assign logic pehle se verify_registration() mein maujood hai,
+        # bas is progress record ke bina wo kabhi trigger nahi hota tha)
+        progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign_id).first()
+        if not progress:
+            progress = CampaignAllocationProgress(
+                campaign_id=campaign_id, total_tasks_created=0,
+                total_tasks_assigned=0, users_count_assigned=0
+            )
+            db.session.add(progress)
+
+        progress.total_tasks_created = (progress.total_tasks_created or 0) + total_tasks_needed
+        progress.total_tasks_assigned = (progress.total_tasks_assigned or 0) + len(candidate_ids)
+        progress.users_count_assigned = (progress.users_count_assigned or 0) + len(candidate_ids)
+        progress.is_fully_allocated = progress.total_tasks_assigned >= progress.total_tasks_created
+        progress.updated_at = datetime.now(timezone.utc)
+
         db.session.commit()
 
-        return jsonify({'status': 'success', 'message': f'✅ Successfully assigned {len(candidate_ids)} tasks!'})
+        pending = progress.total_tasks_created - progress.total_tasks_assigned
+        msg = f'✅ Successfully assigned {len(candidate_ids)} tasks!'
+        if pending > 0:
+            msg += f' {pending} pending — naye users register karte hi unhe automatically mil jaayega.'
+
+        return jsonify({'status': 'success', 'message': msg})
 
     except Exception as e:
         db.session.rollback()
