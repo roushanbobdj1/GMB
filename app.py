@@ -6,13 +6,12 @@ import random
 import logging
 import hashlib
 import secrets
-from flask import make_response
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, session, url_for, flash,
-    jsonify, send_file, send_from_directory
+    jsonify, send_file, send_from_directory, make_response
 )
 from werkzeug.utils import secure_filename
 from PIL import Image, UnidentifiedImageError
@@ -252,7 +251,6 @@ def check_if_blocked():
                 'support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket',
                 'logout', 'static', 'offline', 'serve_uploads'
             ]
-            # [FIXED BUG]: Checking request.endpoint to prevent 404 crash
             if request.endpoint and request.endpoint not in allowed_routes:
                 flash('❌ Your account has been blocked by Admin. Please contact support.', 'error')
                 return redirect(url_for('support_page'))
@@ -318,6 +316,12 @@ def index():
     resp.headers['Expires'] = '0'
     
     return resp
+
+@app.route("/landing")
+def landing():
+    # If landing page is still needed externally
+    return render_template("index.html")
+
 
 @app.route("/register", methods=["GET"])
 def user_register():
@@ -416,6 +420,11 @@ def register():
 
                 progress.total_tasks_assigned += 1
                 progress.users_count_assigned += 1
+                
+                # ✅ FIX: Status auto update agar target hit ho gaya
+                if progress.total_tasks_assigned >= progress.total_tasks_created:
+                    progress.is_fully_allocated = True
+                    
                 progress.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
@@ -460,7 +469,6 @@ def verify_registration():
             return render_template('verify_registration.html', email=email)
 
         # Legacy logic (moved to register POST)
-        # To reactivate OTP in future, move the DB creation block back here.
         pass 
 
     return render_template('verify_registration.html', email=email)
@@ -503,7 +511,6 @@ def user_login():
         # ❌ 3. Agar dono me se kisi ka password match nahi kiya
         flash('❌ Invalid email or password!', 'error')
 
-    # Note: Aapki HTML file ka naam jo bhi ho, wo yahan rahega (jaise login.html)
     return render_template("login.html")
 
 
@@ -871,6 +878,7 @@ def reply_ticket(ticket_id):
 
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
+    # Admin login unified, redirect to normal user login page
     return redirect(url_for('user_login'))
 
 
@@ -1043,7 +1051,6 @@ def task_verify_action(submission_id, action):
     task = submission.task
     user = task.user if task else None
 
-    # [FIXED BUG]: Checking if user is missing (i.e. was deleted) to prevent crash
     if not user:
         return jsonify({'status': 'error', 'message': 'User associated with this task not found or deleted!'}), 404
 
@@ -1267,13 +1274,14 @@ def allocate_tasks(campaign_id):
 
         now = datetime.now(timezone.utc)
 
-        # ✅ FIX 1: Sirf CURRENT MONTH ke already-assigned users exclude karo
-        # (pehle poore campaign lifetime ke liye exclude ho jaate the, isliye
-        # ek baar task milne ke baad user permanently dobara eligible nahi hota tha)
-        assigned_subquery = db.session.query(UserCampaignTaskAssignment.user_id).\
+        # ✅ FIX 1: Sirf CURRENT MONTH ke already-assigned users nikalna aur subquery fix karna
+        assigned_users = db.session.query(UserCampaignTaskAssignment.user_id).\
             filter(UserCampaignTaskAssignment.campaign_id == campaign_id).\
             filter(func.extract('month', UserCampaignTaskAssignment.assigned_at) == now.month).\
-            filter(func.extract('year', UserCampaignTaskAssignment.assigned_at) == now.year)
+            filter(func.extract('year', UserCampaignTaskAssignment.assigned_at) == now.year).\
+            all()
+            
+        assigned_user_ids = [row[0] for row in assigned_users]
 
         eligible_query = db.session.query(User.id).\
             outerjoin(Task, and_(
@@ -1281,7 +1289,7 @@ def allocate_tasks(campaign_id):
                 func.extract('month', Task.assigned_date) == now.month,
                 func.extract('year', Task.assigned_date) == now.year
             )).\
-            filter(User.id.notin_(assigned_subquery)).\
+            filter(~User.id.in_(assigned_user_ids) if assigned_user_ids else True).\
             filter(User.is_blocked == False).\
             group_by(User.id).\
             having(func.count(Task.id) < 14)
@@ -1335,18 +1343,20 @@ def allocate_tasks(campaign_id):
         db.session.flush()
 
         for task in tasks_to_insert:
+            # ✅ FIX 2: assigned_at=now add kiya gaya hai double assignment issue rokne ke liye
             assignments_to_insert.append(UserCampaignTaskAssignment(
-                user_id=task.user_id, campaign_id=campaign_id, task_id=task.id, status='Assigned'))
+                user_id=task.user_id, 
+                campaign_id=campaign_id, 
+                task_id=task.id, 
+                status='Assigned',
+                assigned_at=now
+            ))
             notifications_to_insert.append(Notification(
                 user_id=task.user_id, message=f'🎉 New task assigned for campaign: {campaign.name}', notification_type='task_assigned'))
 
         db.session.add_all(assignments_to_insert)
         db.session.add_all(notifications_to_insert)
 
-        # ✅ FIX 2: Baaki bacha hua quota CampaignAllocationProgress mein save karo,
-        # taaki naye users register karte hi unhe auto-assign ho jaaye
-        # (yeh auto-assign logic pehle se verify_registration() mein maujood hai,
-        # bas is progress record ke bina wo kabhi trigger nahi hota tha)
         progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign_id).first()
         if not progress:
             progress = CampaignAllocationProgress(
@@ -1696,7 +1706,6 @@ def admin_analytics():
 
 def _compute_leaderboard(settings, limit=None):
     excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
-    # [FIXED BUG]: Removed utcnow() which caused timezone crash
     period_start = settings.period_start or datetime.now(timezone.utc)
     rows = []
 
@@ -1854,7 +1863,6 @@ def admin_leaderboard_settings():
 def admin_leaderboard_reset():
     settings = LeaderboardSettings.get_settings()
     try:
-        # [FIXED BUG]: Removed utcnow() which caused timezone crash
         settings.period_start = datetime.now(timezone.utc)
         settings.last_reset_at = datetime.now(timezone.utc)
         settings.last_reset_by = session.get('admin_id')
@@ -2073,35 +2081,27 @@ def toggle_block_user(user_id):
 
 @app.errorhandler(404)
 def page_not_found(e):
-    # Agar user koi aisi URL type kare jo exist nahi karti
     flash("⚠️ The page you are looking for does not exist.", "warning")
-    
-    # Check if admin is logged in to redirect to admin dashboard, else user dashboard
     if 'admin_id' in session:
         return redirect(url_for('admin_dashboard'))
     return redirect(url_for('index'))
 
 @app.errorhandler(405)
 def method_not_allowed(e):
-    # Agar user URL bar mein POST request ko directly open karne ki koshish kare
     flash("❌ Action not allowed. Please use the proper buttons on the dashboard.", "error")
-    
-    # Redirect back safely
     if 'admin_id' in session:
         return redirect(url_for('admin_campaigns'))
     return redirect(url_for('index'))
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    # Agar server mein koi error aa jaye
     flash("❌ Something went wrong on our end. Please try again later.", "error")
-    
     if 'admin_id' in session:
         return redirect(url_for('admin_dashboard'))
     return redirect(url_for('index'))
+
 # ----------------- App entrypoint -----------------
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    # [FIXED BUG]: Removed 'allow_unsafe_werkzeug=True' for Production Security
     socketio.run(app, host="0.0.0.0", port=port, debug=False, use_reloader=False)
