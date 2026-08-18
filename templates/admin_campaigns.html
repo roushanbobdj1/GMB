@@ -975,7 +975,7 @@
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <form method="POST" action="/admin/allocate_tasks/{{ campaign.id }}" class="allocate-form" data-no-spa>
+                        <form method="POST" action="/admin/allocate_tasks/{{ campaign.id }}" class="allocate-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="modal-body">
                                 <div class="mb-3">
@@ -1109,24 +1109,25 @@
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <form method="POST" action="/admin/campaign/{{ campaign.id }}/delete">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="modal-body">
-                                <div class="alert-danger-modal">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <strong>This action is permanent and cannot be undone!</strong>
-                                </div>
-                                <p class="mb-2">
-                                    Are you sure you want to permanently delete <strong>{{ campaign.name }}</strong>?
-                                </p>
-                                <p class="text-muted small mb-0">
-                                    <i class="fas fa-info-circle"></i> All tasks, submissions, allocations and review texts linked to this campaign will also be deleted.
-                                </p>
+                        <div class="modal-body">
+                            <div class="alert-danger-modal">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>This action is permanent and cannot be undone!</strong>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
-                                    Cancel
-                                </button>
+                            <p class="mb-2">
+                                Are you sure you want to permanently delete <strong>{{ campaign.name }}</strong>?
+                            </p>
+                            <p class="text-muted small mb-0">
+                                <i class="fas fa-info-circle"></i> All tasks, submissions, allocations and review texts linked to this campaign will also be deleted.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn-action btn-danger-action" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                            <!-- MAIN FIX: Wrapped the delete button in its own safe form structure -->
+                            <form method="POST" action="{{ url_for('delete_campaign', campaign_id=campaign.id) }}" class="m-0 p-0 d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button 
                                     type="submit" 
                                     class="btn-action btn-danger-action"
@@ -1134,8 +1135,8 @@
                                 >
                                     <i class="fas fa-trash-alt"></i> Delete Permanently
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
