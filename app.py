@@ -1858,7 +1858,7 @@ def admin_leaderboard_exclude(user_id):
 def admin_allocations():
     if 'admin_id' not in session:
         flash("Please login as admin first.", "error")
-        return redirect(url_for('admin_login'))
+        return redirect(url_for('user_login'))
 
     campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
     allocation_data = []
