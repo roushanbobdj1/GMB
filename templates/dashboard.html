@@ -735,6 +735,127 @@
         }
     }
 
+    /* ============ AVAILABLE CAMPAIGNS RESPONSIVE CAROUSEL ============ */
+    .campaign-desktop-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
+
+    .campaign-grid-item { min-width: 0; }
+    .campaign-mobile-carousel { display: none; }
+
+    @media (max-width: 767.98px) {
+        .campaign-desktop-grid { display: none; }
+        .campaign-mobile-carousel {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .campaign-mobile-track {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 2px 2px 10px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+            scrollbar-width: none;
+            touch-action: pan-x;
+        }
+
+        .campaign-mobile-track::-webkit-scrollbar { display: none; }
+
+        .campaign-mobile-slide {
+            flex: 0 0 calc(50% - 6px);
+            min-width: calc(50% - 6px);
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+
+        .campaign-mobile-slide .campaign-card-enhanced {
+            height: 100%;
+            margin: 0;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 14px rgba(0,0,0,.07);
+        }
+
+        .campaign-mobile-slide .campaign-header {
+            padding: 12px;
+            gap: 9px;
+            min-height: 70px;
+        }
+
+        .campaign-mobile-slide .campaign-icon {
+            width: 38px; height: 38px; flex: 0 0 38px;
+            border-radius: 10px; font-size: 1rem;
+        }
+
+        .campaign-mobile-slide .campaign-title {
+            font-size: .82rem;
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .campaign-mobile-slide .campaign-body {
+            padding: 11px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .campaign-mobile-slide .campaign-stat {
+            gap: 8px;
+            margin-bottom: 9px;
+            padding-bottom: 9px;
+        }
+
+        .campaign-mobile-slide .campaign-stat-icon {
+            width: 30px; height: 30px; flex: 0 0 30px;
+            border-radius: 7px; font-size: .72rem;
+        }
+
+        .campaign-mobile-slide .campaign-stat-label {
+            font-size: .62rem; line-height: 1.2; margin-bottom: 2px;
+        }
+
+        .campaign-mobile-slide .campaign-badge {
+            padding: 3px 6px; font-size: .6rem; border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .campaign-mobile-slide .campaign-actions { margin-top: auto; padding-top: 4px; }
+
+        .campaign-mobile-slide .campaign-btn {
+            width: 100%; min-height: 40px; padding: 8px 6px;
+            font-size: .68rem; border-radius: 8px; white-space: nowrap;
+        }
+
+        .campaign-swipe-hint {
+            display: flex; justify-content: center; align-items: center;
+            gap: 6px; margin-top: 4px; color: #94a3b8;
+            font-size: .65rem; font-weight: 600;
+        }
+
+        .campaign-swipe-hint i { font-size: .7rem; }
+    }
+
+    @media (max-width: 380px) {
+        .campaign-mobile-slide { flex-basis: 72%; min-width: 72%; }
+        .campaign-mobile-slide .campaign-title { font-size: .86rem; }
+        .campaign-mobile-slide .campaign-body { padding: 12px; }
+        .campaign-mobile-slide .campaign-stat-label { font-size: .65rem; }
+        .campaign-mobile-slide .campaign-btn { font-size: .7rem; }
+    }
+
     /* ============ RESPONSIVE (mobile improvements; desktop untouched above this) ============ */
 
     /* Tablets and below */
@@ -1083,9 +1204,10 @@
             </div>
 
             {% if campaigns %}
-                <div class="row g-3 g-md-4">
+                <!-- Desktop: normal 2-column grid -->
+                <div class="campaign-desktop-grid">
                     {% for campaign in campaigns %}
-                    <div class="col-md-6 col-12">
+                    <div class="campaign-grid-item">
                         <div class="card campaign-card-enhanced">
                             <div class="campaign-header">
                                 <div class="campaign-icon">
@@ -1101,47 +1223,82 @@
                             </div>
                             <div class="campaign-body">
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon primary">
-                                        <i class="fas fa-star"></i>
-                                    </div>
+                                    <div class="campaign-stat-icon primary"><i class="fas fa-star"></i></div>
                                     <div class="campaign-stat-content">
                                         <div class="campaign-stat-label">Points Per Review</div>
-                                        <div class="campaign-stat-value">
-                                            <span class="campaign-badge campaign-badge-primary">{{ campaign.points_per_review }} pts</span>
-                                        </div>
+                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-primary">{{ campaign.points_per_review }} pts</span></div>
                                     </div>
                                 </div>
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon warning">
-                                        <i class="fas fa-file-lines"></i>
-                                    </div>
+                                    <div class="campaign-stat-icon warning"><i class="fas fa-file-lines"></i></div>
                                     <div class="campaign-stat-content">
                                         <div class="campaign-stat-label">Total Reviews Required</div>
-                                        <div class="campaign-stat-value">
-                                            <span class="campaign-badge campaign-badge-warning">{{ campaign.total_reviews_required }} reviews</span>
-                                        </div>
+                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-warning">{{ campaign.total_reviews_required }} reviews</span></div>
                                     </div>
                                 </div>
                                 <div class="campaign-stat">
-                                    <div class="campaign-stat-icon secondary">
-                                        <i class="fas fa-calendar-days"></i>
-                                    </div>
+                                    <div class="campaign-stat-icon secondary"><i class="fas fa-calendar-days"></i></div>
                                     <div class="campaign-stat-content">
                                         <div class="campaign-stat-label">Campaign Duration</div>
-                                        <div class="campaign-stat-value">
-                                            <span class="campaign-badge campaign-badge-secondary">{{ campaign.duration_months }} month(s)</span>
-                                        </div>
+                                        <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-secondary">{{ campaign.duration_months }} month(s)</span></div>
                                     </div>
                                 </div>
                                 <div class="campaign-actions">
-                                    <a href="/tasks?campaign={{ campaign.id }}" class="campaign-btn campaign-btn-primary">
-                                        <i class="fas fa-play-circle"></i> Start Task
-                                    </a>
+                                    <a href="/tasks?campaign={{ campaign.id }}" class="campaign-btn campaign-btn-primary"><i class="fas fa-play-circle"></i> Start Task</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+
+                <!-- Mobile: horizontal swipe carousel -->
+                <div class="campaign-mobile-carousel">
+                    <div class="campaign-mobile-track">
+                        {% for campaign in campaigns %}
+                        <div class="campaign-mobile-slide">
+                            <div class="card campaign-card-enhanced">
+                                <div class="campaign-header">
+                                    <div class="campaign-icon">
+                                        {% if campaign.icon %}<i class="{{ campaign.icon }}"></i>{% else %}<i class="fas fa-bullhorn"></i>{% endif %}
+                                    </div>
+                                    <div class="campaign-title-wrap">
+                                        <h5 class="campaign-title">{{ campaign.name }}</h5>
+                                    </div>
+                                </div>
+                                <div class="campaign-body">
+                                    <div class="campaign-stat">
+                                        <div class="campaign-stat-icon primary"><i class="fas fa-star"></i></div>
+                                        <div class="campaign-stat-content">
+                                            <div class="campaign-stat-label">Points Per Review</div>
+                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-primary">{{ campaign.points_per_review }} pts</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="campaign-stat">
+                                        <div class="campaign-stat-icon warning"><i class="fas fa-file-lines"></i></div>
+                                        <div class="campaign-stat-content">
+                                            <div class="campaign-stat-label">Reviews Required</div>
+                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-warning">{{ campaign.total_reviews_required }}</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="campaign-stat">
+                                        <div class="campaign-stat-icon secondary"><i class="fas fa-calendar-days"></i></div>
+                                        <div class="campaign-stat-content">
+                                            <div class="campaign-stat-label">Duration</div>
+                                            <div class="campaign-stat-value"><span class="campaign-badge campaign-badge-secondary">{{ campaign.duration_months }} month(s)</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="campaign-actions">
+                                        <a href="/tasks?campaign={{ campaign.id }}" class="campaign-btn campaign-btn-primary"><i class="fas fa-play-circle"></i> Start Task</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if campaigns|length > 1 %}
+                    <div class="campaign-swipe-hint"><i class="fas fa-arrows-left-right"></i><span>Swipe to see more campaigns</span></div>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="empty-state">
