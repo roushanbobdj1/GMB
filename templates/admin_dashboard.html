@@ -5,9 +5,9 @@
 {% block extra_css %}
 <style>
 /* =========================================================
-   GMB EARN — DESKTOP COMMAND CENTER
-   Redesigned for wide PC/laptop screens.
-   All existing Jinja variables and routes are preserved.
+   GMB EARN — ADMIN COMMAND CENTER
+   Desktop + Mobile App Style
+   Existing Jinja variables and routes preserved
    ========================================================= */
 
 :root {
@@ -26,32 +26,62 @@
 
     --dash-radius: 18px;
     --dash-radius-sm: 13px;
-    --dash-shadow: 0 6px 24px rgba(15, 23, 42, .055);
-    --dash-shadow-hover: 0 14px 34px rgba(15, 23, 42, .10);
+
+    --dash-shadow:
+        0 6px 24px rgba(15, 23, 42, .055);
+
+    --dash-shadow-hover:
+        0 14px 34px rgba(15, 23, 42, .10);
+
     --dash-transition: 180ms ease;
 }
+
+/* =========================================================
+   PAGE
+   ========================================================= */
 
 .admin-dashboard {
     width: min(100%, 1540px);
     margin: 0 auto;
     padding: 30px 30px 56px;
     color: var(--dash-text);
+    overflow-x: hidden;
 }
 
-/* ---------- HERO ---------- */
+.admin-dashboard *,
+.admin-dashboard *::before,
+.admin-dashboard *::after {
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
 
 .dashboard-hero {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 28px;
+
     margin-bottom: 26px;
     padding: 25px 28px;
+
     border: 1px solid var(--dash-border);
     border-radius: 22px;
+
     background:
-        radial-gradient(circle at 85% 10%, rgba(37,99,235,.10), transparent 28%),
-        linear-gradient(135deg, #ffffff 0%, #f9fbff 100%);
+        radial-gradient(
+            circle at 85% 10%,
+            rgba(37,99,235,.10),
+            transparent 28%
+        ),
+        linear-gradient(
+            135deg,
+            #ffffff 0%,
+            #f9fbff 100%
+        );
+
     box-shadow: var(--dash-shadow);
 }
 
@@ -63,11 +93,15 @@
     display: flex;
     align-items: center;
     gap: 14px;
+
     margin: 0 0 7px;
+
     color: var(--dash-text);
+
     font-size: clamp(1.65rem, 2.2vw, 2.25rem);
     line-height: 1.15;
     font-weight: 850;
+
     letter-spacing: -.04em;
 }
 
@@ -75,18 +109,31 @@
     width: 50px;
     height: 50px;
     flex: 0 0 50px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 15px;
+
     color: #fff;
-    background: linear-gradient(135deg, var(--dash-primary), var(--dash-primary-2));
-    box-shadow: 0 10px 24px rgba(37,99,235,.20);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--dash-primary),
+            var(--dash-primary-2)
+        );
+
+    box-shadow:
+        0 10px 24px rgba(37,99,235,.20);
 }
 
 .hero-subtitle {
     margin: 0;
+
     color: var(--dash-muted);
+
     font-size: .91rem;
     font-weight: 500;
 }
@@ -94,21 +141,31 @@
 .hero-meta {
     display: flex;
     align-items: center;
+
     gap: 10px;
+
     flex: 0 0 auto;
 }
 
 .live-status {
     display: inline-flex;
     align-items: center;
+
     gap: 9px;
+
     min-height: 42px;
+
     padding: 0 14px;
+
     border: 1px solid var(--dash-border);
     border-radius: 12px;
+
     background: #fff;
+
     color: var(--dash-muted);
+
     font-size: .76rem;
+
     white-space: nowrap;
 }
 
@@ -120,12 +177,20 @@
 .live-dot {
     width: 8px;
     height: 8px;
+
+    flex: 0 0 8px;
+
     border-radius: 50%;
+
     background: var(--dash-success);
-    box-shadow: 0 0 0 4px rgba(16,185,129,.10);
+
+    box-shadow:
+        0 0 0 4px rgba(16,185,129,.10);
 }
 
-/* ---------- SECTION ---------- */
+/* =========================================================
+   SECTION
+   ========================================================= */
 
 .dashboard-section {
     margin-bottom: 28px;
@@ -135,59 +200,89 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     gap: 16px;
+
     margin-bottom: 13px;
 }
 
 .section-title {
     display: flex;
     align-items: center;
+
     gap: 9px;
+
     margin: 0;
+
     color: var(--dash-text);
+
     font-size: 1rem;
     font-weight: 850;
+
     letter-spacing: -.02em;
 }
 
 .section-title i {
     width: 30px;
     height: 30px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 9px;
+
     color: var(--dash-primary);
     background: rgba(37,99,235,.09);
+
     font-size: .78rem;
 }
 
-/* ---------- KPI ROW ---------- */
+/* =========================================================
+   KPI
+   ========================================================= */
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+
     gap: 13px;
 }
 
 .stat-card {
     position: relative;
+
     min-width: 0;
+
     overflow: hidden;
+
     padding: 17px 16px 15px;
+
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
+
     background: var(--dash-card);
+
     box-shadow: var(--dash-shadow);
-    transition: transform var(--dash-transition), box-shadow var(--dash-transition);
+
+    transition:
+        transform var(--dash-transition),
+        box-shadow var(--dash-transition);
 }
 
 .stat-card::before {
     content: "";
+
     position: absolute;
+
     inset: 0 0 auto;
+
     height: 3px;
-    background: var(--stat-color, var(--dash-primary));
+
+    background:
+        var(--stat-color, var(--dash-primary));
 }
 
 .stat-card:hover {
@@ -195,93 +290,152 @@
     box-shadow: var(--dash-shadow-hover);
 }
 
-.stat-card.primary { --stat-color: var(--dash-primary); }
-.stat-card.info { --stat-color: var(--dash-primary-2); }
-.stat-card.success { --stat-color: var(--dash-success); }
-.stat-card.warning { --stat-color: var(--dash-warning); }
-.stat-card.danger { --stat-color: var(--dash-danger); }
+.stat-card.primary {
+    --stat-color: var(--dash-primary);
+}
+
+.stat-card.info {
+    --stat-color: var(--dash-primary-2);
+}
+
+.stat-card.success {
+    --stat-color: var(--dash-success);
+}
+
+.stat-card.warning {
+    --stat-color: var(--dash-warning);
+}
+
+.stat-card.danger {
+    --stat-color: var(--dash-danger);
+}
 
 .stat-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     gap: 10px;
 }
 
 .stat-label {
     display: block;
+
     margin-bottom: 7px;
+
     color: var(--dash-muted);
+
     font-size: .66rem;
     font-weight: 850;
+
     letter-spacing: .075em;
+
     text-transform: uppercase;
 }
 
 .stat-value {
     display: block;
+
     color: var(--dash-text);
-    font-size: clamp(1.45rem, 2vw, 1.85rem);
+
+    font-size:
+        clamp(1.45rem, 2vw, 1.85rem);
+
     line-height: 1;
+
     font-weight: 850;
+
     letter-spacing: -.045em;
 }
 
 .stat-icon {
     width: 40px;
     height: 40px;
+
     flex: 0 0 40px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 12px;
+
     color: var(--stat-color);
-    background: color-mix(in srgb, var(--stat-color) 10%, transparent);
+
+    background:
+        color-mix(
+            in srgb,
+            var(--stat-color) 10%,
+            transparent
+        );
 }
 
 .stat-bottom {
     display: flex;
     align-items: center;
+
     gap: 6px;
+
     margin-top: 14px;
+
     color: var(--dash-muted);
+
     font-size: .67rem;
     font-weight: 650;
+
     white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stat-bottom i {
     color: var(--stat-color);
 }
 
-/* ---------- ATTENTION STRIP ---------- */
+/* =========================================================
+   AT A GLANCE
+   ========================================================= */
 
 .attention-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
     gap: 13px;
 }
 
 .attention-card {
     display: flex;
     align-items: center;
+
     gap: 13px;
+
     min-width: 0;
+
     padding: 15px 16px;
+
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
+
     background: var(--dash-card);
+
     box-shadow: var(--dash-shadow);
 }
 
 .attention-icon {
     width: 42px;
     height: 42px;
+
     flex: 0 0 42px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 12px;
+
     font-size: .92rem;
 }
 
@@ -289,14 +443,17 @@
     color: #b45309;
     background: rgba(245,158,11,.12);
 }
+
 .attention-icon.red {
     color: #dc2626;
     background: rgba(239,68,68,.10);
 }
+
 .attention-icon.green {
     color: #059669;
     background: rgba(16,185,129,.10);
 }
+
 .attention-icon.blue {
     color: var(--dash-primary);
     background: rgba(37,99,235,.09);
@@ -309,68 +466,103 @@
 
 .attention-copy strong {
     display: block;
+
     margin-bottom: 3px;
+
     color: var(--dash-text);
+
     font-size: .86rem;
     font-weight: 850;
 }
 
 .attention-copy span {
     display: block;
+
     overflow: hidden;
+
     color: var(--dash-muted);
+
     font-size: .68rem;
     font-weight: 550;
+
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .attention-number {
     flex: 0 0 auto;
+
     color: var(--dash-text);
+
     font-size: 1.05rem;
     font-weight: 850;
 }
 
-/* ---------- QUICK ACTIONS ---------- */
+/* =========================================================
+   QUICK ACTIONS
+   ========================================================= */
 
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
     gap: 13px;
 }
 
 .quick-action {
     display: flex;
     align-items: center;
+
     gap: 15px;
+
     min-width: 0;
+
     padding: 17px 18px;
+
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
+
     background: var(--dash-card);
+
     color: inherit;
+
     text-decoration: none;
+
     box-shadow: var(--dash-shadow);
-    transition: transform var(--dash-transition), box-shadow var(--dash-transition), border-color var(--dash-transition);
+
+    transition:
+        transform var(--dash-transition),
+        box-shadow var(--dash-transition),
+        border-color var(--dash-transition);
 }
 
 .quick-action:hover {
     color: inherit;
     text-decoration: none;
+
     transform: translateY(-2px);
-    border-color: rgba(37,99,235,.22);
-    box-shadow: var(--dash-shadow-hover);
+
+    border-color:
+        rgba(37,99,235,.22);
+
+    box-shadow:
+        var(--dash-shadow-hover);
 }
 
 .quick-action-icon {
     width: 46px;
     height: 46px;
+
     flex: 0 0 46px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 13px;
+
     font-size: 1rem;
 }
 
@@ -378,6 +570,7 @@
     color: var(--dash-primary);
     background: rgba(37,99,235,.10);
 }
+
 .quick-action-icon.yellow {
     color: #d97706;
     background: rgba(245,158,11,.12);
@@ -390,72 +583,109 @@
 
 .quick-action-content h3 {
     margin: 0 0 4px;
+
     color: var(--dash-text);
+
     font-size: .89rem;
     font-weight: 850;
 }
 
 .quick-action-content p {
     margin: 0;
+
     color: var(--dash-muted);
+
     font-size: .72rem;
 }
 
 .pending-pill {
     display: inline-flex;
+
     margin-top: 6px;
+
     padding: 3px 8px;
+
     border-radius: 99px;
+
     color: #92400e;
     background: rgba(245,158,11,.12);
+
     font-size: .64rem;
     font-weight: 850;
 }
 
 .quick-action-arrow {
     color: #94a3b8;
-    transition: transform var(--dash-transition);
+
+    transition:
+        transform var(--dash-transition);
 }
+
 .quick-action:hover .quick-action-arrow {
     color: var(--dash-primary);
+
     transform: translateX(3px);
 }
 
-/* ---------- MANAGEMENT ---------- */
+/* =========================================================
+   MANAGEMENT
+   ========================================================= */
 
 .management-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
     gap: 13px;
 }
 
 .management-card {
     display: grid;
-    grid-template-columns: 45px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+
+    grid-template-columns:
+        45px minmax(0, 1fr);
+
+    grid-template-rows:
+        auto auto auto;
+
     column-gap: 13px;
+
     min-width: 0;
+
     padding: 17px;
+
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
+
     background: var(--dash-card);
+
     box-shadow: var(--dash-shadow);
-    transition: transform var(--dash-transition), box-shadow var(--dash-transition);
+
+    transition:
+        transform var(--dash-transition),
+        box-shadow var(--dash-transition);
 }
 
 .management-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--dash-shadow-hover);
+
+    box-shadow:
+        var(--dash-shadow-hover);
 }
 
 .management-icon {
     grid-row: 1 / span 2;
+
     width: 45px;
     height: 45px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 13px;
+
     font-size: .95rem;
 }
 
@@ -463,22 +693,27 @@
     color: var(--dash-primary);
     background: rgba(37,99,235,.10);
 }
+
 .management-icon.green {
     color: #059669;
     background: rgba(16,185,129,.10);
 }
+
 .management-icon.red {
     color: #dc2626;
     background: rgba(239,68,68,.10);
 }
+
 .management-icon.yellow {
     color: #d97706;
     background: rgba(245,158,11,.12);
 }
+
 .management-icon.cyan {
     color: #0891b2;
     background: rgba(6,182,212,.10);
 }
+
 .management-icon.purple {
     color: var(--dash-purple);
     background: rgba(124,58,237,.10);
@@ -486,90 +721,180 @@
 
 .management-card h3 {
     margin: 1px 0 4px;
+
     color: var(--dash-text);
+
     font-size: .86rem;
     font-weight: 850;
 }
 
 .management-card p {
     min-width: 0;
+
     margin: 0;
+
     color: var(--dash-muted);
+
     font-size: .69rem;
+
     line-height: 1.45;
 }
 
 .management-footer {
     grid-column: 1 / -1;
+
     display: flex;
     align-items: center;
+
     gap: 9px;
+
     margin-top: 14px;
 }
 
 .management-badge {
     display: inline-flex;
     align-items: center;
+
     padding: 4px 8px;
+
     border-radius: 99px;
+
     font-size: .62rem;
     font-weight: 850;
 }
-.management-badge.red { color: #b91c1c; background: rgba(239,68,68,.10); }
-.management-badge.yellow { color: #92400e; background: rgba(245,158,11,.12); }
-.management-badge.cyan { color: #0e7490; background: rgba(6,182,212,.10); }
+
+.management-badge.red {
+    color: #b91c1c;
+    background: rgba(239,68,68,.10);
+}
+
+.management-badge.yellow {
+    color: #92400e;
+    background: rgba(245,158,11,.12);
+}
+
+.management-badge.cyan {
+    color: #0e7490;
+    background: rgba(6,182,212,.10);
+}
 
 .management-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     gap: 7px;
+
     min-height: 34px;
+
     margin-left: auto;
+
     padding: 7px 12px;
+
     border-radius: 9px;
+
     color: #fff !important;
+
     font-size: .66rem;
     font-weight: 800;
+
     text-decoration: none !important;
-    transition: filter var(--dash-transition), transform var(--dash-transition);
+
+    transition:
+        filter var(--dash-transition),
+        transform var(--dash-transition);
 }
 
 .management-btn:hover {
     color: #fff !important;
+
     filter: brightness(.96);
+
     transform: translateY(-1px);
 }
 
-.btn-blue { background: linear-gradient(135deg, #2563eb, #06b6d4); }
-.btn-green { background: linear-gradient(135deg, #059669, #10b981); }
-.btn-red { background: linear-gradient(135deg, #dc2626, #ef4444); }
-.btn-yellow { background: linear-gradient(135deg, #d97706, #f59e0b); }
-.btn-purple { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.btn-blue {
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #06b6d4
+        );
+}
 
-/* ---------- BOTTOM INFO ROW ---------- */
+.btn-green {
+    background:
+        linear-gradient(
+            135deg,
+            #059669,
+            #10b981
+        );
+}
+
+.btn-red {
+    background:
+        linear-gradient(
+            135deg,
+            #dc2626,
+            #ef4444
+        );
+}
+
+.btn-yellow {
+    background:
+        linear-gradient(
+            135deg,
+            #d97706,
+            #f59e0b
+        );
+}
+
+.btn-purple {
+    background:
+        linear-gradient(
+            135deg,
+            #6d28d9,
+            #8b5cf6
+        );
+}
+
+/* =========================================================
+   BOTTOM INFORMATION
+   ========================================================= */
 
 .bottom-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
+
+    grid-template-columns:
+        minmax(0, 1.25fr)
+        minmax(0, .75fr);
+
     gap: 13px;
 }
 
 .info-card {
     min-width: 0;
+
     padding: 18px;
+
     border: 1px solid var(--dash-border);
     border-radius: var(--dash-radius);
+
     background: var(--dash-card);
+
     box-shadow: var(--dash-shadow);
 }
 
 .info-card-title {
     display: flex;
     align-items: center;
+
     gap: 9px;
+
     margin: 0 0 14px;
+
     color: var(--dash-text);
+
     font-size: .86rem;
     font-weight: 850;
 }
@@ -577,17 +902,23 @@
 .info-card-title i {
     width: 29px;
     height: 29px;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     border-radius: 8px;
+
     color: var(--dash-primary);
     background: rgba(37,99,235,.09);
 }
 
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
     gap: 9px;
 }
 
@@ -595,88 +926,134 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     gap: 10px;
+
     padding: 10px 11px;
+
     border: 1px solid var(--dash-border);
     border-radius: 10px;
+
     background: #fbfcfe;
 }
 
 .summary-label {
     display: flex;
     align-items: center;
+
     gap: 7px;
+
     min-width: 0;
+
     color: var(--dash-muted);
+
     font-size: .67rem;
     font-weight: 650;
 }
 
 .summary-label i {
     flex: 0 0 15px;
+
     width: 15px;
+
     text-align: center;
 }
 
 .summary-value {
+    flex: 0 0 auto;
+
     color: var(--dash-text);
+
     font-size: .84rem;
     font-weight: 850;
 }
 
+/* =========================================================
+   SYSTEM STATUS
+   ========================================================= */
+
 .system-list {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
     gap: 9px;
 }
 
 .system-item {
     min-width: 0;
+
     padding: 11px;
+
     border: 1px solid var(--dash-border);
     border-radius: 10px;
 }
 
 .system-item h4 {
     margin: 0 0 4px;
+
     color: var(--dash-text);
+
     font-size: .71rem;
     font-weight: 850;
 }
 
 .system-item p {
     margin: 0 0 8px;
+
     color: var(--dash-muted);
+
     font-size: .62rem;
+
     line-height: 1.35;
 }
 
 .status-badge {
     display: inline-flex;
+
     padding: 4px 7px;
+
     border-radius: 99px;
+
     color: #047857;
     background: rgba(16,185,129,.10);
+
     font-size: .58rem;
     font-weight: 850;
 }
 
-/* ---------- DARK THEME ---------- */
+/* =========================================================
+   DARK THEME
+   ========================================================= */
 
 [data-theme="dark"] {
     --dash-text: #f1f5f9;
     --dash-muted: #94a3b8;
+
     --dash-bg: #0f172a;
     --dash-card: #182235;
     --dash-border: #293548;
-    --dash-shadow: 0 6px 24px rgba(0,0,0,.18);
-    --dash-shadow-hover: 0 14px 34px rgba(0,0,0,.28);
+
+    --dash-shadow:
+        0 6px 24px rgba(0,0,0,.18);
+
+    --dash-shadow-hover:
+        0 14px 34px rgba(0,0,0,.28);
 }
 
 [data-theme="dark"] .dashboard-hero {
     background:
-        radial-gradient(circle at 85% 10%, rgba(37,99,235,.16), transparent 28%),
-        linear-gradient(135deg, #182235 0%, #172033 100%);
+        radial-gradient(
+            circle at 85% 10%,
+            rgba(37,99,235,.16),
+            transparent 28%
+        ),
+        linear-gradient(
+            135deg,
+            #182235 0%,
+            #172033 100%
+        );
 }
 
 [data-theme="dark"] .live-status,
@@ -696,25 +1073,36 @@
     color: #f8fafc;
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* =========================================================
+   LARGE TABLET
+   ========================================================= */
 
 @media (max-width: 1320px) {
+
     .stats-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
     }
 
     .attention-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
     }
 }
 
+/* =========================================================
+   TABLET
+   ========================================================= */
+
 @media (max-width: 1050px) {
+
     .admin-dashboard {
         padding: 24px 20px 45px;
     }
 
     .management-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
     }
 
     .bottom-grid {
@@ -722,58 +1110,814 @@
     }
 }
 
+/* =========================================================
+   MOBILE APP MODE
+   ========================================================= */
+
 @media (max-width: 760px) {
-    .admin-dashboard {
-        padding: 18px 14px 35px;
+
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
+    .admin-dashboard {
+        width: 100%;
+
+        margin: 0;
+
+        padding:
+            10px
+            10px
+            88px;
+
+        overflow-x: hidden;
+    }
+
+    /* -----------------------------------------------------
+       SECTION
+       ----------------------------------------------------- */
+
+    .dashboard-section {
+        margin-bottom: 16px;
+    }
+
+    .section-head {
+        margin-bottom: 9px;
+
+        padding:
+            0
+            2px;
+    }
+
+    .section-title {
+        gap: 7px;
+
+        font-size: .88rem;
+    }
+
+    .section-title i {
+        width: 27px;
+        height: 27px;
+
+        border-radius: 8px;
+
+        font-size: .68rem;
+    }
+
+    /* -----------------------------------------------------
+       APP HERO
+       ----------------------------------------------------- */
+
     .dashboard-hero {
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 19px;
-        gap: 16px;
+        display: flex;
+
+        flex-direction: row;
+
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 10px;
+
+        min-height: 94px;
+
+        margin-bottom: 15px;
+
+        padding: 14px;
+
         border-radius: 17px;
+
+        background:
+            radial-gradient(
+                circle at 90% 5%,
+                rgba(37,99,235,.13),
+                transparent 35%
+            ),
+            linear-gradient(
+                135deg,
+                #ffffff 0%,
+                #f9fbff 100%
+            );
+
+        box-shadow:
+            0 5px 18px rgba(15,23,42,.06);
+    }
+
+    .hero-copy {
+        flex: 1;
+        min-width: 0;
     }
 
     .hero-title {
-        font-size: 1.45rem;
+        gap: 8px;
+
+        margin-bottom: 5px;
+
+        font-size: 1.08rem;
+
+        letter-spacing: -.035em;
     }
 
     .hero-icon {
-        width: 42px;
-        height: 42px;
-        flex-basis: 42px;
-        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+
+        flex: 0 0 36px;
+
+        border-radius: 10px;
+
+        font-size: .76rem;
     }
 
-    .hero-meta,
+    .hero-subtitle {
+        max-width: 205px;
+
+        overflow: hidden;
+
+        font-size: .59rem;
+
+        line-height: 1.35;
+
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .hero-meta {
+        flex: 0 0 auto;
+    }
+
     .live-status {
+        min-height: 30px;
+
+        padding: 0 8px;
+
+        gap: 5px;
+
+        border-radius: 8px;
+
+        font-size: .54rem;
+    }
+
+    .live-status strong {
+        font-size: .55rem;
+    }
+
+    .live-dot {
+        width: 6px;
+        height: 6px;
+
+        flex-basis: 6px;
+
+        box-shadow:
+            0 0 0 3px rgba(16,185,129,.10);
+    }
+
+    /* -----------------------------------------------------
+       KPI — 2 COLUMNS
+       ----------------------------------------------------- */
+
+    .stats-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+    .stat-card {
+        min-height: 91px;
+
+        padding: 11px;
+
+        border-radius: 13px;
+
+        box-shadow:
+            0 4px 13px rgba(15,23,42,.05);
+    }
+
+    .stat-card::before {
+        height: 2px;
+    }
+
+    .stat-top {
+        gap: 5px;
+    }
+
+    .stat-label {
+        margin-bottom: 5px;
+
+        font-size: .51rem;
+
+        letter-spacing: .045em;
+    }
+
+    .stat-value {
+        font-size: 1.22rem;
+    }
+
+    .stat-icon {
+        width: 31px;
+        height: 31px;
+
+        flex: 0 0 31px;
+
+        border-radius: 9px;
+
+        font-size: .67rem;
+    }
+
+    .stat-bottom {
+        gap: 4px;
+
+        margin-top: 9px;
+
+        font-size: .49rem;
+    }
+
+    /* -----------------------------------------------------
+       AT A GLANCE — 2 COLUMNS
+       ----------------------------------------------------- */
+
+    .attention-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+    .attention-card {
+        min-height: 65px;
+
+        padding: 9px;
+
+        gap: 7px;
+
+        border-radius: 12px;
+
+        box-shadow:
+            0 4px 13px rgba(15,23,42,.045);
+    }
+
+    .attention-icon {
+        width: 30px;
+        height: 30px;
+
+        flex: 0 0 30px;
+
+        border-radius: 8px;
+
+        font-size: .65rem;
+    }
+
+    .attention-copy {
+        min-width: 0;
+    }
+
+    .attention-copy strong {
+        margin-bottom: 2px;
+
+        font-size: .61rem;
+
+        line-height: 1.2;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attention-copy span {
+        font-size: .48rem;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .attention-number {
+        font-size: .76rem;
+    }
+
+    /* -----------------------------------------------------
+       QUICK ACTIONS — 2 COLUMNS
+       ----------------------------------------------------- */
+
+    .quick-actions {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+    .quick-action {
+        min-height: 76px;
+
+        padding: 10px;
+
+        gap: 8px;
+
+        border-radius: 12px;
+
+        box-shadow:
+            0 4px 13px rgba(15,23,42,.05);
+    }
+
+    .quick-action-icon {
+        width: 34px;
+        height: 34px;
+
+        flex: 0 0 34px;
+
+        border-radius: 9px;
+
+        font-size: .7rem;
+    }
+
+    .quick-action-content {
+        min-width: 0;
+    }
+
+    .quick-action-content h3 {
+        margin-bottom: 2px;
+
+        font-size: .62rem;
+
+        line-height: 1.2;
+    }
+
+    .quick-action-content p {
+        display: none;
+    }
+
+    .pending-pill {
+        margin-top: 4px;
+
+        padding: 2px 5px;
+
+        font-size: .47rem;
+    }
+
+    .quick-action-arrow {
+        display: none;
+    }
+
+    /* -----------------------------------------------------
+       MANAGEMENT — 2 COLUMNS
+       ----------------------------------------------------- */
+
+    .management-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+    .management-card {
+        display: flex;
+
+        flex-direction: column;
+
+        min-width: 0;
+
+        min-height: 132px;
+
+        padding: 10px;
+
+        border-radius: 12px;
+
+        box-shadow:
+            0 4px 13px rgba(15,23,42,.05);
+    }
+
+    .management-icon {
+        width: 32px;
+        height: 32px;
+
+        flex: 0 0 32px;
+
+        margin-bottom: 7px;
+
+        border-radius: 8px;
+
+        font-size: .68rem;
+    }
+
+    .management-card h3 {
+        margin: 0 0 3px;
+
+        font-size: .64rem;
+
+        line-height: 1.2;
+    }
+
+    .management-card p {
+        display: -webkit-box;
+
+        overflow: hidden;
+
+        font-size: .50rem;
+
+        line-height: 1.35;
+
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .management-footer {
         width: 100%;
+
+        margin-top: auto;
+
+        padding-top: 7px;
+
+        gap: 5px;
+    }
+
+    .management-badge {
+        max-width: 50%;
+
+        padding: 3px 5px;
+
+        font-size: .44rem;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+    }
+
+    .management-btn {
+        min-height: 28px;
+
+        margin-left: auto;
+
+        padding: 5px 6px;
+
+        border-radius: 7px;
+
+        font-size: .46rem;
+
+        white-space: nowrap;
+    }
+
+    .management-btn i {
+        font-size: .43rem;
+    }
+
+    /* -----------------------------------------------------
+       BOTTOM INFO
+       ----------------------------------------------------- */
+
+    .bottom-grid {
+        display: grid;
+
+        grid-template-columns: 1fr;
+
+        gap: 9px;
+    }
+
+    .info-card {
+        padding: 12px;
+
+        border-radius: 13px;
+    }
+
+    .info-card-title {
+        gap: 7px;
+
+        margin-bottom: 9px;
+
+        font-size: .69rem;
+    }
+
+    .info-card-title i {
+        width: 25px;
+        height: 25px;
+
+        border-radius: 7px;
+
+        font-size: .57rem;
+    }
+
+    /* -----------------------------------------------------
+       ACTION SUMMARY — 2 COLUMNS
+       ----------------------------------------------------- */
+
+    .summary-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 7px;
+    }
+
+    .summary-item {
+        min-height: 44px;
+
+        padding: 7px;
+
+        gap: 5px;
+
+        border-radius: 8px;
+    }
+
+    .summary-label {
+        gap: 5px;
+
+        font-size: .47rem;
+
+        line-height: 1.2;
+    }
+
+    .summary-label i {
+        width: 12px;
+
+        flex-basis: 12px;
+    }
+
+    .summary-value {
+        font-size: .66rem;
+    }
+
+    /* -----------------------------------------------------
+       SYSTEM STATUS — HORIZONTAL APP SWIPE
+       ----------------------------------------------------- */
+
+    .system-list {
+        display: flex;
+
+        width: 100%;
+
+        gap: 8px;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        padding:
+            2px
+            2px
+            7px;
+
+        scroll-snap-type: x mandatory;
+
+        -webkit-overflow-scrolling: touch;
+
+        scrollbar-width: none;
+    }
+
+    .system-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .system-item {
+        flex:
+            0 0 78%;
+
+        min-width: 78%;
+
+        padding: 10px;
+
+        border-radius: 10px;
+
+        scroll-snap-align: start;
+    }
+
+    .system-item h4 {
+        margin-bottom: 4px;
+
+        font-size: .61rem;
+    }
+
+    .system-item p {
+        margin-bottom: 7px;
+
+        font-size: .51rem;
+    }
+
+    .status-badge {
+        padding: 3px 6px;
+
+        font-size: .48rem;
+    }
+
+    /* -----------------------------------------------------
+       TOUCH / MOBILE FEEDBACK
+       ----------------------------------------------------- */
+
+    .quick-action,
+    .management-btn {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    .quick-action:active,
+    .management-card:active {
+        transform: scale(.985);
+    }
+
+    .management-btn:active {
+        transform: scale(.96);
+    }
+
+    /* Remove desktop hover lift on touch screens */
+
+    .stat-card:hover,
+    .quick-action:hover,
+    .management-card:hover {
+        transform: none;
+    }
+}
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 390px) {
+
+    .admin-dashboard {
+        padding:
+            8px
+            8px
+            82px;
+    }
+
+    .dashboard-hero {
+        min-height: 88px;
+
+        padding: 12px;
+
+        border-radius: 15px;
+    }
+
+    .hero-title {
+        font-size: 1rem;
+    }
+
+    .hero-icon {
+        width: 33px;
+        height: 33px;
+
+        flex-basis: 33px;
+
+        border-radius: 9px;
+
+        font-size: .69rem;
+    }
+
+    .hero-subtitle {
+        max-width: 180px;
+
+        font-size: .54rem;
+    }
+
+    .live-status {
+        min-height: 27px;
+
+        padding: 0 6px;
+
+        font-size: .48rem;
+    }
+
+    .live-status span:not(.live-dot) {
+        display: none;
     }
 
     .stats-grid,
     .attention-grid,
     .quick-actions,
-    .management-grid,
-    .summary-grid,
-    .system-list {
-        grid-template-columns: 1fr;
+    .management-grid {
+        gap: 7px;
     }
 
     .stat-card {
-        padding: 15px;
+        min-height: 87px;
+
+        padding: 9px;
+    }
+
+    .stat-label {
+        font-size: .48rem;
+    }
+
+    .stat-value {
+        font-size: 1.12rem;
+    }
+
+    .stat-icon {
+        width: 29px;
+        height: 29px;
+
+        flex-basis: 29px;
+    }
+
+    .stat-bottom {
+        font-size: .46rem;
+    }
+
+    .attention-card {
+        min-height: 61px;
+
+        padding: 7px;
+    }
+
+    .attention-icon {
+        width: 28px;
+        height: 28px;
+
+        flex-basis: 28px;
+    }
+
+    .attention-copy strong {
+        font-size: .58rem;
+    }
+
+    .attention-copy span {
+        font-size: .45rem;
+    }
+
+    .attention-number {
+        font-size: .72rem;
     }
 
     .quick-action {
-        padding: 15px;
+        min-height: 69px;
+
+        padding: 8px;
+    }
+
+    .quick-action-icon {
+        width: 30px;
+        height: 30px;
+
+        flex-basis: 30px;
+    }
+
+    .quick-action-content h3 {
+        font-size: .58rem;
     }
 
     .management-card {
-        padding: 15px;
+        min-height: 126px;
+
+        padding: 8px;
+    }
+
+    .management-icon {
+        width: 30px;
+        height: 30px;
+
+        flex-basis: 30px;
+    }
+
+    .management-card h3 {
+        font-size: .60rem;
+    }
+
+    .management-card p {
+        font-size: .48rem;
+    }
+
+    .management-btn {
+        padding: 4px 5px;
+
+        font-size: .43rem;
+    }
+
+    .summary-item {
+        min-height: 41px;
+
+        padding: 6px;
+    }
+
+    .summary-label {
+        font-size: .44rem;
+    }
+
+    .summary-value {
+        font-size: .62rem;
+    }
+
+    .system-item {
+        flex-basis: 84%;
+        min-width: 84%;
     }
 }
 
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
+
     .stat-card,
     .quick-action,
     .management-card,
@@ -785,388 +1929,1061 @@
 </style>
 {% endblock %}
 
+
 {% block content %}
+
 <div class="admin-dashboard">
 
-    <!-- HERO -->
+    <!-- =====================================================
+         HERO
+         ===================================================== -->
+
     <header class="dashboard-hero">
+
         <div class="hero-copy">
+
             <h1 class="hero-title">
-                <span class="hero-icon"><i class="fas fa-chart-pie"></i></span>
+
+                <span class="hero-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </span>
+
                 Admin Dashboard
+
             </h1>
-            <p class="hero-subtitle">Platform overview and complete management suite</p>
+
+            <p class="hero-subtitle">
+                Platform overview and complete management suite
+            </p>
+
         </div>
 
         <div class="hero-meta">
+
             <div class="live-status">
+
                 <span class="live-dot"></span>
+
                 <span>Last updated</span>
-                <strong id="lastUpdate">Just now</strong>
+
+                <strong id="lastUpdate">
+                    Just now
+                </strong>
+
             </div>
+
         </div>
+
     </header>
 
-    <!-- KEY METRICS -->
+
+    <!-- =====================================================
+         KEY METRICS
+         ===================================================== -->
+
     <section class="dashboard-section">
+
         <div class="section-head">
+
             <h2 class="section-title">
+
                 <i class="fas fa-chart-bar"></i>
+
                 Key Metrics
+
             </h2>
+
         </div>
+
 
         <div class="stats-grid">
+
+            <!-- TOTAL USERS -->
+
             <div class="stat-card primary">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Total Users</span>
-                        <span class="stat-value">{{ total_users }}</span>
+
+                        <span class="stat-label">
+                            Total Users
+                        </span>
+
+                        <span class="stat-value">
+                            {{ total_users }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-users"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-arrow-up"></i> Active platform users</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-arrow-up"></i>
+
+                    Active platform users
+
+                </div>
+
             </div>
+
+
+            <!-- CAMPAIGNS -->
 
             <div class="stat-card info">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Campaigns</span>
-                        <span class="stat-value">{{ total_campaigns }}</span>
+
+                        <span class="stat-label">
+                            Campaigns
+                        </span>
+
+                        <span class="stat-value">
+                            {{ total_campaigns }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-bullhorn"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-layer-group"></i> All time campaigns</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-layer-group"></i>
+
+                    All time campaigns
+
+                </div>
+
             </div>
+
+
+            <!-- ACTIVE -->
 
             <div class="stat-card success">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Active Now</span>
-                        <span class="stat-value">{{ active_campaigns }}</span>
+
+                        <span class="stat-label">
+                            Active Now
+                        </span>
+
+                        <span class="stat-value">
+                            {{ active_campaigns }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-play-circle"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-check-circle"></i> Currently running</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-check-circle"></i>
+
+                    Currently running
+
+                </div>
+
             </div>
 
+
+            <!-- PENDING TASKS -->
+
             <div class="stat-card warning">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Pending Tasks</span>
-                        <span class="stat-value">{{ pending_tasks }}</span>
+
+                        <span class="stat-label">
+                            Pending Tasks
+                        </span>
+
+                        <span class="stat-value">
+                            {{ pending_tasks }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-tasks"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-tasks"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-clock"></i> Awaiting verification</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-clock"></i>
+
+                    Awaiting verification
+
+                </div>
+
             </div>
+
+
+            <!-- SUPPORT -->
 
             <div class="stat-card danger">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Support Tickets</span>
-                        <span class="stat-value">{{ pending_support }}</span>
+
+                        <span class="stat-label">
+                            Support Tickets
+                        </span>
+
+                        <span class="stat-value">
+                            {{ pending_support }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-headset"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-headset"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-bell"></i> Pending requests</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-bell"></i>
+
+                    Pending requests
+
+                </div>
+
             </div>
+
+
+            <!-- REDEEMS -->
 
             <div class="stat-card warning">
+
                 <div class="stat-top">
+
                     <div>
-                        <span class="stat-label">Redeems</span>
-                        <span class="stat-value">{{ pending_redeems }}</span>
+
+                        <span class="stat-label">
+                            Redeems
+                        </span>
+
+                        <span class="stat-value">
+                            {{ pending_redeems }}
+                        </span>
+
                     </div>
-                    <span class="stat-icon"><i class="fas fa-money-bill-wave"></i></span>
+
+                    <span class="stat-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+
                 </div>
-                <div class="stat-bottom"><i class="fas fa-clock"></i> Pending payout</div>
+
+                <div class="stat-bottom">
+
+                    <i class="fas fa-clock"></i>
+
+                    Pending payout
+
+                </div>
+
             </div>
+
         </div>
+
     </section>
 
-    <!-- ACTION SUMMARY -->
+
+    <!-- =====================================================
+         AT A GLANCE
+         ===================================================== -->
+
     <section class="dashboard-section">
+
         <div class="section-head">
+
             <h2 class="section-title">
+
                 <i class="fas fa-bell"></i>
+
                 At a Glance
+
             </h2>
+
         </div>
+
 
         <div class="attention-grid">
-            <div class="attention-card">
-                <span class="attention-icon orange"><i class="fas fa-hourglass-half"></i></span>
-                <div class="attention-copy">
-                    <strong>Tasks to verify</strong>
-                    <span>Awaiting verification</span>
-                </div>
-                <span class="attention-number">{{ pending_tasks }}</span>
-            </div>
+
+
+            <!-- TASKS -->
 
             <div class="attention-card">
-                <span class="attention-icon red"><i class="fas fa-headset"></i></span>
+
+                <span class="attention-icon orange">
+                    <i class="fas fa-hourglass-half"></i>
+                </span>
+
                 <div class="attention-copy">
-                    <strong>Support tickets</strong>
-                    <span>Open support requests</span>
+
+                    <strong>
+                        Tasks to verify
+                    </strong>
+
+                    <span>
+                        Awaiting verification
+                    </span>
+
                 </div>
-                <span class="attention-number">{{ pending_support }}</span>
+
+                <span class="attention-number">
+                    {{ pending_tasks }}
+                </span>
+
             </div>
 
-            <div class="attention-card">
-                <span class="attention-icon orange"><i class="fas fa-money-bill-wave"></i></span>
-                <div class="attention-copy">
-                    <strong>Redeem requests</strong>
-                    <span>Pending payout requests</span>
-                </div>
-                <span class="attention-number">{{ pending_redeems }}</span>
-            </div>
+
+            <!-- SUPPORT -->
 
             <div class="attention-card">
-                <span class="attention-icon green"><i class="fas fa-play-circle"></i></span>
+
+                <span class="attention-icon red">
+                    <i class="fas fa-headset"></i>
+                </span>
+
                 <div class="attention-copy">
-                    <strong>Active campaigns</strong>
-                    <span>Currently running</span>
+
+                    <strong>
+                        Support tickets
+                    </strong>
+
+                    <span>
+                        Open support requests
+                    </span>
+
                 </div>
-                <span class="attention-number">{{ active_campaigns }}</span>
+
+                <span class="attention-number">
+                    {{ pending_support }}
+                </span>
+
             </div>
+
+
+            <!-- REDEEMS -->
+
+            <div class="attention-card">
+
+                <span class="attention-icon orange">
+                    <i class="fas fa-money-bill-wave"></i>
+                </span>
+
+                <div class="attention-copy">
+
+                    <strong>
+                        Redeem requests
+                    </strong>
+
+                    <span>
+                        Pending payout requests
+                    </span>
+
+                </div>
+
+                <span class="attention-number">
+                    {{ pending_redeems }}
+                </span>
+
+            </div>
+
+
+            <!-- ACTIVE CAMPAIGNS -->
+
+            <div class="attention-card">
+
+                <span class="attention-icon green">
+                    <i class="fas fa-play-circle"></i>
+                </span>
+
+                <div class="attention-copy">
+
+                    <strong>
+                        Active campaigns
+                    </strong>
+
+                    <span>
+                        Currently running
+                    </span>
+
+                </div>
+
+                <span class="attention-number">
+                    {{ active_campaigns }}
+                </span>
+
+            </div>
+
+
         </div>
+
     </section>
 
-    <!-- QUICK ACTIONS -->
+
+    <!-- =====================================================
+         QUICK ACTIONS
+         ===================================================== -->
+
     <section class="dashboard-section">
+
         <div class="section-head">
+
             <h2 class="section-title">
+
                 <i class="fas fa-bolt"></i>
+
                 Quick Actions
+
             </h2>
+
         </div>
+
 
         <div class="quick-actions">
-            <a href="/admin/create_campaign" class="quick-action">
-                <span class="quick-action-icon blue"><i class="fas fa-plus-circle"></i></span>
-                <span class="quick-action-content">
-                    <h3>Create New Campaign</h3>
-                    <p>Launch a new campaign and engage users</p>
+
+
+            <a
+                href="/admin/create_campaign"
+                class="quick-action"
+            >
+
+                <span class="quick-action-icon blue">
+
+                    <i class="fas fa-plus-circle"></i>
+
                 </span>
+
+                <span class="quick-action-content">
+
+                    <h3>
+                        Create New Campaign
+                    </h3>
+
+                    <p>
+                        Launch a new campaign and engage users
+                    </p>
+
+                </span>
+
                 <i class="fas fa-chevron-right quick-action-arrow"></i>
+
             </a>
 
-            <a href="/admin/verify_tasks" class="quick-action">
-                <span class="quick-action-icon yellow"><i class="fas fa-tasks"></i></span>
-                <span class="quick-action-content">
-                    <h3>Verify Tasks</h3>
-                    <p>Review and approve submitted tasks</p>
-                    <span class="pending-pill">{{ pending_tasks }} Pending</span>
+
+            <a
+                href="/admin/verify_tasks"
+                class="quick-action"
+            >
+
+                <span class="quick-action-icon yellow">
+
+                    <i class="fas fa-tasks"></i>
+
                 </span>
+
+                <span class="quick-action-content">
+
+                    <h3>
+                        Verify Tasks
+                    </h3>
+
+                    <p>
+                        Review and approve submitted tasks
+                    </p>
+
+                    <span class="pending-pill">
+                        {{ pending_tasks }} Pending
+                    </span>
+
+                </span>
+
                 <i class="fas fa-chevron-right quick-action-arrow"></i>
+
             </a>
+
+
         </div>
+
     </section>
 
-    <!-- MANAGEMENT -->
+
+    <!-- =====================================================
+         MANAGEMENT
+         ===================================================== -->
+
     <section class="dashboard-section">
+
         <div class="section-head">
+
             <h2 class="section-title">
+
                 <i class="fas fa-cogs"></i>
+
                 Management
+
             </h2>
+
         </div>
+
 
         <div class="management-grid">
-            <article class="management-card">
-                <span class="management-icon blue"><i class="fas fa-bullhorn"></i></span>
-                <div>
-                    <h3>Manage Campaigns</h3>
-                    <p>Create, edit, pause or resume campaigns.</p>
-                </div>
-                <div class="management-footer">
-                    <a href="/admin/campaigns" class="management-btn btn-blue">
-                        <i class="fas fa-arrow-right"></i> View Campaigns
-                    </a>
-                </div>
-            </article>
+
+
+            <!-- CAMPAIGNS -->
 
             <article class="management-card">
-                <span class="management-icon green"><i class="fas fa-check-square"></i></span>
+
+                <span class="management-icon blue">
+
+                    <i class="fas fa-bullhorn"></i>
+
+                </span>
+
                 <div>
-                    <h3>Verify Tasks</h3>
-                    <p>Review and approve task submissions.</p>
+
+                    <h3>
+                        Manage Campaigns
+                    </h3>
+
+                    <p>
+                        Create, edit, pause or resume campaigns.
+                    </p>
+
                 </div>
+
                 <div class="management-footer">
-                    <a href="/admin/verify_tasks" class="management-btn btn-green">
-                        <i class="fas fa-arrow-right"></i> Review Pending
+
+                    <a
+                        href="/admin/campaigns"
+                        class="management-btn btn-blue"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        View Campaigns
+
                     </a>
+
                 </div>
+
             </article>
 
-            <article class="management-card">
-                <span class="management-icon red"><i class="fas fa-headset"></i></span>
-                <div>
-                    <h3>Support Tickets</h3>
-                    <p>Manage user support requests.</p>
-                </div>
-                <div class="management-footer">
-                    <span class="management-badge red">{{ pending_support }} Pending</span>
-                    <a href="/admin/support" class="management-btn btn-red">
-                        <i class="fas fa-arrow-right"></i> View Tickets
-                    </a>
-                </div>
-            </article>
+
+            <!-- VERIFY -->
 
             <article class="management-card">
-                <span class="management-icon yellow"><i class="fas fa-money-bill-wave"></i></span>
+
+                <span class="management-icon green">
+
+                    <i class="fas fa-check-square"></i>
+
+                </span>
+
                 <div>
-                    <h3>Process Redeems</h3>
-                    <p>Review and approve payout requests.</p>
+
+                    <h3>
+                        Verify Tasks
+                    </h3>
+
+                    <p>
+                        Review and approve task submissions.
+                    </p>
+
                 </div>
+
                 <div class="management-footer">
-                    <span class="management-badge yellow">{{ pending_redeems }} Pending</span>
-                    <a href="/admin/redeems" class="management-btn btn-yellow">
-                        <i class="fas fa-arrow-right"></i> View Requests
+
+                    <a
+                        href="/admin/verify_tasks"
+                        class="management-btn btn-green"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        Review Pending
+
                     </a>
+
                 </div>
+
             </article>
 
-            <article class="management-card">
-                <span class="management-icon cyan"><i class="fas fa-users"></i></span>
-                <div>
-                    <h3>View All Users</h3>
-                    <p>See user details and performance.</p>
-                </div>
-                <div class="management-footer">
-                    <span class="management-badge cyan">{{ total_users }} Users</span>
-                    <a href="/admin/list/users" class="management-btn btn-blue">
-                        <i class="fas fa-arrow-right"></i> View Users
-                    </a>
-                </div>
-            </article>
+
+            <!-- SUPPORT -->
 
             <article class="management-card">
-                <span class="management-icon blue"><i class="fas fa-chart-line"></i></span>
+
+                <span class="management-icon red">
+
+                    <i class="fas fa-headset"></i>
+
+                </span>
+
                 <div>
-                    <h3>Analytics</h3>
-                    <p>View platform statistics and trends.</p>
+
+                    <h3>
+                        Support Tickets
+                    </h3>
+
+                    <p>
+                        Manage user support requests.
+                    </p>
+
                 </div>
+
                 <div class="management-footer">
-                    <a href="/admin/analytics" class="management-btn btn-blue">
-                        <i class="fas fa-arrow-right"></i> View Analytics
+
+                    <span class="management-badge red">
+                        {{ pending_support }} Pending
+                    </span>
+
+                    <a
+                        href="/admin/support"
+                        class="management-btn btn-red"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        View Tickets
+
                     </a>
+
                 </div>
+
             </article>
 
+
+            <!-- REDEEMS -->
+
             <article class="management-card">
-                <span class="management-icon purple"><i class="fas fa-sitemap"></i></span>
+
+                <span class="management-icon yellow">
+
+                    <i class="fas fa-money-bill-wave"></i>
+
+                </span>
+
                 <div>
-                    <h3>Task Allocations</h3>
-                    <p>Track assigned tasks, limits and user details.</p>
+
+                    <h3>
+                        Process Redeems
+                    </h3>
+
+                    <p>
+                        Review and approve payout requests.
+                    </p>
+
                 </div>
+
                 <div class="management-footer">
-                    <a href="/admin/allocations" class="management-btn btn-purple">
-                        <i class="fas fa-arrow-right"></i> Track Details
+
+                    <span class="management-badge yellow">
+                        {{ pending_redeems }} Pending
+                    </span>
+
+                    <a
+                        href="/admin/redeems"
+                        class="management-btn btn-yellow"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        View Requests
+
                     </a>
+
                 </div>
+
             </article>
+
+
+            <!-- USERS -->
+
+            <article class="management-card">
+
+                <span class="management-icon cyan">
+
+                    <i class="fas fa-users"></i>
+
+                </span>
+
+                <div>
+
+                    <h3>
+                        View All Users
+                    </h3>
+
+                    <p>
+                        See user details and performance.
+                    </p>
+
+                </div>
+
+                <div class="management-footer">
+
+                    <span class="management-badge cyan">
+                        {{ total_users }} Users
+                    </span>
+
+                    <a
+                        href="/admin/list/users"
+                        class="management-btn btn-blue"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        View Users
+
+                    </a>
+
+                </div>
+
+            </article>
+
+
+            <!-- ANALYTICS -->
+
+            <article class="management-card">
+
+                <span class="management-icon blue">
+
+                    <i class="fas fa-chart-line"></i>
+
+                </span>
+
+                <div>
+
+                    <h3>
+                        Analytics
+                    </h3>
+
+                    <p>
+                        View platform statistics and trends.
+                    </p>
+
+                </div>
+
+                <div class="management-footer">
+
+                    <a
+                        href="/admin/analytics"
+                        class="management-btn btn-blue"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        View Analytics
+
+                    </a>
+
+                </div>
+
+            </article>
+
+
+            <!-- TASK ALLOCATIONS -->
+
+            <article class="management-card">
+
+                <span class="management-icon purple">
+
+                    <i class="fas fa-sitemap"></i>
+
+                </span>
+
+                <div>
+
+                    <h3>
+                        Task Allocations
+                    </h3>
+
+                    <p>
+                        Track assigned tasks, limits and user details.
+                    </p>
+
+                </div>
+
+                <div class="management-footer">
+
+                    <a
+                        href="/admin/allocations"
+                        class="management-btn btn-purple"
+                    >
+
+                        <i class="fas fa-arrow-right"></i>
+
+                        Track Details
+
+                    </a>
+
+                </div>
+
+            </article>
+
+
         </div>
+
     </section>
 
-    <!-- BOTTOM INFO -->
+
+    <!-- =====================================================
+         BOTTOM INFORMATION
+         ===================================================== -->
+
     <section class="dashboard-section">
+
         <div class="bottom-grid">
 
+
+            <!-- ACTION SUMMARY -->
+
             <div class="info-card">
+
                 <h2 class="info-card-title">
+
                     <i class="fas fa-clipboard-list"></i>
+
                     Action Summary
+
                 </h2>
+
 
                 <div class="summary-grid">
+
+
                     <div class="summary-item">
+
                         <span class="summary-label">
-                            <i class="fas fa-hourglass-half" style="color:#f59e0b;"></i>
+
+                            <i
+                                class="fas fa-hourglass-half"
+                                style="color:#f59e0b;"
+                            ></i>
+
                             Tasks awaiting verification
+
                         </span>
-                        <strong class="summary-value">{{ pending_tasks }}</strong>
+
+                        <strong class="summary-value">
+                            {{ pending_tasks }}
+                        </strong>
+
                     </div>
 
+
                     <div class="summary-item">
+
                         <span class="summary-label">
-                            <i class="fas fa-headset" style="color:#ef4444;"></i>
+
+                            <i
+                                class="fas fa-headset"
+                                style="color:#ef4444;"
+                            ></i>
+
                             Open support tickets
+
                         </span>
-                        <strong class="summary-value">{{ pending_support }}</strong>
+
+                        <strong class="summary-value">
+                            {{ pending_support }}
+                        </strong>
+
                     </div>
 
+
                     <div class="summary-item">
+
                         <span class="summary-label">
-                            <i class="fas fa-money-bill-wave" style="color:#f59e0b;"></i>
+
+                            <i
+                                class="fas fa-money-bill-wave"
+                                style="color:#f59e0b;"
+                            ></i>
+
                             Redeem requests pending
+
                         </span>
-                        <strong class="summary-value">{{ pending_redeems }}</strong>
+
+                        <strong class="summary-value">
+                            {{ pending_redeems }}
+                        </strong>
+
                     </div>
 
+
                     <div class="summary-item">
+
                         <span class="summary-label">
-                            <i class="fas fa-play-circle" style="color:#10b981;"></i>
+
+                            <i
+                                class="fas fa-play-circle"
+                                style="color:#10b981;"
+                            ></i>
+
                             Campaigns currently active
+
                         </span>
-                        <strong class="summary-value">{{ active_campaigns }}</strong>
+
+                        <strong class="summary-value">
+                            {{ active_campaigns }}
+                        </strong>
+
                     </div>
+
+
                 </div>
+
             </div>
+
+
+            <!-- SYSTEM STATUS -->
 
             <div class="info-card">
+
                 <h2 class="info-card-title">
+
                     <i class="fas fa-heartbeat"></i>
+
                     System Status
+
                 </h2>
 
+
                 <div class="system-list">
-                    <div class="system-item">
-                        <h4>Platform Status</h4>
-                        <p>All systems running smoothly</p>
-                        <span class="status-badge">Operational</span>
-                    </div>
+
 
                     <div class="system-item">
-                        <h4>Database</h4>
-                        <p>All data synced successfully</p>
-                        <span class="status-badge">Connected</span>
+
+                        <h4>
+                            Platform Status
+                        </h4>
+
+                        <p>
+                            All systems running smoothly
+                        </p>
+
+                        <span class="status-badge">
+                            Operational
+                        </span>
+
                     </div>
 
+
                     <div class="system-item">
-                        <h4>API Status</h4>
-                        <p>All endpoints working properly</p>
-                        <span class="status-badge">Active</span>
+
+                        <h4>
+                            Database
+                        </h4>
+
+                        <p>
+                            All data synced successfully
+                        </p>
+
+                        <span class="status-badge">
+                            Connected
+                        </span>
+
                     </div>
+
+
+                    <div class="system-item">
+
+                        <h4>
+                            API Status
+                        </h4>
+
+                        <p>
+                            All endpoints working properly
+                        </p>
+
+                        <span class="status-badge">
+                            Active
+                        </span>
+
+                    </div>
+
+
                 </div>
+
             </div>
 
+
         </div>
+
     </section>
+
 
 </div>
 
+
+<!-- =========================================================
+     LIVE CLOCK
+     ========================================================= -->
+
 <script>
 (function () {
+
     "use strict";
 
     function updateDashboardTime() {
-        const element = document.getElementById("lastUpdate");
+
+        const element =
+            document.getElementById("lastUpdate");
+
         if (!element) return;
 
         const now = new Date();
-        element.textContent = now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        });
+
+        element.textContent =
+            now.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        updateDashboardTime();
-        setInterval(updateDashboardTime, 1000);
-    });
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            updateDashboardTime();
+
+            setInterval(
+                updateDashboardTime,
+                1000
+            );
+
+        }
+    );
+
 })();
 </script>
+
 {% endblock %}
