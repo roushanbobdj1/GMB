@@ -3,72 +3,74 @@
 {% block title %}Wallet - GMB Earn{% endblock %}
 
 {% block content %}
-<div class="container-fluid pt-5">
+<div class="container-fluid pt-4 pt-md-5">
     <!-- Header Section -->
-    <div class="row mb-5">
+    <div class="row mb-4 mb-md-5">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    <h1 class="fw-bold text-dark mb-1">
-                        <i class="fas fa-wallet text-primary"></i> My Wallet
+                    <h1 class="fw-bold text-dark mb-1 page-title">
+                        <i class="fas fa-wallet text-primary me-2"></i> My Wallet
                     </h1>
-                    <p class="text-muted mb-0">Manage your points and redeem rewards</p>
+                    <p class="text-secondary mb-0" style="font-size: 0.9rem;">Manage your points and redeem rewards</p>
                 </div>
-                <div class="text-end">
-                    <small class="text-muted">Last updated: <span id="lastUpdate">Just now</span></small>
+                <div class="text-md-end">
+                    <small class="text-muted fw-600 bg-light px-3 py-2 rounded-pill border">
+                        <i class="fas fa-clock me-1"></i> Last updated: <span id="lastUpdate">Just now</span>
+                    </small>
                 </div>
             </div>
-            <hr class="my-3 border-light">
+            <hr class="mt-4 mb-2 border-secondary opacity-10">
         </div>
     </div>
 
     <!-- Wallet Overview Cards -->
-    <div class="row mb-5">
+    <div class="row mb-4 mb-md-5">
         <!-- Total Points Card -->
-        <div class="col-md-4 mb-4">
-            <div class="stat-card border-start border-5 border-primary">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="stat-card primary-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="text-muted mb-2 fw-500">Total Points</p>
-                        <h2 class="fw-bold text-dark mb-0" id="walletTotalPoints">{{ wallet.total_points if wallet else 0 }}</h2>
+                        <p class="text-muted mb-1 fw-600 font-sm">Total Points</p>
+                        <h2 class="fw-bold text-dark mb-0 stat-value" id="walletTotalPoints">{{ wallet.total_points if wallet else 0 }}</h2>
                     </div>
-                    <div class="bg-primary bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-star text-primary fa-lg"></i>
+                    <div class="icon-box bg-primary-soft text-primary">
+                        <i class="fas fa-star fa-lg"></i>
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">Earned from all campaigns</small>
+                <small class="text-muted mt-3 d-block font-xs"><i class="fas fa-chart-line me-1"></i> Earned from all campaigns</small>
             </div>
         </div>
 
         <!-- Available Points Card -->
-        <div class="col-md-4 mb-4">
-            <div class="stat-card border-start border-5 border-success">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="stat-card success-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="text-muted mb-2 fw-500">Available Points</p>
-                        <h2 class="fw-bold text-dark mb-0" id="walletAvailablePoints">{{ wallet.available_points if wallet else 0 }}</h2>
+                        <p class="text-muted mb-1 fw-600 font-sm">Available Points</p>
+                        <h2 class="fw-bold text-dark mb-0 stat-value" id="walletAvailablePoints">{{ wallet.available_points if wallet else 0 }}</h2>
                     </div>
-                    <div class="bg-success bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-check-circle text-success fa-lg"></i>
+                    <div class="icon-box bg-success-soft text-success">
+                        <i class="fas fa-check-circle fa-lg"></i>
                     </div>
                 </div>
-                <small class="text-success mt-2 d-block"><i class="fas fa-arrow-up"></i> Ready to redeem</small>
+                <small class="text-success mt-3 d-block font-xs fw-600"><i class="fas fa-arrow-up me-1"></i> Ready to redeem</small>
             </div>
         </div>
 
         <!-- Redeemed Points Card -->
-        <div class="col-md-4 mb-4">
-            <div class="stat-card border-start border-5 border-warning">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="stat-card warning-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="text-muted mb-2 fw-500">Redeemed Points</p>
-                        <h2 class="fw-bold text-dark mb-0">{{ wallet.redeemed_points if wallet else 0 }}</h2>
+                        <p class="text-muted mb-1 fw-600 font-sm">Redeemed Points</p>
+                        <h2 class="fw-bold text-dark mb-0 stat-value">{{ wallet.redeemed_points if wallet else 0 }}</h2>
                     </div>
-                    <div class="bg-warning bg-opacity-10 p-3 rounded">
-                        <i class="fas fa-money-bill-wave text-warning fa-lg"></i>
+                    <div class="icon-box bg-warning-soft text-warning">
+                        <i class="fas fa-money-bill-wave fa-lg"></i>
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">Total amount redeemed</small>
+                <small class="text-muted mt-3 d-block font-xs"><i class="fas fa-history me-1"></i> Total amount redeemed</small>
             </div>
         </div>
     </div>
@@ -76,111 +78,114 @@
     <!-- Main Content Row -->
     <div class="row mb-5">
         <!-- Redeem Section -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-5 mb-4">
             <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-4">
-                    <h5 class="card-title fw-bold text-dark mb-0">
-                        <i class="fas fa-money-bill-wave text-primary"></i> Redeem Points
+                <div class="card-header bg-white py-3 py-md-4">
+                    <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center">
+                        <span class="icon-circle bg-primary-soft text-primary me-2"><i class="fas fa-gift"></i></span>
+                        Redeem Points
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-3 p-md-4">
                     <!-- Minimum 500 points required -->
                     {% if wallet and wallet.available_points >= 500 %}
                         <form method="POST" action="/redeem" id="redeemForm">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <!-- Points Input -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2">
-                                    <i class="fas fa-coins text-warning"></i> Points to Redeem
+                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                    <i class="fas fa-coins text-warning me-1"></i> Points to Redeem
                                 </label>
                                 <div class="input-group">
                                     <input
                                         type="number"
-                                        class="form-control form-control-lg"
+                                        class="form-control form-control-lg custom-input"
                                         name="points"
                                         min="500"
                                         max="{{ wallet.available_points if wallet else 0 }}"
-                                        placeholder="Enter points (minimum 500)"
+                                        placeholder="Min 500"
                                         id="pointsInput"
                                         required
                                         onchange="updateConversion()"
                                         oninput="updateConversion()"
                                     >
-                                    <span class="input-group-text bg-light">
+                                    <span class="input-group-text bg-light text-secondary font-sm">
                                         <strong>Max: {{ wallet.available_points if wallet else 0 }}</strong>
                                     </span>
                                 </div>
-                                <small class="text-muted d-block mt-2">
+                                <small class="text-secondary d-block mt-2 font-xs">
                                     <i class="fas fa-info-circle"></i> Minimum redemption is 500 points
                                 </small>
                             </div>
 
                             <!-- Conversion Info: 1 Point = ₹1 -->
-                            <div class="alert alert-info border-0 mb-4">
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <small class="text-muted"><strong>Conversion Rate:</strong></small>
+                            <div class="alert alert-info custom-alert border-0 mb-4">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-6 border-end border-info border-opacity-25">
+                                        <small class="text-primary opacity-75 d-block mb-1 font-xs fw-600">Conversion Rate</small>
                                         <h6 class="fw-bold text-primary mb-0">1 Point = ₹1</h6>
                                     </div>
-                                    <div class="col-6">
-                                        <small class="text-muted"><strong>You Will Get:</strong></small>
-                                        <h6 class="fw-bold text-success mb-0" id="rupeeValue">₹0</h6>
+                                    <div class="col-6 ps-3">
+                                        <small class="text-success opacity-75 d-block mb-1 font-xs fw-600">You Will Get</small>
+                                        <h6 class="fw-bold text-success mb-0 fs-5" id="rupeeValue">₹0</h6>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Payment Method -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2">
-                                    <i class="fas fa-credit-card text-primary"></i> Payment Method <span class="text-danger">*</span>
+                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                    <i class="fas fa-credit-card text-primary me-1"></i> Payment Method <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-select form-select-lg" name="payment_method" required>
-                                    <option value="" selected>-- Select Payment Method --</option>
+                                <select class="form-select form-select-lg custom-input" name="payment_method" required>
+                                    <option value="" selected>-- Select Method --</option>
                                     <option value="UPI">UPI</option>
                                     <option value="Paytm">Paytm</option>
-                                    <option value="Phone Pay">Phone Pay</option>
+                                    <option value="Phone Pay">PhonePe</option>
                                     <option value="Google Pay">Google Pay</option>
                                 </select>
-                                <small class="text-muted d-block mt-2">How do you want to receive the payment?</small>
                             </div>
 
                             <!-- Payment Details -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2">
-                                    <i class="fas fa-user-check text-primary"></i> Payment Details <span class="text-danger">*</span>
+                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                    <i class="fas fa-user-check text-primary me-1"></i> Payment Details <span class="text-danger">*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    class="form-control form-control-lg"
+                                    class="form-control form-control-lg custom-input"
                                     name="payment_details"
-                                    placeholder="UPI ID / Phone Number / Account Number"
+                                    placeholder="UPI ID or Phone Number"
                                     required
                                 >
-                                <small class="text-muted d-block mt-2">
-                                    <strong>Format:</strong> UPI ID (user@bank), Phone (10 digits)
+                                <small class="text-secondary d-block mt-2 font-xs">
+                                    <strong>Format:</strong> user@upi or 10-digit number
                                 </small>
                             </div>
 
                             <!-- Submit Button -->
-                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-600">
-                                <i class="fas fa-check-circle"></i> Request Redeem
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm btn-bounce">
+                                <i class="fas fa-paper-plane me-1"></i> Request Redeem
                             </button>
                         </form>
                     {% else %}
                         <div class="text-center py-5">
                             <div class="mb-3">
-                                <i class="fas fa-lock text-muted fa-3x opacity-50"></i>
+                                <div class="icon-circle bg-light text-muted mx-auto" style="width:80px;height:80px;font-size:2rem;">
+                                    <i class="fas fa-lock"></i>
+                                </div>
                             </div>
-                            <h6 class="text-muted fw-600">Insufficient Points</h6>
-                            <p class="text-muted small mb-3">
-                                You need at least <strong>500 points</strong> to redeem.
-                                <br>
-                                Current: <strong>{{ wallet.available_points if wallet else 0 }} points (₹{{ wallet.available_points if wallet else 0 }})</strong>
+                            <h6 class="text-dark fw-bold">Insufficient Points</h6>
+                            <p class="text-secondary small mb-4 px-2">
+                                You need at least <strong>500 points</strong> to redeem your rewards.<br>
+                                Current Balance: <strong>{{ wallet.available_points if wallet else 0 }} points</strong>
                             </p>
-                            <div class="progress mb-3" style="height: 6px;">
-                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ (wallet.available_points / 500 * 100) if wallet and wallet.available_points else 0 }}%"></div>
+                            <div class="progress mb-3 bg-light" style="height: 8px; border-radius: 10px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (wallet.available_points / 500 * 100) if wallet and wallet.available_points else 0 }}%; border-radius: 10px;"></div>
                             </div>
-                            <small class="text-muted">Need {{ 500 - (wallet.available_points if wallet else 0) }} more points to redeem</small>
+                            <small class="text-primary fw-600 bg-primary-soft px-3 py-1 rounded-pill">
+                                Need {{ 500 - (wallet.available_points if wallet else 0) }} more points
+                            </small>
                         </div>
                     {% endif %}
                 </div>
@@ -188,61 +193,58 @@
         </div>
 
         <!-- Redeem Status Section -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-7 mb-4">
             <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-4">
-                    <h5 class="card-title fw-bold text-dark mb-0">
-                        <i class="fas fa-history text-info"></i> Redeem Requests
+                <div class="card-header bg-white py-3 py-md-4">
+                    <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center">
+                        <span class="icon-circle bg-info-soft text-info me-2"><i class="fas fa-history"></i></span>
+                        Redeem Requests
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if redeem_requests %}
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0 custom-table">
+                                <thead class="table-light text-secondary font-xs text-uppercase">
                                     <tr>
-                                        <th class="fw-600 text-dark">Points</th>
-                                        <th class="fw-600 text-dark">Amount (₹)</th>
-                                        <th class="fw-600 text-dark">Status</th>
-                                        <th class="fw-600 text-dark">Date</th>
+                                        <th class="fw-600 ps-4">Amount</th>
+                                        <th class="fw-600">Status</th>
+                                        <th class="fw-600 pe-4">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for req in redeem_requests %}
                                     <tr>
-                                        <td>
-                                            <span class="badge bg-warning bg-opacity-20 text-dark fw-600">
-                                                {{ req.points }} Pts
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <strong class="text-success">₹{{ req.points }}</strong>
+                                        <td class="ps-4">
+                                            <div class="d-flex flex-column">
+                                                <strong class="text-success">₹{{ req.points }}</strong>
+                                                <span class="text-muted font-xs">{{ req.points }} Pts</span>
+                                            </div>
                                         </td>
                                         <td>
                                             {% if req.status == 'In Process' %}
-                                                <span class="badge bg-warning text-dark">
-                                                    <i class="fas fa-hourglass-half"></i> Processing
+                                                <span class="badge bg-warning-soft text-warning-dark custom-badge">
+                                                    <i class="fas fa-circle text-warning me-1" style="font-size:8px;"></i> Processing
                                                 </span>
                                             {% elif req.status == 'Completed' %}
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-check-circle"></i> Completed
+                                                <span class="badge bg-success-soft text-success custom-badge">
+                                                    <i class="fas fa-check-circle me-1"></i> Completed
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-times-circle"></i> Failed
+                                                <span class="badge bg-danger-soft text-danger custom-badge">
+                                                    <i class="fas fa-times-circle me-1"></i> Failed
                                                 </span>
                                                 {% if req.rejection_reason %}
-                                                    <br>
-                                                    <small class="text-danger d-block mt-1">
-                                                        <i class="fas fa-comment-dots"></i> {{ req.rejection_reason }}
+                                                    <small class="text-danger d-block mt-1 font-xs lh-sm">
+                                                        <i class="fas fa-info-circle"></i> {{ req.rejection_reason }}
                                                     </small>
                                                 {% endif %}
                                             {% endif %}
                                         </td>
-                                        <td>
-                                            <small class="text-muted">
-                                                {{ req.requested_at.strftime('%d-%m-%Y %H:%M') }}
-                                            </small>
+                                        <td class="pe-4">
+                                            <span class="text-secondary font-sm">
+                                                {{ req.requested_at.strftime('%d %b %y, %H:%M') }}
+                                            </span>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -251,11 +253,11 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="fas fa-inbox text-muted fa-3x opacity-50"></i>
+                            <div class="icon-circle bg-light text-muted mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem;">
+                                <i class="fas fa-inbox"></i>
                             </div>
-                            <p class="text-muted mb-0">No redeem requests yet</p>
-                            <small class="text-muted">Your redeem requests will appear here</small>
+                            <p class="text-dark fw-600 mb-1">No requests yet</p>
+                            <small class="text-secondary">Your redeem history will appear here</small>
                         </div>
                     {% endif %}
                 </div>
@@ -267,73 +269,61 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom py-4">
-                    <h5 class="card-title fw-bold text-dark mb-0">
-                        <i class="fas fa-exchange-alt text-success"></i> Transaction History
+                <div class="card-header bg-white py-3 py-md-4">
+                    <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center">
+                        <span class="icon-circle bg-success-soft text-success me-2"><i class="fas fa-exchange-alt"></i></span>
+                        Transaction History
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if transactions %}
                         <div class="table-responsive">
-                            <table class="table table-hover table-borderless mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0 custom-table">
+                                <thead class="table-light text-secondary font-xs text-uppercase">
                                     <tr>
-                                        <th class="fw-600 text-dark">Type</th>
-                                        <th class="fw-600 text-dark">Points</th>
-                                        <th class="fw-600 text-dark">Amount (₹)</th>
-                                        <th class="fw-600 text-dark">Date & Time</th>
-                                        <th class="fw-600 text-dark">Reference ID</th>
-                                        <th class="fw-600 text-dark">Details</th>
+                                        <th class="fw-600 ps-4">Type</th>
+                                        <th class="fw-600">Points/Amount</th>
+                                        <th class="fw-600">Details</th>
+                                        <th class="fw-600">Date</th>
+                                        <th class="fw-600 pe-4">Ref ID</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for txn in transactions %}
                                     <tr>
-                                        <td>
+                                        <td class="ps-4">
                                             {% if txn.transaction_type == 'Earn' %}
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-arrow-up"></i> Earn
-                                                </span>
+                                                <div class="icon-circle bg-success-soft text-success" style="width:36px;height:36px;">
+                                                    <i class="fas fa-arrow-down"></i>
+                                                </div>
                                             {% else %}
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-arrow-down"></i> Redeem
-                                                </span>
+                                                <div class="icon-circle bg-danger-soft text-danger" style="width:36px;height:36px;">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                </div>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %}">
-                                                {% if txn.transaction_type == 'Earn' %}
-                                                    +{{ txn.points }}
-                                                {% else %}
-                                                    -{{ txn.points }}
-                                                {% endif %}
-                                            </strong>
+                                            <div class="d-flex flex-column">
+                                                <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %} fs-6">
+                                                    {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}₹{{ txn.points }}
+                                                </strong>
+                                                <span class="text-muted font-xs">
+                                                    {% if txn.transaction_type == 'Earn' %}+{% else %}-{% endif %}{{ txn.points }} Pts
+                                                </span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <strong class="{% if txn.transaction_type == 'Earn' %}text-success{% else %}text-danger{% endif %}">
-                                                {% if txn.transaction_type == 'Earn' %}
-                                                    +₹{{ txn.points }}
-                                                {% else %}
-                                                    -₹{{ txn.points }}
-                                                {% endif %}
-                                            </strong>
+                                            <span class="text-dark fw-600 font-sm">
+                                                {% if txn.transaction_type == 'Earn' %}Task Reward{% else %}Wallet Redeem{% endif %}
+                                            </span>
                                         </td>
                                         <td>
-                                            <small class="text-muted">
-                                                {{ txn.transaction_date.strftime('%d-%m-%Y %H:%M') }}
-                                            </small>
+                                            <span class="text-secondary font-sm">
+                                                {{ txn.transaction_date.strftime('%d %b %y, %H:%M') }}
+                                            </span>
                                         </td>
-                                        <td>
-                                            <code class="text-muted small">{{ txn.reference_id }}</code>
-                                        </td>
-                                        <td>
-                                            <small class="text-muted">
-                                                {% if txn.transaction_type == 'Earn' %}
-                                                    Task Completion
-                                                {% else %}
-                                                    Payout Request
-                                                {% endif %}
-                                            </small>
+                                        <td class="pe-4">
+                                            <code class="text-muted bg-light px-2 py-1 rounded">{{ txn.reference_id }}</code>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -342,10 +332,11 @@
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="fas fa-inbox text-muted fa-3x opacity-50"></i>
+                            <div class="icon-circle bg-light text-muted mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem;">
+                                <i class="fas fa-receipt"></i>
                             </div>
-                            <p class="text-muted mb-0">No transactions yet</p>
+                            <p class="text-dark fw-600 mb-1">No transactions yet</p>
+                            <small class="text-secondary">Earn points to see history</small>
                         </div>
                     {% endif %}
                 </div>
@@ -355,99 +346,100 @@
 </div>
 
 <style>
+    /* =========================================
+       GLOBAL UI TWEAKS (App-Like)
+    ========================================= */
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #f8fafc; }
+    .font-sm { font-size: 0.85rem; }
+    .font-xs { font-size: 0.75rem; }
+    .fw-600 { font-weight: 600; }
+    
+    /* Utility colors */
+    .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
+    .bg-success-soft { background-color: rgba(16, 185, 129, 0.1); }
+    .bg-warning-soft { background-color: rgba(245, 158, 11, 0.1); }
+    .bg-info-soft { background-color: rgba(14, 165, 233, 0.1); }
+    .bg-danger-soft { background-color: rgba(239, 68, 68, 0.1); }
+    .text-warning-dark { color: #b45309; }
+
+    /* Icons */
+    .icon-box {
+        width: 48px; height: 48px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 12px;
+    }
+    .icon-circle {
+        width: 32px; height: 32px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+    }
+
+    /* Cards */
+    .card { border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important; }
+    .card-header { border-bottom: 1px solid #f1f5f9 !important; border-radius: 16px 16px 0 0 !important; }
+
+    /* Stat Cards */
     .stat-card {
         background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        border: 1px solid #f1f5f9;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+    .stat-card.primary-card { border-top: 4px solid #3b82f6; }
+    .stat-card.success-card { border-top: 4px solid #10b981; }
+    .stat-card.warning-card { border-top: 4px solid #f59e0b; }
 
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    /* Inputs & Forms */
+    .custom-input {
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+        background: #f8fafc;
     }
-
-    .form-control-lg,
-    .form-select-lg {
-        border-radius: 8px;
-        border: 2px solid #e9ecef;
-        font-size: 15px;
-        padding: 0.85rem 1rem;
-        transition: all 0.3s ease;
+    .custom-input:focus {
+        background: white;
+        border-color: #0f3460;
+        box-shadow: 0 0 0 3px rgba(15, 52, 96, 0.1);
     }
+    .input-group-text { border: 1px solid #cbd5e1; border-radius: 0 10px 10px 0; border-left: none; }
+    .input-group .custom-input { border-radius: 10px 0 0 10px; border-right: none; }
+    .custom-alert { border-radius: 12px; background-color: #f0f9ff; }
 
-    .form-control-lg:focus,
-    .form-select-lg:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-    }
+    /* Buttons */
+    .btn-bounce { transition: transform 0.2s; border-radius: 10px; }
+    .btn-bounce:hover { transform: translateY(-2px); }
 
-    .input-group-text {
-        border: 2px solid #e9ecef;
-        border-radius: 0 8px 8px 0;
-    }
+    /* Tables */
+    .custom-table th { border-bottom: 1px solid #e2e8f0; padding-top: 12px; padding-bottom: 12px; }
+    .custom-table td { padding-top: 16px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
+    .custom-badge { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.3px; }
 
-    .input-group .form-control {
-        border-radius: 8px 0 0 8px;
-        border-right: none;
-    }
-
-    .card {
-        border: none;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .card-header {
-        border-bottom: 1px solid #e9ecef !important;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-
-    .badge {
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .bg-opacity-10 {
-        opacity: 0.1;
-    }
-
-    code {
-        background-color: #f8f9fa;
-        padding: 0.2rem 0.4rem;
-        border-radius: 4px;
-        font-size: 12px;
-    }
-
-    .opacity-50 {
-        opacity: 0.5;
-    }
-
-    .alert-info {
-        background-color: #cfe2ff;
-        color: #084298;
-        border: none;
-        border-radius: 8px;
-    }
-
+    /* =========================================
+       MOBILE RESPONSIVE TWEAKS
+    ========================================= */
     @media (max-width: 768px) {
-        .stat-card {
-            margin-bottom: 1rem;
-        }
-
-        .table {
-            font-size: 13px;
-        }
-
-        .card-body {
-            padding: 1.5rem !important;
-        }
+        .container-fluid { padding-left: 12px !important; padding-right: 12px !important; }
+        .page-title { font-size: 1.5rem !important; }
+        
+        .stat-card { padding: 18px; margin-bottom: 0; }
+        .stat-value { font-size: 1.5rem; }
+        .icon-box { width: 40px; height: 40px; }
+        
+        .card-header { padding: 16px !important; }
+        .card-body { padding: 16px !important; }
+        
+        .custom-input { font-size: 0.9rem; padding: 0.6rem 0.8rem; }
+        .btn-lg { padding: 12px; font-size: 0.95rem; }
+        
+        /* Optimize table for mobile viewing */
+        .custom-table th, .custom-table td { padding-left: 12px !important; padding-right: 12px !important; }
+        .custom-table td { padding-top: 12px; padding-bottom: 12px; }
+        .font-sm { font-size: 0.8rem; }
     }
 </style>
 
@@ -456,6 +448,8 @@
     function updateConversion() {
         const pointsInput = document.getElementById('pointsInput');
         const rupeeValue = document.getElementById('rupeeValue');
+        if(!pointsInput || !rupeeValue) return;
+
         const points = parseInt(pointsInput.value) || 0;
         const rupees = points; // 1 Point = ₹1
         rupeeValue.textContent = '₹' + rupees.toLocaleString();
@@ -464,11 +458,13 @@
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
         const lastUpdateElement = document.getElementById('lastUpdate');
-        const now = new Date();
-        lastUpdateElement.textContent = now.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        if(lastUpdateElement) {
+            const now = new Date();
+            lastUpdateElement.textContent = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
 
         // Points input validation
         const pointsInput = document.getElementById('pointsInput');
@@ -477,11 +473,11 @@
                 const maxPoints = parseInt(this.max);
                 const currentPoints = parseInt(this.value) || 0;
 
-                // Enforce minimum 500
+                // Enforce minimum visually
                 if (currentPoints < 500 && currentPoints > 0) {
-                    this.style.borderColor = '#dc3545';
+                    this.style.borderColor = '#ef4444';
                 } else {
-                    this.style.borderColor = '#e9ecef';
+                    this.style.borderColor = '#cbd5e1';
                 }
 
                 if (currentPoints > maxPoints) {
@@ -502,21 +498,38 @@
 
                 if (points < 500) {
                     e.preventDefault();
-                    alert('Minimum 500 points required to redeem.');
+                    if(typeof window.showNotification === 'function') {
+                        window.showNotification('Minimum 500 points required to redeem.', 'error');
+                    } else {
+                        alert('Minimum 500 points required to redeem.');
+                    }
                     return false;
                 }
 
                 if (!paymentMethod) {
                     e.preventDefault();
-                    alert('Please select a payment method.');
+                    if(typeof window.showNotification === 'function') {
+                        window.showNotification('Please select a payment method.', 'warning');
+                    } else {
+                        alert('Please select a payment method.');
+                    }
                     return false;
                 }
 
                 if (!paymentDetails) {
                     e.preventDefault();
-                    alert('Please enter payment details.');
+                    if(typeof window.showNotification === 'function') {
+                        window.showNotification('Please enter payment details.', 'warning');
+                    } else {
+                        alert('Please enter payment details.');
+                    }
                     return false;
                 }
+                
+                // Disable button and show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+                submitBtn.disabled = true;
             });
         }
 
