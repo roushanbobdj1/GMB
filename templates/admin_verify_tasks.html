@@ -4,810 +4,2080 @@
 
 {% block extra_css %}
 <style>
-    /* ============================================
-       VARIABLES & GENERAL
-       ============================================ */
+    /* =========================================================
+       VERIFY TASKS
+       Desktop: Professional dashboard
+       Mobile : App-like task cards
+       ========================================================= */
+
     :root {
-        --primary: #0d6efd;
-        --primary-light: #0dcaf0;
-        --success: #198754;
-        --warning: #ffc107;
-        --danger: #dc3545;
-        --info: #0d6efd;
-        --light: #f8f9fa;
-        --muted: #6c757d;
-        --border: #e9ecef;
-        
-        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-        --success-gradient: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        --warning-gradient: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-        --danger-gradient: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-        
-        --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
-        --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
-        
-        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        --vt-primary: #0d6efd;
+        --vt-primary-light: #0dcaf0;
+        --vt-success: #198754;
+        --vt-warning: #ffc107;
+        --vt-danger: #dc3545;
+        --vt-muted: #6c757d;
+        --vt-text: #2d3748;
+        --vt-bg: #f8fafc;
+        --vt-card: #ffffff;
+        --vt-border: #e9ecef;
+
+        --vt-primary-gradient:
+            linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+
+        --vt-success-gradient:
+            linear-gradient(135deg, #198754 0%, #20c997 100%);
+
+        --vt-danger-gradient:
+            linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+
+        --vt-shadow-sm:
+            0 2px 6px rgba(0, 0, 0, .05);
+
+        --vt-shadow-md:
+            0 5px 16px rgba(0, 0, 0, .07);
+
+        --vt-shadow-lg:
+            0 12px 28px rgba(0, 0, 0, .11);
+
+        --vt-radius: 16px;
+
+        --vt-transition:
+            220ms cubic-bezier(.4, 0, .2, 1);
     }
 
-    /* ============================================
+
+    /* =========================================================
+       PAGE
+       ========================================================= */
+
+    .verify-page {
+        width: 100%;
+        min-width: 0;
+    }
+
+
+    /* =========================================================
        PAGE HEADER
-       ============================================ */
-    .page-header {
-        margin-bottom: 2.5rem;
+       ========================================================= */
+
+    .verify-page-header {
+        margin-bottom: 1.75rem;
     }
 
-    .page-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #2d3748;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .page-title i {
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .page-subtitle {
-        color: var(--muted);
-        font-weight: 500;
+    .verify-page-title {
         margin: 0;
-    }
-
-    /* ============================================
-       STATS SECTION
-       ============================================ */
-    .stats-section {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2.5rem;
-    }
-
-    .stat-badge {
-        background: white;
-        border-radius: 12px;
-        padding: 1.25rem;
-        text-align: center;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
-    }
-
-    .stat-badge:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 800;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-        font-size: 0.85rem;
-        color: var(--muted);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin: 0;
-    }
-
-    /* ============================================
-       SUBMISSION CARD
-       ============================================ */
-    .submission-card {
-        background: white;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border);
-        transition: all var(--transition-base);
-        margin-bottom: 2rem;
-    }
-
-    .submission-card:hover {
-        box-shadow: var(--shadow-lg);
-        transform: translateY(-4px);
-    }
-
-    .submission-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-bottom: 1px solid var(--border);
-        padding: 1.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .submission-user {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: .7rem;
+
+        color: var(--vt-text);
+        font-size: clamp(1.4rem, 2.5vw, 2.15rem);
+        font-weight: 850;
+        line-height: 1.2;
+        letter-spacing: -.4px;
     }
 
-    .submission-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
-        background: var(--primary-gradient);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
+    .verify-page-title-icon {
+        width: 42px;
+        height: 42px;
 
-    .user-info h6 {
-        font-weight: 800;
-        color: #2d3748;
-        margin: 0 0 0.25rem 0;
-        font-size: 1rem;
-    }
+        flex: 0 0 42px;
 
-    .user-info p {
-        font-size: 0.85rem;
-        color: var(--muted);
-        margin: 0;
-        font-weight: 500;
-    }
-
-    .status-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.2rem;
-        background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 152, 0, 0.12) 100%);
-        color: #856404;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        justify-content: center;
+
+        border-radius: 12px;
+
+        background: var(--vt-primary-gradient);
+        color: #fff;
+
+        font-size: 1rem;
+
+        box-shadow:
+            0 5px 14px rgba(13, 110, 253, .20);
     }
 
-    /* ============================================
-       SUBMISSION CONTENT
-       ============================================ */
-    .submission-content {
-        padding: 2rem;
+    .verify-page-subtitle {
+        margin: .55rem 0 0 3.1rem;
+
+        color: var(--vt-muted);
+        font-size: .9rem;
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+
+    /* =========================================================
+       STATISTICS
+       ========================================================= */
+
+    .verify-stats {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-    }
 
-    .content-section {
-        display: flex;
-        flex-direction: column;
-    }
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
 
-    .content-label {
-        font-size: 0.8rem;
-        color: var(--muted);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.75rem;
-    }
-
-    .content-value {
-        font-size: 0.95rem;
-        color: #2d3748;
-        font-weight: 600;
-        line-height: 1.6;
-    }
-
-    .campaign-badge {
-        display: inline-block;
-        padding: 0.5rem 0.875rem;
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(13, 202, 240, 0.12) 100%);
-        color: #0d6efd;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        width: fit-content;
-    }
-
-    /* ============================================
-       SCREENSHOT SECTION
-       ============================================ */
-    .screenshot-container {
-        display: flex;
-        flex-direction: column;
         gap: 1rem;
+
+        margin-bottom: 1.75rem;
     }
 
-    .screenshot-wrapper {
-        position: relative;
-        background: var(--light);
-        border-radius: 10px;
+    .verify-stat {
+        min-width: 0;
+
+        padding: 1.15rem 1rem;
+
+        background: var(--vt-card);
+
+        border: 1px solid var(--vt-border);
+        border-radius: 14px;
+
+        box-shadow: var(--vt-shadow-sm);
+
+        text-align: center;
+
+        transition:
+            transform var(--vt-transition),
+            box-shadow var(--vt-transition);
+    }
+
+    .verify-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--vt-shadow-md);
+    }
+
+    .verify-stat-number {
+        margin: 0;
+
+        font-size: 1.8rem;
+        font-weight: 900;
+        line-height: 1.1;
+
+        background: var(--vt-primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .verify-stat-label {
+        margin: .45rem 0 0;
+
+        color: var(--vt-muted);
+
+        font-size: .7rem;
+        font-weight: 800;
+
+        text-transform: uppercase;
+        letter-spacing: .45px;
+
+        line-height: 1.25;
+    }
+
+
+    /* =========================================================
+       SUBMISSION CARD
+       ========================================================= */
+
+    .verify-submission-card {
+        width: 100%;
+
+        margin-bottom: 1.25rem;
+
         overflow: hidden;
-        border: 2px dashed var(--border);
-        aspect-ratio: 16 / 9;
+
+        background: var(--vt-card);
+
+        border: 1px solid var(--vt-border);
+        border-radius: var(--vt-radius);
+
+        box-shadow: var(--vt-shadow-md);
+
+        transition:
+            transform var(--vt-transition),
+            box-shadow var(--vt-transition);
+    }
+
+    .verify-submission-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--vt-shadow-lg);
+    }
+
+
+    /* =========================================================
+       CARD HEADER
+       ========================================================= */
+
+    .verify-submission-header {
+        min-width: 0;
+
+        padding: 1rem 1.25rem;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 1rem;
+
+        background:
+            linear-gradient(
+                135deg,
+                #f8f9fa 0%,
+                #f1f3f5 100%
+            );
+
+        border-bottom: 1px solid var(--vt-border);
+    }
+
+    .verify-user {
+        min-width: 0;
+
+        display: flex;
+        align-items: center;
+
+        gap: .8rem;
+    }
+
+    .verify-avatar {
+        width: 44px;
+        height: 44px;
+
+        flex: 0 0 44px;
+
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 200px;
+
+        border-radius: 12px;
+
+        background: var(--vt-primary-gradient);
+        color: #fff;
+
+        font-size: 1rem;
+
+        box-shadow:
+            0 4px 12px rgba(13, 110, 253, .18);
     }
 
-    .screenshot-image {
+    .verify-user-info {
+        min-width: 0;
+    }
+
+    .verify-user-email {
+        margin: 0;
+
+        color: var(--vt-text);
+
+        font-size: .9rem;
+        font-weight: 800;
+        line-height: 1.3;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .verify-user-id {
+        margin: .2rem 0 0;
+
+        color: var(--vt-muted);
+
+        font-size: .72rem;
+        font-weight: 600;
+    }
+
+
+    /* =========================================================
+       STATUS
+       ========================================================= */
+
+    .verify-status {
+        flex: 0 0 auto;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: .35rem;
+
+        min-height: 30px;
+
+        padding: .4rem .7rem;
+
+        border-radius: 999px;
+
+        background: rgba(255, 193, 7, .12);
+
+        border: 1px solid rgba(255, 193, 7, .20);
+
+        color: #856404;
+
+        font-size: .68rem;
+        font-weight: 800;
+
+        white-space: nowrap;
+
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+
+
+    /* =========================================================
+       CONTENT
+       ========================================================= */
+
+    .verify-submission-content {
+        padding: 1.35rem;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(320px, .9fr);
+
+        gap: 1.5rem;
+    }
+
+
+    /* =========================================================
+       INFORMATION SIDE
+       ========================================================= */
+
+    .verify-details {
+        min-width: 0;
+
+        display: flex;
+        flex-direction: column;
+
+        gap: 1rem;
+    }
+
+    .verify-info-box {
+        min-width: 0;
+
+        padding: .9rem;
+
+        border-radius: 11px;
+
+        background: #f8f9fb;
+
+        border: 1px solid #edf0f3;
+    }
+
+    .verify-content-label {
+        display: block;
+
+        margin-bottom: .45rem;
+
+        color: #7a8494;
+
+        font-size: .67rem;
+        font-weight: 800;
+
+        text-transform: uppercase;
+        letter-spacing: .45px;
+
+        line-height: 1.2;
+    }
+
+    .verify-content-value {
+        display: block;
+
+        color: var(--vt-text);
+
+        font-size: .86rem;
+        font-weight: 650;
+
+        line-height: 1.55;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+
+    /* =========================================================
+       CAMPAIGN
+       ========================================================= */
+
+    .verify-campaign {
+        display: inline-flex;
+        align-items: center;
+
+        max-width: 100%;
+
+        padding: .45rem .7rem;
+
+        border-radius: 999px;
+
+        background:
+            linear-gradient(
+                135deg,
+                rgba(13, 110, 253, .10),
+                rgba(13, 202, 240, .10)
+            );
+
+        border: 1px solid rgba(13, 110, 253, .12);
+
+        color: #0d6efd;
+
+        font-size: .7rem;
+        font-weight: 800;
+
+        line-height: 1.25;
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+
+    /* =========================================================
+       REVIEW TEXT
+       ========================================================= */
+
+    .verify-review-text {
+        max-height: 170px;
+
+        overflow-y: auto;
+
+        padding-right: .3rem;
+
+        scrollbar-width: thin;
+    }
+
+
+    /* =========================================================
+       POINTS
+       ========================================================= */
+
+    .verify-points {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+
+        color: var(--vt-success);
+
+        font-size: 1rem;
+        font-weight: 850;
+    }
+
+    .verify-points::before {
+        content: "★";
+
+        font-size: .75rem;
+        opacity: .8;
+    }
+
+
+    /* =========================================================
+       SCREENSHOT
+       ========================================================= */
+
+    .verify-evidence {
+        min-width: 0;
+    }
+
+    .verify-screenshot-label {
+        display: block;
+
+        margin-bottom: .55rem;
+
+        color: #7a8494;
+
+        font-size: .67rem;
+        font-weight: 800;
+
+        text-transform: uppercase;
+        letter-spacing: .45px;
+    }
+
+    .verify-screenshot-wrapper {
+        position: relative;
+
+        width: 100%;
+
+        aspect-ratio: 16 / 10;
+
+        min-height: 220px;
+
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #f8f9fa;
+
+        border: 1px dashed #dce1e7;
+        border-radius: 12px;
+
+        cursor: pointer;
+    }
+
+    .verify-screenshot-wrapper::after {
+        content: "Click to view";
+
+        position: absolute;
+
+        left: 50%;
+        bottom: 10px;
+
+        transform: translateX(-50%);
+
+        padding: .3rem .55rem;
+
+        border-radius: 999px;
+
+        background: rgba(0, 0, 0, .58);
+
+        color: #fff;
+
+        font-size: .62rem;
+        font-weight: 700;
+
+        opacity: 0;
+
+        pointer-events: none;
+
+        transition: opacity var(--vt-transition);
+    }
+
+    .verify-screenshot-wrapper:hover::after {
+        opacity: 1;
+    }
+
+    .verify-screenshot {
         width: 100%;
         height: 100%;
+
         object-fit: contain;
-        cursor: pointer;
-        transition: transform var(--transition-base);
+
+        display: block;
+
+        transition: transform var(--vt-transition);
     }
 
-    .screenshot-image:hover {
-        transform: scale(1.02);
+    .verify-screenshot-wrapper:hover .verify-screenshot {
+        transform: scale(1.015);
     }
 
-    .screenshot-placeholder {
+    .verify-no-screenshot {
+        padding: 1rem;
+
         text-align: center;
-        color: var(--muted);
+
+        color: var(--vt-muted);
     }
 
-    .screenshot-placeholder i {
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-        opacity: 0.5;
+    .verify-no-screenshot i {
+        display: block;
+
+        margin-bottom: .45rem;
+
+        font-size: 2rem;
+
+        opacity: .45;
     }
 
-    /* ============================================
-       ACTION BUTTONS
-       ============================================ */
-    .action-buttons {
+    .verify-no-screenshot p {
+        margin: 0;
+
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+
+    /* =========================================================
+       ACTIONS
+       ========================================================= */
+
+    .verify-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: .7rem;
+
+        margin-top: .75rem;
     }
 
-    .btn-action {
-        padding: 0.875rem 1.5rem;
+    .verify-action-btn {
+        width: 100%;
+        min-height: 44px;
+
+        padding: .7rem .8rem;
+
+        border: 0;
         border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: all var(--transition-base);
-        border: none;
-        cursor: pointer;
-        text-decoration: none;
+
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.75rem;
-        font-family: 'Inter', sans-serif;
+
+        gap: .4rem;
+
+        color: #fff;
+
+        font-size: .78rem;
+        font-weight: 800;
+
+        cursor: pointer;
+
+        transition:
+            transform var(--vt-transition),
+            box-shadow var(--vt-transition),
+            opacity var(--vt-transition);
     }
 
-    .btn-approve {
-        background: var(--success-gradient);
-        color: white;
-        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.2);
+    .verify-action-btn:hover {
+        transform: translateY(-1px);
     }
 
-    .btn-approve:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(25, 135, 84, 0.3);
-        color: white;
+    .verify-action-btn:active {
+        transform: scale(.98);
     }
 
-    .btn-reject {
-        background: var(--danger-gradient);
-        color: white;
-        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
-    }
-
-    .btn-reject:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.3);
-        color: white;
-    }
-
-    .btn-action:disabled {
-        opacity: 0.6;
+    .verify-action-btn:disabled {
+        opacity: .6;
         cursor: not-allowed;
         transform: none;
     }
 
-    /* ============================================
+    .verify-btn-approve {
+        background: var(--vt-success-gradient);
+
+        box-shadow:
+            0 4px 10px rgba(25, 135, 84, .18);
+    }
+
+    .verify-btn-reject {
+        background: var(--vt-danger-gradient);
+
+        box-shadow:
+            0 4px 10px rgba(220, 53, 69, .16);
+    }
+
+
+    /* =========================================================
        EMPTY STATE
-       ============================================ */
-    .empty-state {
+       ========================================================= */
+
+    .verify-empty {
+        padding: 3.5rem 1.5rem;
+
         text-align: center;
-        padding: 4rem 2rem;
-        background: linear-gradient(135deg, rgba(25, 135, 84, 0.08) 0%, rgba(32, 201, 151, 0.08) 100%);
-        border-radius: 14px;
-        border: 2px solid var(--success);
+
+        background:
+            linear-gradient(
+                135deg,
+                rgba(25, 135, 84, .07),
+                rgba(32, 201, 151, .05)
+            );
+
+        border: 1px solid rgba(25, 135, 84, .18);
+        border-radius: 16px;
     }
 
-    .empty-state-icon {
-        font-size: 4rem;
-        color: var(--success);
-        margin-bottom: 1rem;
-    }
+    .verify-empty-icon {
+        width: 70px;
+        height: 70px;
 
-    .empty-state-title {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #0f5132;
-        margin-bottom: 0.75rem;
-    }
+        margin: 0 auto 1rem;
 
-    .empty-state-text {
-        color: #0f5132;
-        font-weight: 500;
-        font-size: 1rem;
-        margin: 0;
-    }
-
-    /* ============================================
-       MODAL
-       ============================================ */
-    .image-modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
-        padding: 1rem;
+        display: flex;
         align-items: center;
         justify-content: center;
+
+        border-radius: 50%;
+
+        background: rgba(25, 135, 84, .10);
+
+        color: var(--vt-success);
+
+        font-size: 2rem;
     }
 
-    .image-modal.active {
+    .verify-empty-title {
+        margin: 0 0 .45rem;
+
+        color: #0f5132;
+
+        font-size: 1.35rem;
+        font-weight: 850;
+    }
+
+    .verify-empty-text {
+        max-width: 520px;
+
+        margin: 0 auto;
+
+        color: #286a4b;
+
+        font-size: .86rem;
+        font-weight: 500;
+
+        line-height: 1.55;
+    }
+
+
+    /* =========================================================
+       IMAGE MODAL
+       ========================================================= */
+
+    .verify-image-modal {
+        position: fixed;
+
+        inset: 0;
+
+        z-index: 9999;
+
+        display: none;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 1rem;
+
+        background: rgba(0, 0, 0, .86);
+
+        backdrop-filter: blur(4px);
+    }
+
+    .verify-image-modal.active {
         display: flex;
     }
 
-    .modal-image {
-        max-width: 90vw;
+    .verify-modal-image {
+        max-width: 94vw;
         max-height: 90vh;
+
+        width: auto;
+        height: auto;
+
         object-fit: contain;
-        border-radius: 8px;
-        animation: slideIn 0.3s ease;
+
+        border-radius: 10px;
+
+        box-shadow:
+            0 20px 50px rgba(0, 0, 0, .35);
+
+        animation: verifyImageIn .22s ease-out;
     }
 
-    @keyframes slideIn {
+    @keyframes verifyImageIn {
         from {
             opacity: 0;
-            transform: scale(0.8);
+            transform: scale(.94);
         }
+
         to {
             opacity: 1;
             transform: scale(1);
         }
     }
 
-    .modal-close {
-        position: absolute;
-        top: 2rem;
-        right: 2rem;
-        background: white;
-        border: none;
-        width: 40px;
-        height: 40px;
+    .verify-modal-close {
+        position: fixed;
+
+        top: 18px;
+        right: 18px;
+
+        z-index: 10001;
+
+        width: 42px;
+        height: 42px;
+
+        padding: 0;
+
+        border: 0;
         border-radius: 50%;
+
         display: flex;
         align-items: center;
         justify-content: center;
+
+        background: rgba(255, 255, 255, .95);
+        color: #212529;
+
+        font-size: 1.05rem;
+
         cursor: pointer;
-        font-size: 1.5rem;
-        transition: all var(--transition-base);
+
+        box-shadow:
+            0 5px 15px rgba(0, 0, 0, .2);
     }
 
-    .modal-close:hover {
-        background: var(--light);
-        transform: rotate(90deg);
-    }
 
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 992px) {
-        .page-title {
-            font-size: 1.8rem;
-        }
+    /* =========================================================
+       TABLET
+       ========================================================= */
 
-        .submission-content {
+    @media (max-width: 991.98px) {
+
+        .verify-submission-content {
             grid-template-columns: 1fr;
         }
 
-        .submission-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
+        .verify-screenshot-wrapper {
+            aspect-ratio: 16 / 9;
+            min-height: 240px;
         }
     }
 
-    @media (max-width: 768px) {
-        .page-header {
-            margin-bottom: 1.5rem;
+
+    /* =========================================================
+       MOBILE
+       ========================================================= */
+
+    @media (max-width: 767.98px) {
+
+        .verify-page-container {
+            padding-left: .65rem !important;
+            padding-right: .65rem !important;
+            padding-top: .75rem !important;
+            padding-bottom: 1.25rem !important;
         }
 
-        .page-title {
-            font-size: 1.5rem;
+        .verify-page-header {
+            margin-bottom: 1rem;
         }
 
-        .stats-section {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
+        .verify-page-title {
+            font-size: 1.15rem;
+            gap: .55rem;
         }
 
-        .stat-badge {
-            padding: 1rem;
+        .verify-page-title-icon {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+
+            border-radius: 10px;
+
+            font-size: .85rem;
         }
 
-        .stat-number {
-            font-size: 1.5rem;
+        .verify-page-subtitle {
+            margin: .45rem 0 0 2.45rem;
+
+            font-size: .72rem;
+
+            line-height: 1.4;
         }
 
-        .stat-label {
-            font-size: 0.75rem;
+
+        /* -----------------------------------------
+           Stats
+           ----------------------------------------- */
+
+        .verify-stats {
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: .5rem;
+
+            margin-bottom: 1rem;
         }
 
-        .submission-card {
-            margin-bottom: 1.5rem;
+        .verify-stat {
+            padding: .8rem .35rem;
+
+            border-radius: 12px;
         }
 
-        .submission-header {
-            padding: 1.25rem;
-        }
-
-        .submission-content {
-            padding: 1.5rem;
-            gap: 1.5rem;
-        }
-
-        .action-buttons {
-            grid-template-columns: 1fr;
-            gap: 0.75rem;
-        }
-
-        .btn-action {
-            padding: 0.75rem 1.25rem;
-            font-size: 0.9rem;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .page-title {
+        .verify-stat-number {
             font-size: 1.3rem;
         }
 
-        .stats-section {
-            grid-template-columns: 1fr;
+        .verify-stat-label {
+            margin-top: .3rem;
+
+            font-size: .57rem;
+            letter-spacing: .2px;
         }
 
-        .submission-header {
-            padding: 1rem;
+
+        /* -----------------------------------------
+           Submission Card
+           ----------------------------------------- */
+
+        .verify-submission-card {
+            margin-bottom: .85rem;
+
+            border-radius: 17px;
+
+            box-shadow:
+                0 3px 8px rgba(15, 23, 42, .045),
+                0 8px 22px rgba(15, 23, 42, .055);
         }
 
-        .submission-content {
-            padding: 1.25rem;
+        .verify-submission-card:hover {
+            transform: none;
         }
 
-        .screenshot-wrapper {
-            min-height: 150px;
+
+        /* -----------------------------------------
+           Header
+           ----------------------------------------- */
+
+        .verify-submission-header {
+            padding: .8rem .85rem;
+
+            align-items: flex-start;
+
+            gap: .65rem;
         }
 
-        .submission-avatar {
-            width: 40px;
-            height: 40px;
-            font-size: 1.2rem;
+        .verify-user {
+            align-items: center;
+            gap: .6rem;
         }
 
-        .user-info h6 {
-            font-size: 0.95rem;
+        .verify-avatar {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+
+            border-radius: 10px;
+
+            font-size: .82rem;
         }
 
-        .empty-state {
-            padding: 2rem 1.5rem;
+        .verify-user-email {
+            font-size: .76rem;
         }
 
-        .empty-state-icon {
-            font-size: 3rem;
+        .verify-user-id {
+            margin-top: .16rem;
+
+            font-size: .62rem;
         }
 
-        .empty-state-title {
-            font-size: 1.2rem;
+        .verify-status {
+            min-height: 25px;
+
+            padding: .32rem .5rem;
+
+            font-size: .57rem;
+
+            gap: .25rem;
         }
 
-        .empty-state-text {
-            font-size: 0.9rem;
+
+        /* -----------------------------------------
+           Content
+           ----------------------------------------- */
+
+        .verify-submission-content {
+            padding: .8rem;
+
+            display: flex;
+            flex-direction: column;
+
+            gap: .8rem;
         }
 
-        .modal-close {
-            width: 36px;
-            height: 36px;
-            font-size: 1.2rem;
-            top: 1rem;
-            right: 1rem;
+        .verify-details {
+            gap: .55rem;
+        }
+
+        .verify-info-box {
+            padding: .72rem .75rem;
+
+            border-radius: 10px;
+        }
+
+        .verify-content-label,
+        .verify-screenshot-label {
+            margin-bottom: .35rem;
+
+            font-size: .59rem;
+        }
+
+        .verify-content-value {
+            font-size: .75rem;
+            line-height: 1.45;
+        }
+
+        .verify-campaign {
+            padding: .35rem .55rem;
+
+            font-size: .62rem;
+        }
+
+        .verify-points {
+            font-size: .88rem;
+        }
+
+
+        /* -----------------------------------------
+           Review text
+           ----------------------------------------- */
+
+        .verify-review-text {
+            max-height: 125px;
+        }
+
+
+        /* -----------------------------------------
+           Screenshot
+           ----------------------------------------- */
+
+        .verify-screenshot-wrapper {
+            min-height: 185px;
+
+            aspect-ratio: 16 / 10;
+
+            border-radius: 11px;
+        }
+
+        .verify-screenshot-wrapper::after {
+            display: none;
+        }
+
+
+        /* -----------------------------------------
+           Actions
+           ----------------------------------------- */
+
+        .verify-actions {
+            grid-template-columns: 1fr 1fr;
+
+            gap: .55rem;
+
+            margin-top: .6rem;
+        }
+
+        .verify-action-btn {
+            min-height: 44px;
+
+            padding: .65rem .45rem;
+
+            border-radius: 10px;
+
+            font-size: .7rem;
+        }
+
+
+        /* -----------------------------------------
+           Empty
+           ----------------------------------------- */
+
+        .verify-empty {
+            padding: 2.5rem 1rem;
+
+            border-radius: 15px;
+        }
+
+        .verify-empty-icon {
+            width: 60px;
+            height: 60px;
+
+            font-size: 1.7rem;
+        }
+
+        .verify-empty-title {
+            font-size: 1.1rem;
+        }
+
+        .verify-empty-text {
+            font-size: .76rem;
+        }
+
+
+        /* -----------------------------------------
+           Image modal
+           ----------------------------------------- */
+
+        .verify-image-modal {
+            padding: .55rem;
+        }
+
+        .verify-modal-image {
+            max-width: 98vw;
+            max-height: 84vh;
+
+            border-radius: 7px;
+        }
+
+        .verify-modal-close {
+            top: 10px;
+            right: 10px;
+
+            width: 38px;
+            height: 38px;
+
+            font-size: .9rem;
         }
     }
 
-    /* Dark Theme Support */
-    [data-theme="dark"] .submission-card,
-    [data-theme="dark"] .stat-badge {
+
+    /* =========================================================
+       SMALL PHONES
+       ========================================================= */
+
+    @media (max-width: 480px) {
+
+        .verify-page-container {
+            padding-left: .5rem !important;
+            padding-right: .5rem !important;
+        }
+
+        .verify-page-title {
+            font-size: 1.08rem;
+        }
+
+        .verify-page-subtitle {
+            margin-left: 2.3rem;
+
+            font-size: .68rem;
+        }
+
+        .verify-stats {
+            gap: .4rem;
+        }
+
+        .verify-stat {
+            padding: .72rem .25rem;
+        }
+
+        .verify-stat-number {
+            font-size: 1.18rem;
+        }
+
+        .verify-stat-label {
+            font-size: .52rem;
+        }
+
+        .verify-submission-header {
+            padding: .72rem .75rem;
+        }
+
+        .verify-avatar {
+            width: 35px;
+            height: 35px;
+            flex-basis: 35px;
+        }
+
+        .verify-user-email {
+            font-size: .72rem;
+        }
+
+        .verify-status {
+            font-size: .53rem;
+
+            padding-left: .42rem;
+            padding-right: .42rem;
+        }
+
+        .verify-submission-content {
+            padding: .72rem;
+        }
+
+        .verify-info-box {
+            padding: .65rem .7rem;
+        }
+
+        .verify-content-value {
+            font-size: .72rem;
+        }
+
+        .verify-screenshot-wrapper {
+            min-height: 165px;
+        }
+
+        .verify-action-btn {
+            min-height: 43px;
+
+            font-size: .67rem;
+
+            gap: .3rem;
+        }
+    }
+
+
+    /* =========================================================
+       VERY SMALL PHONES
+       ========================================================= */
+
+    @media (max-width: 360px) {
+
+        .verify-stats {
+            gap: .3rem;
+        }
+
+        .verify-stat {
+            padding: .65rem .2rem;
+        }
+
+        .verify-stat-number {
+            font-size: 1.08rem;
+        }
+
+        .verify-stat-label {
+            font-size: .49rem;
+        }
+
+        .verify-status {
+            max-width: 88px;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .verify-screenshot-wrapper {
+            min-height: 150px;
+        }
+
+        .verify-action-btn {
+            font-size: .63rem;
+        }
+    }
+
+
+    /* =========================================================
+       DARK THEME
+       ========================================================= */
+
+    [data-theme="dark"] .verify-page-title {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .verify-page-subtitle {
+        color: #a0aec0;
+    }
+
+    [data-theme="dark"] .verify-stat,
+    [data-theme="dark"] .verify-submission-card {
         background: #2d3748;
         border-color: #4b5563;
     }
 
-    [data-theme="dark"] .submission-header {
-        background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
+    [data-theme="dark"] .verify-submission-header {
+        background:
+            linear-gradient(
+                135deg,
+                #374151 0%,
+                #2d3748 100%
+            );
+
         border-color: #4b5563;
     }
 
-    [data-theme="dark"] .page-title,
-    [data-theme="dark"] .user-info h6,
-    [data-theme="dark"] .content-value {
+    [data-theme="dark"] .verify-user-email,
+    [data-theme="dark"] .verify-content-value {
         color: #e2e8f0;
     }
 
-    [data-theme="dark"] .page-subtitle,
-    [data-theme="dark"] .content-label,
-    [data-theme="dark"] .user-info p {
+    [data-theme="dark"] .verify-user-id,
+    [data-theme="dark"] .verify-content-label,
+    [data-theme="dark"] .verify-screenshot-label {
         color: #a0aec0;
     }
 
-    [data-theme="dark"] .screenshot-wrapper {
+    [data-theme="dark"] .verify-info-box {
         background: #374151;
         border-color: #4b5563;
     }
 
-    [data-theme="dark"] .screenshot-placeholder {
-        color: #a0aec0;
+    [data-theme="dark"] .verify-screenshot-wrapper {
+        background: #374151;
+        border-color: #4b5563;
     }
 
-    [data-theme="dark"] .modal-close {
+    [data-theme="dark"] .verify-status {
+        background: rgba(255, 193, 7, .12);
+        color: #ffd75e;
+        border-color: rgba(255, 193, 7, .2);
+    }
+
+    [data-theme="dark"] .verify-empty {
+        background:
+            linear-gradient(
+                135deg,
+                rgba(25, 135, 84, .10),
+                rgba(32, 201, 151, .06)
+            );
+
+        border-color: rgba(25, 135, 84, .25);
+    }
+
+    [data-theme="dark"] .verify-empty-title {
+        color: #75d6a5;
+    }
+
+    [data-theme="dark"] .verify-empty-text {
+        color: #8ed8b1;
+    }
+
+    [data-theme="dark"] .verify-modal-close {
         background: #374151;
         color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .modal-close:hover {
-        background: #4b5563;
     }
 </style>
 {% endblock %}
 
+
 {% block content %}
-<div class="container-fluid py-4 py-lg-5">
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1 class="page-title">
-            <i class="fas fa-check-circle"></i> Verify Tasks
-        </h1>
-        <p class="page-subtitle">Review and approve user task submissions</p>
-    </div>
 
-    <!-- Statistics Section -->
-    {% if submissions %}
-    <div class="stats-section">
-        <div class="stat-badge">
-            <div class="stat-number">{{ submissions|length }}</div>
-            <p class="stat-label">Pending Review</p>
-        </div>
-        <div class="stat-badge">
-            <div class="stat-number">{{ total_approved|default(0) }}</div>
-            <p class="stat-label">Approved</p>
-        </div>
-        <div class="stat-badge">
-            <div class="stat-number">{{ total_rejected|default(0) }}</div>
-            <p class="stat-label">Rejected</p>
-        </div>
-    </div>
-    {% endif %}
+<div class="container-fluid py-4 py-lg-5 verify-page-container">
 
-    <!-- Submissions -->
-    {% if submissions %}
-        {% for submission in submissions %}
-        <div class="submission-card">
-            <!-- Header -->
-            <div class="submission-header">
-                <div class="submission-user">
-                    <div class="submission-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="user-info">
-                        <h6>{{ submission.task.user.email }}</h6>
-                        <p>User ID: #{{ submission.task.user.id }}</p>
-                    </div>
-                </div>
-                <span class="status-badge">
-                    <i class="fas fa-hourglass-half"></i> Pending Review
+    <div class="verify-page">
+
+        <!-- =====================================================
+             PAGE HEADER
+             ===================================================== -->
+
+        <div class="verify-page-header">
+
+            <h1 class="verify-page-title">
+
+                <span class="verify-page-title-icon">
+                    <i class="fas fa-check-circle"></i>
                 </span>
-            </div>
 
-            <!-- Content -->
-            <div class="submission-content">
-                <!-- Details -->
-                <div class="content-section">
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="content-label">Campaign</div>
-                        <span class="campaign-badge">{{ submission.task.campaign.name }}</span>
-                    </div>
+                <span>Verify Tasks</span>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="content-label">Review Text Submitted</div>
-                        <div class="content-value">{{ submission.review_text_submitted }}</div>
-                    </div>
+            </h1>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <div class="content-label">Points Reward</div>
-                        <div class="content-value">{{ submission.task.points_per_review or (submission.task.campaign.points_per_review if submission.task.campaign else 0) }} Points</div>
-                    </div>
+            <p class="verify-page-subtitle">
+                Review and approve user task submissions
+            </p>
 
-                    <div>
-                        <div class="content-label">Submitted Date</div>
-                        <div class="content-value">{{ submission.submitted_date.strftime('%d-%m-%Y %H:%M:%S') }}</div>
-                    </div>
+        </div>
+
+
+        <!-- =====================================================
+             STATISTICS
+             ===================================================== -->
+
+        {% if submissions %}
+
+        <div class="verify-stats">
+
+            <div class="verify-stat">
+
+                <div class="verify-stat-number">
+                    {{ submissions|length }}
                 </div>
 
-                <!-- Screenshot -->
-                <div class="screenshot-container">
-                    {% if submission.screenshot_url %}
-                    <div>
-                        <div class="content-label">Screenshot Evidence</div>
-                        <div class="screenshot-wrapper" onclick="openImageModal(this)">
-                            <img src="/uploads/{{ submission.screenshot_url }}" class="screenshot-image" alt="Task Screenshot">
+                <p class="verify-stat-label">
+                    Pending Review
+                </p>
+
+            </div>
+
+
+            <div class="verify-stat">
+
+                <div class="verify-stat-number">
+                    {{ total_approved|default(0) }}
+                </div>
+
+                <p class="verify-stat-label">
+                    Approved
+                </p>
+
+            </div>
+
+
+            <div class="verify-stat">
+
+                <div class="verify-stat-number">
+                    {{ total_rejected|default(0) }}
+                </div>
+
+                <p class="verify-stat-label">
+                    Rejected
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =====================================================
+             SUBMISSIONS
+             ===================================================== -->
+
+        {% if submissions %}
+
+            {% for submission in submissions %}
+
+            <article class="verify-submission-card">
+
+                <!-- =================================================
+                     CARD HEADER
+                     ================================================= -->
+
+                <div class="verify-submission-header">
+
+                    <div class="verify-user">
+
+                        <div class="verify-avatar">
+                            <i class="fas fa-user"></i>
                         </div>
+
+                        <div class="verify-user-info">
+
+                            <p class="verify-user-email">
+                                {{ submission.task.user.email }}
+                            </p>
+
+                            <p class="verify-user-id">
+                                User ID: #{{ submission.task.user.id }}
+                            </p>
+
+                        </div>
+
                     </div>
-                    {% else %}
-                    <div>
-                        <div class="content-label">Screenshot Evidence</div>
-                        <div class="screenshot-wrapper">
-                            <div class="screenshot-placeholder">
-                                <i class="fas fa-image"></i>
-                                <p>No screenshot uploaded</p>
+
+
+                    <span class="verify-status">
+
+                        <i class="fas fa-hourglass-half"></i>
+
+                        <span>Pending Review</span>
+
+                    </span>
+
+                </div>
+
+
+                <!-- =================================================
+                     CARD CONTENT
+                     ================================================= -->
+
+                <div class="verify-submission-content">
+
+                    <!-- =============================================
+                         DETAILS
+                         ============================================= -->
+
+                    <div class="verify-details">
+
+                        <!-- Campaign -->
+
+                        <div class="verify-info-box">
+
+                            <span class="verify-content-label">
+                                Campaign
+                            </span>
+
+                            <span class="verify-campaign">
+                                {{ submission.task.campaign.name }}
+                            </span>
+
+                        </div>
+
+
+                        <!-- Review Text -->
+
+                        <div class="verify-info-box">
+
+                            <span class="verify-content-label">
+                                Review Text Submitted
+                            </span>
+
+                            <div class="verify-content-value verify-review-text">
+                                {{ submission.review_text_submitted }}
                             </div>
-                        </div>
-                    </div>
-                    {% endif %}
 
-                    <!-- Action Buttons -->
-                    <div class="action-buttons">
-                        <button type="button" class="btn-action btn-approve" onclick="approveTask({{ submission.id }}, this)">
-                            <i class="fas fa-check-circle"></i> Approve Task
-                        </button>
-                        <button type="button" class="btn-action btn-reject" onclick="rejectTask({{ submission.id }}, this)">
-                            <i class="fas fa-times-circle"></i> Reject Task
-                        </button>
+                        </div>
+
+
+                        <!-- Points -->
+
+                        <div class="verify-info-box">
+
+                            <span class="verify-content-label">
+                                Points Reward
+                            </span>
+
+                            <span class="verify-points">
+
+                                {{ submission.task.points_per_review
+                                   or
+                                   (submission.task.campaign.points_per_review
+                                   if submission.task.campaign else 0) }}
+
+                                Points
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- Submitted Date -->
+
+                        <div class="verify-info-box">
+
+                            <span class="verify-content-label">
+                                Submitted Date
+                            </span>
+
+                            <span class="verify-content-value">
+
+                                {{ submission.submitted_date.strftime(
+                                    '%d-%m-%Y %H:%M:%S'
+                                ) }}
+
+                            </span>
+
+                        </div>
+
                     </div>
+
+
+                    <!-- =============================================
+                         SCREENSHOT + ACTIONS
+                         ============================================= -->
+
+                    <div class="verify-evidence">
+
+                        <span class="verify-screenshot-label">
+                            Screenshot Evidence
+                        </span>
+
+
+                        {% if submission.screenshot_url %}
+
+                        <div
+                            class="verify-screenshot-wrapper"
+                            onclick="openImageModal(this)"
+                        >
+
+                            <img
+                                src="/uploads/{{ submission.screenshot_url }}"
+                                class="verify-screenshot"
+                                alt="Task Screenshot"
+                                loading="lazy"
+                            >
+
+                        </div>
+
+                        {% else %}
+
+                        <div class="verify-screenshot-wrapper">
+
+                            <div class="verify-no-screenshot">
+
+                                <i class="fas fa-image"></i>
+
+                                <p>
+                                    No screenshot uploaded
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        {% endif %}
+
+
+                        <!-- ACTIONS -->
+
+                        <div class="verify-actions">
+
+                            <button
+                                type="button"
+                                class="verify-action-btn verify-btn-approve"
+                                onclick="approveTask({{ submission.id }}, this)"
+                            >
+
+                                <i class="fas fa-check-circle"></i>
+
+                                <span>Approve Task</span>
+
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="verify-action-btn verify-btn-reject"
+                                onclick="rejectTask({{ submission.id }}, this)"
+                            >
+
+                                <i class="fas fa-times-circle"></i>
+
+                                <span>Reject Task</span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
                 </div>
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-        <!-- Empty State -->
-        <div class="empty-state">
-            <div class="empty-state-icon">
+
+            </article>
+
+            {% endfor %}
+
+
+        {% else %}
+
+        <!-- =====================================================
+             EMPTY STATE
+             ===================================================== -->
+
+        <div class="verify-empty">
+
+            <div class="verify-empty-icon">
+
                 <i class="fas fa-check-double"></i>
+
             </div>
-            <h2 class="empty-state-title">All Tasks Verified! ✅</h2>
-            <p class="empty-state-text">There are no pending tasks to review. All submissions have been verified.</p>
+
+            <h2 class="verify-empty-title">
+                All Tasks Verified! ✅
+            </h2>
+
+            <p class="verify-empty-text">
+                There are no pending tasks to review.
+                All submissions have been verified.
+            </p>
+
         </div>
-    {% endif %}
+
+        {% endif %}
+
+    </div>
+
 </div>
 
-<!-- Image Modal -->
-<div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
-    <button class="modal-close" onclick="closeImageModal()">
+
+<!-- =========================================================
+     IMAGE MODAL
+     ========================================================= -->
+
+<div
+    id="imageModal"
+    class="verify-image-modal"
+    onclick="closeImageModal(event)"
+    aria-hidden="true"
+>
+
+    <button
+        type="button"
+        class="verify-modal-close"
+        onclick="closeImageModal()"
+        aria-label="Close image"
+    >
         <i class="fas fa-times"></i>
     </button>
-    <img id="modalImage" class="modal-image" alt="Full size screenshot">
+
+
+    <img
+        id="modalImage"
+        class="verify-modal-image"
+        alt="Full size task screenshot"
+    >
+
 </div>
 
+
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+
 <script>
-    (function() {
-        'use strict';
+(function () {
 
-        window.approveTask = function(submissionId, button) {
-            if (!confirm('Are you sure you want to approve this task?')) {
-                return;
-            }
+    'use strict';
 
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
 
-            fetch(`/admin/task/${submissionId}/approve`, {
+    /* =========================================================
+       APPROVE TASK
+       ========================================================= */
+
+    window.approveTask = function (submissionId, button) {
+
+        if (!confirm(
+            'Are you sure you want to approve this task?'
+        )) {
+            return;
+        }
+
+
+        if (!button) {
+            return;
+        }
+
+
+        button.disabled = true;
+
+
+        const originalText =
+            button.innerHTML;
+
+
+        button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> ' +
+            '<span>Approving...</span>';
+
+
+        fetch(
+            `/admin/task/${submissionId}/approve`,
+            {
                 method: 'POST',
+
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success' || data.message) {
-                    alert('✅ Task approved successfully!');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    alert('❌ Error: ' + (data.message || 'Failed to approve task'));
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                alert('❌ Error: ' + error.message);
+            }
+        )
+
+        .then(function (response) {
+
+            return response.json();
+
+        })
+
+        .then(function (data) {
+
+            if (
+                data.status === 'success' ||
+                data.message
+            ) {
+
+                alert(
+                    '✅ Task approved successfully!'
+                );
+
+
+                setTimeout(function () {
+
+                    location.reload();
+
+                }, 700);
+
+
+            } else {
+
+                alert(
+                    '❌ Error: ' +
+                    (
+                        data.message ||
+                        'Failed to approve task'
+                    )
+                );
+
+
                 button.disabled = false;
-                button.innerHTML = originalText;
-            });
-        };
 
-        window.rejectTask = function(submissionId, button) {
-            if (!confirm('Are you sure you want to reject this task?')) {
-                return;
+                button.innerHTML =
+                    originalText;
             }
 
-            button.disabled = true;
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rejecting...';
+        })
 
-            fetch(`/admin/task/${submissionId}/reject`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success' || data.message) {
-                    alert('✅ Task rejected successfully!');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    alert('❌ Error: ' + (data.message || 'Failed to reject task'));
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                alert('❌ Error: ' + error.message);
-                button.disabled = false;
-                button.innerHTML = originalText;
-            });
-        };
+        .catch(function (error) {
 
-        window.openImageModal = function(element) {
-            const image = element.querySelector('img');
-            if (image) {
-                document.getElementById('modalImage').src = image.src;
-                document.getElementById('imageModal').classList.add('active');
-            }
-        };
+            console.error(
+                'Approve task error:',
+                error
+            );
 
-        window.closeImageModal = function(event) {
-            if (event && event.target.id !== 'imageModal') {
-                return;
-            }
-            document.getElementById('imageModal').classList.remove('active');
-        };
 
-        // Close modal on ESC key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                document.getElementById('imageModal').classList.remove('active');
-            }
+            alert(
+                '❌ Error: ' +
+                error.message
+            );
+
+
+            button.disabled = false;
+
+            button.innerHTML =
+                originalText;
         });
-    })();
+
+    };
+
+
+    /* =========================================================
+       REJECT TASK
+       ========================================================= */
+
+    window.rejectTask = function (
+        submissionId,
+        button
+    ) {
+
+        if (!confirm(
+            'Are you sure you want to reject this task?'
+        )) {
+            return;
+        }
+
+
+        if (!button) {
+            return;
+        }
+
+
+        button.disabled = true;
+
+
+        const originalText =
+            button.innerHTML;
+
+
+        button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> ' +
+            '<span>Rejecting...</span>';
+
+
+        fetch(
+            `/admin/task/${submissionId}/reject`,
+            {
+                method: 'POST',
+
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }
+        )
+
+        .then(function (response) {
+
+            return response.json();
+
+        })
+
+        .then(function (data) {
+
+            if (
+                data.status === 'success' ||
+                data.message
+            ) {
+
+                alert(
+                    '✅ Task rejected successfully!'
+                );
+
+
+                setTimeout(function () {
+
+                    location.reload();
+
+                }, 700);
+
+
+            } else {
+
+                alert(
+                    '❌ Error: ' +
+                    (
+                        data.message ||
+                        'Failed to reject task'
+                    )
+                );
+
+
+                button.disabled = false;
+
+                button.innerHTML =
+                    originalText;
+            }
+
+        })
+
+        .catch(function (error) {
+
+            console.error(
+                'Reject task error:',
+                error
+            );
+
+
+            alert(
+                '❌ Error: ' +
+                error.message
+            );
+
+
+            button.disabled = false;
+
+            button.innerHTML =
+                originalText;
+        });
+
+    };
+
+
+    /* =========================================================
+       OPEN IMAGE MODAL
+       ========================================================= */
+
+    window.openImageModal = function (element) {
+
+        if (!element) {
+            return;
+        }
+
+
+        const image =
+            element.querySelector('img');
+
+
+        if (!image) {
+            return;
+        }
+
+
+        const modal =
+            document.getElementById('imageModal');
+
+        const modalImage =
+            document.getElementById('modalImage');
+
+
+        if (!modal || !modalImage) {
+            return;
+        }
+
+
+        modalImage.src =
+            image.src;
+
+
+        modal.classList.add('active');
+
+        modal.setAttribute(
+            'aria-hidden',
+            'false'
+        );
+
+
+        /* Prevent page behind modal from scrolling */
+
+        document.body.style.overflow =
+            'hidden';
+
+    };
+
+
+    /* =========================================================
+       CLOSE IMAGE MODAL
+       ========================================================= */
+
+    window.closeImageModal = function (event) {
+
+        /*
+         * If click is inside the image or another
+         * modal element, don't close.
+         */
+
+        if (
+            event &&
+            event.target &&
+            event.target.id !== 'imageModal'
+        ) {
+
+            /*
+             * Close button has no id, so handle it
+             * separately.
+             */
+
+            if (
+                !event.currentTarget ||
+                !event.currentTarget.classList.contains(
+                    'verify-modal-close'
+                )
+            ) {
+                return;
+            }
+        }
+
+
+        const modal =
+            document.getElementById('imageModal');
+
+
+        const modalImage =
+            document.getElementById('modalImage');
+
+
+        if (!modal) {
+            return;
+        }
+
+
+        modal.classList.remove('active');
+
+        modal.setAttribute(
+            'aria-hidden',
+            'true'
+        );
+
+
+        if (modalImage) {
+            modalImage.src = '';
+        }
+
+
+        document.body.style.overflow =
+            '';
+    };
+
+
+    /* =========================================================
+       ESC KEY
+       ========================================================= */
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (event.key === 'Escape') {
+
+                const modal =
+                    document.getElementById(
+                        'imageModal'
+                    );
+
+
+                if (
+                    modal &&
+                    modal.classList.contains('active')
+                ) {
+
+                    window.closeImageModal();
+
+                }
+
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       PREVENT IMAGE DRAG
+       ========================================================= */
+
+    document.addEventListener(
+        'dragstart',
+        function (event) {
+
+            if (
+                event.target &&
+                event.target.classList &&
+                event.target.classList.contains(
+                    'verify-screenshot'
+                )
+            ) {
+                event.preventDefault();
+            }
+
+        }
+    );
+
+})();
 </script>
 
 {% endblock %}
