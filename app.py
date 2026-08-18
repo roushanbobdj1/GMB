@@ -272,7 +272,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'admin_id' not in session:
             flash('❌ Admin login required!', 'error')
-            return redirect(url_for('admin_login'))
+            return redirect(url_for('user_login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -471,8 +471,15 @@ def user_login():
             flash('❌ Email and password required!', 'error')
             return render_template("login.html")
 
-        user = User.query.filter_by(email=email).first()
+        # ✅ 1. Pehle check karega ki kya ye Admin hai?
+        if email == app.config.get('ADMIN_EMAIL') and check_admin_password(password):
+            session['admin_id'] = 1
+            session['admin_email'] = email
+            flash('✅ Admin login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
 
+        # ✅ 2. Agar Admin nahi hai, toh User database me check karega
+        user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             if getattr(user, 'is_blocked', False):
                 flash('❌ Your account has been blocked by Admin. Contact support.', 'error')
@@ -484,9 +491,11 @@ def user_login():
             session.permanent = True
             flash('✅ Login successful!', 'success')
             return redirect(url_for('user_dashboard'))
-        else:
-            flash('❌ Invalid email or password!', 'error')
+        
+        # ❌ 3. Agar dono me se kisi ka password match nahi kiya
+        flash('❌ Invalid email or password!', 'error')
 
+    # Note: Aapki HTML file ka naam jo bhi ho, wo yahan rahega (jaise login.html)
     return render_template("login.html")
 
 
@@ -853,25 +862,8 @@ def reply_ticket(ticket_id):
 # ----------------- ADMIN ROUTES -----------------
 
 @app.route("/admin/login", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
 def admin_login():
-    if request.method == "POST":
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '')
-
-        if not email or not password:
-            flash('❌ Email and password required!', 'error')
-            return render_template("admin_login.html")
-
-        if email == app.config.get('ADMIN_EMAIL') and check_admin_password(password):
-            session['admin_id'] = 1
-            session['admin_email'] = email
-            flash('✅ Admin login successful!', 'success')
-            return redirect(url_for('admin_dashboard'))
-        else:
-            flash('❌ Invalid admin credentials!', 'error')
-
-    return render_template("admin_login.html")
+    return redirect(url_for('user_login'))
 
 
 @app.route("/admin")
