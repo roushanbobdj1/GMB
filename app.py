@@ -2578,28 +2578,59 @@ def admin_leaderboard_exclude(user_id):
 @admin_required
 def admin_allocations():
 
-    campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
+    status_priority = db.case(
+        (func.lower(func.trim(Campaign.status)) == 'active', 0),
+        (func.lower(func.trim(Campaign.status)) == 'push', 1),
+        (func.lower(func.trim(Campaign.status)) == 'stopped', 2),
+        else_=3
+    )
+
+    campaigns = Campaign.query.order_by(
+        status_priority,
+        Campaign.created_at.desc()
+    ).all()
+
     allocation_data = []
 
     for campaign in campaigns:
-        progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
-        assignments = UserCampaignTaskAssignment.query.filter_by(campaign_id=campaign.id).all()
+        progress = CampaignAllocationProgress.query.filter_by(
+            campaign_id=campaign.id
+        ).first()
+
+        assignments = UserCampaignTaskAssignment.query.filter_by(
+            campaign_id=campaign.id
+        ).all()
 
         assigned_users = []
+
         for assign in assignments:
             user = User.query.get(assign.user_id)
+
             if user:
                 assigned_users.append({
                     'name': user.name,
                     'email': user.email,
-                    'assigned_date': assign.assigned_at.strftime("%Y-%m-%d %I:%M %p") if assign.assigned_at else "N/A",
+                    'assigned_date': (
+                        assign.assigned_at.strftime("%Y-%m-%d %I:%M %p")
+                        if assign.assigned_at
+                        else "N/A"
+                    ),
                     'status': assign.status
                 })
 
         if progress:
-            total_created = progress.total_tasks_planned or progress.total_tasks_created or 0
+            total_created = (
+                progress.total_tasks_planned
+                or progress.total_tasks_created
+                or 0
+            )
+
             total_assigned = progress.total_tasks_assigned or 0
-            remaining = max(0, total_created - total_assigned)
+
+            remaining = max(
+                0,
+                total_created - total_assigned
+            )
         else:
             total_created = 0
             total_assigned = 0
@@ -2613,7 +2644,10 @@ def admin_allocations():
             'assigned_users': assigned_users
         })
 
-    return render_template('admin_allocations.html', allocation_data=allocation_data)
+    return render_template(
+        'admin_allocations.html',
+        allocation_data=allocation_data
+    )
 
 
 # ----------------- PROFILE / EDIT -----------------
