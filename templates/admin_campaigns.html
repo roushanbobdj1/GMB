@@ -1623,15 +1623,23 @@
                         <div class="action-buttons">
 
                             <!-- Allocate -->
+                            {% set is_allocated = campaign.allocation_progress is defined
+                                and campaign.allocation_progress
+                                and (campaign.allocation_progress.total_tasks_assigned | default(0) | int) > 0 %}
 
                             <button
                                 type="button"
-                                class="btn-action btn-allocate"
+                                class="btn-action {% if is_allocated %}btn-success-action{% else %}btn-allocate{% endif %}" 
                                 data-bs-toggle="modal"
                                 data-bs-target="#allocateModal{{ campaign.id }}"
                             >
-                                <i class="fas fa-users"></i>
-                                <span>Allocate Tasks</span>
+                                {% if is_allocated %}
+                                    <i class="fas fa-check-circle"></i> 
+                                    <span>Allocated</span>
+                                {% else %}
+                                    <i class="fas fa-users"></i> 
+                                    <span>Allocate Tasks</span>
+                                {% endif %}
                             </button>
 
 
@@ -2453,6 +2461,18 @@
                 .then(function (data) {
                     if (data.status === 'success') {
                         alert('✅ ' + (data.message || 'Tasks allocated successfully.'));
+                        const campaignId = form.action.split('/').pop();
+                        const allocateButton = document.querySelector(
+                            '[data-bs-target="#allocateModal' + campaignId + '"]'
+                        );
+
+                       if (allocateButton) {
+                           allocateButton.classList.remove('btn-allocate');
+                           allocateButton.classList.add('btn-success-action');
+
+                           allocateButton.innerHTML =
+                               '<i class="fas fa-check-circle"></i><span>Allocated</span>';
+                        }
                         const modalElement = form.closest('.modal');
                         if (modalElement && typeof bootstrap !== 'undefined') {
                             const modal = bootstrap.Modal.getInstance(modalElement);
