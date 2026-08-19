@@ -2388,31 +2388,38 @@
 
 
 <!-- =============================================================
-     ALLOCATION AJAX
+     ALLOCATION AJAX + MODAL CLEANUP
      ============================================================= -->
 
 <script>
 (function () {
     'use strict';
 
-    // ---- Fix 1: clear leftover modal-backdrop on bfcache restore ----
-    window.addEventListener('pageshow', function (event) {
-        const navEntry = performance.getEntriesByType('navigation')[0];
-        if (event.persisted || (navEntry && navEntry.type === 'back_forward')) {
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-            document.querySelectorAll('.modal.show').forEach(function (modalEl) {
+    function cleanupStuckModal() {
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.querySelectorAll('.modal.show').forEach(function (modalEl) {
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            if (typeof bootstrap !== 'undefined') {
                 const instance = bootstrap.Modal.getInstance(modalEl);
-                if (instance) instance.hide();
-            });
-        }
-    });
+                if (instance) instance.dispose();
+            }
+        });
+    }
+
+    // Run cleanup on normal load and on back/forward (bfcache) restore
+    cleanupStuckModal();
+    window.addEventListener('pageshow', cleanupStuckModal);
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        // ---- Allocate Tasks (existing AJAX) ----
+        cleanupStuckModal();
+
+        // Only Allocate Tasks uses AJAX (backend for this route returns JSON)
         document.querySelectorAll('.allocate-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -2430,73 +2437,66 @@
                     return;
                 }
 
-                submitAjaxForm(form, submitBtn);
-            });
-        });
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Processing...</span>';
 
-        // ---- Pause / Resume / Stop / Delete (now AJAX too) ----
-        document.querySelectorAll(
-            '.pause-form, .resume-form, .stop-form, .delete-form'
-        ).forEach(function (form) {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitAjaxForm(form, submitBtn);
-            });
-        });
-
-        function submitAjaxForm(form, submitBtn) {
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML =
-                '<i class="fas fa-spinner fa-spin"></i><span>Processing...</span>';
-
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Server returned HTTP ' + response.status);
-                }
-                return response.json();
-            })
-            .then(function (data) {
-                if (data.status === 'success') {
-                    closeParentModal(form);
-                    alert('✅ ' + (data.message || 'Done successfully.'));
-                    setTimeout(function () { window.location.reload(); }, 500);
-                } else {
-                    alert('❌ Error: ' + (data.message || 'Action failed.'));
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Server returned HTTP ' + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.status === 'success') {
+                        alert('✅ ' + (data.message || 'Tasks allocated successfully.'));
+                        const modalElement = form.closest('.modal');
+                        if (modalElement && typeof bootstrap !== 'undefined') {
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) modal.hide();
+                        }
+                        setTimeout(function () { window.location.reload(); }, 800);
+                    } else {
+                        alert('❌ Error: ' + (data.message || 'Unable to allocate tasks.'));
+                    }
+                })
+                .catch(function (error) {
+                    console.error('Allocation error:', error);
+                    alert('❌ Error: ' + error.message);
+                })
+                .finally(function () {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                }
-            })
-            .catch(function (error) {
-                console.error('Action error:', error);
-                alert('❌ Error: ' + error.message);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+                });
             });
-        }
+        });
 
-        function closeParentModal(form) {
-            const modalElement = form.closest('.modal');
-            if (modalElement && typeof bootstrap !== 'undefined') {
-                const modal = bootstrap.Modal.getInstance(modalElement);
-                if (modal) modal.hide();
-            }
-            // extra safety cleanup
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-        }
+        // Pause / Resume / Stop / Delete: keep as NORMAL form submits
+        // (no AJAX) — backend does redirect(), not JSON, so we don't
+        // intercept these. Just make sure the modal closes cleanly
+        // before the browser navigates away.
+        document.querySelectorAll(
+            '#allocateModal, [id^="pauseModal"], [id^="stopModal"], [id^="deleteModal"], [id^="editModal"]'
+        );
+        document.querySelectorAll('.modal form:not(.allocate-form)').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML =
+                        '<i class="fas fa-spinner fa-spin"></i> <span>Processing...</span>';
+                }
+                // let the normal POST + redirect happen; no preventDefault
+            });
+        });
 
     });
 
 })();
 </script>
+
 
 {% endblock %}
