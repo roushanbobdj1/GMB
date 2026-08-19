@@ -859,10 +859,6 @@ def user_dashboard():
 def view_tasks():
     user_id = session.get('user_id')
 
-    # ✅ FIX: Incomplete tasks (Assigned/Rejected — jinme user ko action lena
-    # hai) sabse upar, phir Submitted (pending review), phir Approved/
-    # Cancelled (dono terminal/history states) sabse neeche — taki purane
-    # complete tasks ke bich naya kaam na dab jaye.
     status_order = db.case(
         (Task.status == 'Assigned', 0),
         (Task.status == 'Rejected', 0),
@@ -871,12 +867,22 @@ def view_tasks():
         (Task.status == 'Cancelled', 2),
         else_=3
     )
+    
     tasks = (
         Task.query
-        .filter_by(user_id=user_id)
+        .outerjoin(Campaign, Campaign.id == Task.campaign_id)
+        .filter(Task.user_id == user_id)
+        .filter(
+            or_(
+                Campaign.id == None,           
+                Campaign.is_deleted == False, 
+                Task.status.in_(['Submitted', 'Approved']) क
+            )
+        )
         .order_by(status_order, Task.assigned_date.desc())
         .all()
     )
+    
     return render_template("tasks.html", tasks=tasks)
 
 
