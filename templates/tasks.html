@@ -528,7 +528,8 @@
             <button type="button" class="btn btn-sm btn-light rounded-pill fw-bold ms-md-2" id="refreshTasksBtn" title="Refresh task list">
                 <i class="fas fa-sync-alt me-1"></i> Refresh
             </button>
-            <button type="button" class="btn btn-sm btn-light rounded-pill fw-bold text-danger" title="Clear Old Tasks" onclick="clearOldTasks()">
+            <!-- FIX: Added data-bs-toggle & data-bs-target here to properly open Modal -->
+            <button type="button" class="btn btn-sm btn-light rounded-pill fw-bold text-danger" title="Clear Old Tasks" data-bs-toggle="modal" data-bs-target="#clearTasksModal">
                 <i class="fas fa-broom me-1"></i> Clear
             </button>
         </div>
@@ -799,6 +800,18 @@
     if (document.readyState !== 'loading') initTasksPage();
     else document.addEventListener('DOMContentLoaded', initTasksPage);
 
+    // ── Prevent Double Submit on Upload Modal ──
+    document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            const btn = this.querySelector('.btn-modal-submit');
+            if(btn && this.checkValidity()) {
+                btn.disabled = true;
+                const isRejected = btn.classList.contains('bg-danger');
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Processing...`;
+            }
+        });
+    });
+
     // ── Clear Old Tasks Script ──
     document.getElementById('confirmClearBtn').addEventListener('click', function () {
         const btn = this;
@@ -815,23 +828,39 @@
         })
         .then(function (res) { return res.text().then(function (html) { return { ok: res.ok, html: html }; }); })
         .then(function (result) {
-            bootstrap.Modal.getInstance(document.getElementById('clearTasksModal')).hide();
+            const modalEl = document.getElementById('clearTasksModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modalInst = bootstrap.Modal.getInstance(modalEl);
+                if (modalInst) modalInst.hide();
+            }
 
             // Remove approved/rejected/cancelled from DOM smoothly
             document.querySelectorAll('.task-card[data-status="approved"], .task-card[data-status="rejected"], .task-card[data-status="cancelled"]')
                 .forEach(function (card) { card.remove(); });
+            
+            // Re-apply filters so Empty state shows up if 0 tasks left
+            applyFilters(document.querySelector('.search-input').value);
 
+            // Fallback for notification if window.showNotification is missing
             if (typeof window.showNotification === 'function') {
                 window.showNotification(
                     result.ok ? 'Old tasks cleared successfully!' : 'Something went wrong, please try again.',
                     result.ok ? 'success' : 'error'
                 );
+            } else {
+                alert(result.ok ? 'Old tasks cleared successfully!' : 'Something went wrong, please try again.');
             }
         })
         .catch(function () {
-            bootstrap.Modal.getInstance(document.getElementById('clearTasksModal')).hide();
+            const modalEl = document.getElementById('clearTasksModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modalInst = bootstrap.Modal.getInstance(modalEl);
+                if (modalInst) modalInst.hide();
+            }
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Something went wrong, please try again.', 'error');
+            } else {
+                alert('Something went wrong, please try again.');
             }
         })
         .finally(function () {
@@ -899,11 +928,12 @@ function applyFilters(query = '') {
         const matchF  = currentFilter === 'all' || status === currentFilter;
         const matchQ  = text.includes(query);
 
+        // Fixed inline styles display issue by using bootstrap d-none 
         if (matchF && matchQ) { 
-            card.style.setProperty('display', 'block', 'important'); 
+            card.classList.remove('d-none');
             visible++; 
         } else { 
-            card.style.setProperty('display', 'none', 'important'); 
+            card.classList.add('d-none');
         }
     });
 
