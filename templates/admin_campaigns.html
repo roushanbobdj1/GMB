@@ -2395,141 +2395,104 @@
 (function () {
     'use strict';
 
+    // ---- Fix 1: clear leftover modal-backdrop on bfcache restore ----
+    window.addEventListener('pageshow', function (event) {
+        const navEntry = performance.getEntriesByType('navigation')[0];
+        if (event.persisted || (navEntry && navEntry.type === 'back_forward')) {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.querySelectorAll('.modal.show').forEach(function (modalEl) {
+                const instance = bootstrap.Modal.getInstance(modalEl);
+                if (instance) instance.hide();
+            });
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
 
-        const allocateForms =
-            document.querySelectorAll('.allocate-form');
-
-        allocateForms.forEach(function (form) {
-
+        // ---- Allocate Tasks (existing AJAX) ----
+        document.querySelectorAll('.allocate-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
-
                 e.preventDefault();
 
-                const totalTasksField =
-                    form.querySelector('input[name="total_tasks"]');
-
-                const totalTasks =
-                    totalTasksField
-                        ? totalTasksField.value.trim()
-                        : '';
-
-                const submitBtn =
-                    form.querySelector('button[type="submit"]');
+                const totalTasksField = form.querySelector('input[name="total_tasks"]');
+                const totalTasks = totalTasksField ? totalTasksField.value.trim() : '';
+                const submitBtn = form.querySelector('button[type="submit"]');
 
                 if (!totalTasks || parseInt(totalTasks, 10) < 1) {
-
-                    alert(
-                        '❌ Please enter a valid number of tasks (minimum 1)'
-                    );
-
+                    alert('❌ Please enter a valid number of tasks (minimum 1)');
                     return;
                 }
-
                 if (parseInt(totalTasks, 10) > 100000) {
-
-                    alert(
-                        '❌ Maximum allowed tasks is 100,000.'
-                    );
-
+                    alert('❌ Maximum allowed tasks is 100,000.');
                     return;
                 }
 
-                const originalText =
-                    submitBtn.innerHTML;
-
-                submitBtn.disabled = true;
-
-                submitBtn.innerHTML =
-                    '<i class="fas fa-spinner fa-spin"></i>' +
-                    '<span>Processing...</span>';
-
-                fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-
-                .then(function (response) {
-
-                    if (!response.ok) {
-                        throw new Error(
-                            'Server returned HTTP ' +
-                            response.status
-                        );
-                    }
-
-                    return response.json();
-                })
-
-                .then(function (data) {
-
-                    if (data.status === 'success') {
-
-                        alert(
-                            '✅ ' +
-                            (data.message ||
-                                'Tasks allocated successfully.')
-                        );
-
-                        const modalElement =
-                            form.closest('.modal');
-
-                        if (modalElement &&
-                            typeof bootstrap !== 'undefined') {
-
-                            const modal =
-                                bootstrap.Modal.getInstance(
-                                    modalElement
-                                );
-
-                            if (modal) {
-                                modal.hide();
-                            }
-                        }
-
-                        setTimeout(function () {
-                            window.location.reload();
-                        }, 800);
-
-                    } else {
-
-                        alert(
-                            '❌ Error: ' +
-                            (data.message ||
-                                'Unable to allocate tasks.')
-                        );
-                    }
-
-                })
-
-                .catch(function (error) {
-
-                    console.error(
-                        'Allocation error:',
-                        error
-                    );
-
-                    alert(
-                        '❌ Error: ' +
-                        error.message
-                    );
-
-                })
-
-                .finally(function () {
-
-                    submitBtn.disabled = false;
-
-                    submitBtn.innerHTML =
-                        originalText;
-                });
-
+                submitAjaxForm(form, submitBtn);
             });
-
         });
+
+        // ---- Pause / Resume / Stop / Delete (now AJAX too) ----
+        document.querySelectorAll(
+            '.pause-form, .resume-form, .stop-form, .delete-form'
+        ).forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitAjaxForm(form, submitBtn);
+            });
+        });
+
+        function submitAjaxForm(form, submitBtn) {
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i><span>Processing...</span>';
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Server returned HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                if (data.status === 'success') {
+                    closeParentModal(form);
+                    alert('✅ ' + (data.message || 'Done successfully.'));
+                    setTimeout(function () { window.location.reload(); }, 500);
+                } else {
+                    alert('❌ Error: ' + (data.message || 'Action failed.'));
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(function (error) {
+                console.error('Action error:', error);
+                alert('❌ Error: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        }
+
+        function closeParentModal(form) {
+            const modalElement = form.closest('.modal');
+            if (modalElement && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+            // extra safety cleanup
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        }
 
     });
 
