@@ -1,14 +1,12 @@
 // Service Worker for offline functionality
-// v2: also prevents stale Bootstrap modal/loading backdrops from
-// leaving the page permanently dimmed after deploys or reloads.
-const CACHE_NAME = 'rtm-v2';
+// v3: robust Bootstrap modal/backdrop recovery for ALL campaign modals.
+const CACHE_NAME = 'rtm-v3';
 const URLS_TO_CACHE = [
     '/',
     '/static/manifest.json',
     '/offline.html'
 ];
 
-// Install event
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
@@ -21,7 +19,6 @@ self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// Activate event
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -38,15 +35,12 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Inject a small client-side safety net into HTML pages.
-// The campaign modals are rendered inside cards; Bootstrap modals work
-// reliably when moved to <body>, because transformed/overflow-hidden
-// ancestors can otherwise clip the modal and leave only the backdrop.
+// Bootstrap modals are rendered inside campaign cards. Moving every modal
+// to <body> prevents card overflow/transform rules from trapping the modal
+// backdrop. The cleanup also handles Allocate/Edit/Pause/Stop/Delete.
 async function prepareHtmlResponse(response) {
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html')) {
-        return response;
-    }
+    if (!contentType.includes('text/html')) return response;
 
     try {
         const html = await response.text();
@@ -55,7 +49,7 @@ async function prepareHtmlResponse(response) {
 (function () {
     'use strict';
 
-    function moveModalsToBody() {
+    function moveCampaignModalsToBody() {
         document.querySelectorAll('.modal').forEach(function (modal) {
             if (modal.parentElement !== document.body) {
                 document.body.appendChild(modal);
@@ -63,29 +57,58 @@ async function prepareHtmlResponse(response) {
         });
     }
 
-    function clearStaleBackdrop() {
+    function clearModalState() {
         var loading = document.getElementById('loadingOverlay');
         if (loading) {
             loading.classList.remove('show');
             loading.setAttribute('aria-hidden', 'true');
+            loading.style.display = 'none';
         }
 
         document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
             backdrop.remove();
         });
 
+        document.querySelectorAll('.modal.show').forEach(function (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        });
+
         document.body.classList.remove('modal-open');
         document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('overflow');
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        moveModalsToBody();
-        clearStaleBackdrop();
+        moveCampaignModalsToBody();
+        clearModalState();
+
+        // Catch Bootstrap's shown/hidden lifecycle for every modal,
+        // including Stop and Delete.
+        document.addEventListener('shown.bs.modal', function (event) {
+            if (event.target && event.target.classList.contains('modal')) {
+                document.body.classList.add('modal-open');
+            }
+        });
+
+        document.addEventListener('hidden.bs.modal', function () {
+            setTimeout(function () {
+                if (!document.querySelector('.modal.show')) {
+                    document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+                        backdrop.remove();
+                    });
+                    document.body.classList.remove('modal-open');
+                    document.body.style.removeProperty('padding-right');
+                    document.body.style.removeProperty('overflow');
+                }
+            }, 50);
+        });
     });
 
     window.addEventListener('pageshow', function () {
-        moveModalsToBody();
-        clearStaleBackdrop();
+        moveCampaignModalsToBody();
+        clearModalState();
     });
 
     document.addEventListener('show.bs.modal', function (event) {
@@ -118,7 +141,6 @@ async function prepareHtmlResponse(response) {
     }
 }
 
-// Fetch event
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
     if (event.request.url.startsWith('chrome-extension://')) return;
