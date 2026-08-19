@@ -732,41 +732,70 @@ def verify_registration():
 @limiter.limit("10 per minute")
 def user_login():
     if request.method == "POST":
-        email = request.form.get('email', '').strip()
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
 
         if not email or not password:
             flash('❌ Email and password required!', 'error')
             return render_template("login.html")
 
-        # ✅ 1. Pehle check karega ki kya ye Admin hai?
-        if email == app.config.get('ADMIN_EMAIL') and check_admin_password(password):
+        # =====================================================
+        # 1. ADMIN LOGIN
+        # =====================================================
+        if (
+            email == app.config.get('ADMIN_EMAIL', '').strip().lower()
+            and check_admin_password(password)
+        ):
+            # Remove any previous user/admin session data
             session.clear()
+
             session['admin_id'] = 1
             session['admin_email'] = email
+
+            # Make admin session permanent too
+            session.permanent = True
+
             flash('✅ Admin login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
 
-        # ✅ 2. Agar Admin nahi hai, toh User database me check karega
+        # =====================================================
+        # 2. USER LOGIN
+        # =====================================================
         user = User.query.filter_by(email=email).first()
+
         if user and user.check_password(password):
+
+            # Blocked account check
             if getattr(user, 'is_blocked', False):
-                flash('❌ Your account has been blocked by Admin. Contact support.', 'error')
+                flash(
+                    '❌ Your account has been blocked by Admin. '
+                    'Contact support.',
+                    'error'
+                )
                 return render_template("login.html")
 
+            # -------------------------------------------------
+            # Create fresh user session
+            # -------------------------------------------------
             session.clear()
+
             session['user_id'] = user.id
             session['user_email'] = user.email
             session['user_name'] = user.name
+
+            # IMPORTANT:
+            # Keep the login session persistent.
             session.permanent = True
+
             flash('✅ Login successful!', 'success')
             return redirect(url_for('user_dashboard'))
-        
-        # ❌ 3. Agar dono me se kisi ka password match nahi kiya
+
+        # =====================================================
+        # 3. INVALID LOGIN
+        # =====================================================
         flash('❌ Invalid email or password!', 'error')
 
     return render_template("login.html")
-
 
 @app.route("/dashboard")
 @login_required
