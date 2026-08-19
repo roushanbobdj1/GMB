@@ -4,16 +4,25 @@
 
 {% block extra_css %}
 <style>
+    /* =========================================
+       GLOBAL & DESKTOP STYLES
+    ========================================= */
+
     /* ── Page Header ── */
     .page-header {
         background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
         color: white;
         padding: 26px 32px;
         border-radius: 18px;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-md);
     }
 
-    .page-header p { color: rgba(255,255,255,0.6); margin: 0; font-size: .9rem; }
+    .page-header p { 
+        color: rgba(255,255,255,0.7); 
+        margin: 0; 
+        font-size: .9rem; 
+    }
 
     /* ── Summary Chips ── */
     .stat-chip {
@@ -27,14 +36,21 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        backdrop-filter: blur(4px);
     }
 
     /* ── Cards ── */
     .pro-card {
-        border: none;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 18px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        box-shadow: var(--shadow-sm);
         overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .pro-card:hover {
+        box-shadow: var(--shadow-md);
     }
 
     .pro-card-header {
@@ -46,7 +62,11 @@
         gap: 10px;
     }
 
-    .pro-card-header h5 { margin: 0; font-weight: 700; font-size: 1rem; }
+    .pro-card-header h5 { 
+        margin: 0; 
+        font-weight: 700; 
+        font-size: 1.05rem; 
+    }
 
     .pro-card-header .header-icon {
         width: 36px; height: 36px;
@@ -56,40 +76,44 @@
         font-size: .95rem;
     }
 
-    /* ── Form Inputs ── */
+    /* ── Form Inputs (Dark Mode Ready) ── */
     .form-label {
         font-weight: 600;
-        font-size: .83rem;
-        color: #333;
-        margin-bottom: 5px;
+        font-size: .85rem;
+        color: var(--text);
+        margin-bottom: 6px;
     }
 
     .form-control, .form-select {
-        border-radius: 10px;
-        border: 2px solid #e8e8e8;
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 12px;
+        border: 2px solid var(--border);
         font-size: .9rem;
-        padding: 10px 14px;
-        transition: border .25s, box-shadow .25s;
+        padding: 12px 14px;
+        transition: all .25s;
     }
 
     .form-control:focus, .form-select:focus {
-        border-color: #0f3460;
-        box-shadow: 0 0 0 4px rgba(15,52,96,.1);
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, .1);
     }
 
     textarea.form-control { resize: none; }
 
     .hint-text {
         font-size: .75rem;
-        color: #aaa;
-        margin-top: 3px;
+        color: var(--muted);
+        margin-top: 4px;
     }
 
     /* Priority Radio Buttons */
     .priority-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
+        gap: 10px;
     }
 
     .priority-btn input { display: none; }
@@ -99,20 +123,20 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        padding: 9px 10px;
-        border-radius: 10px;
-        border: 2px solid #e8e8e8;
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: var(--surface-soft);
         font-size: .82rem;
         font-weight: 600;
         cursor: pointer;
         transition: all .2s;
-        color: #555;
+        color: var(--text-soft);
         width: 100%;
     }
 
     .priority-btn input:checked + label {
         border-color: currentColor;
-        background: rgba(0,0,0,0.04);
     }
 
     .priority-btn.low    label { color: #6c757d; }
@@ -120,10 +144,10 @@
     .priority-btn.high   label { color: #fd7e14; }
     .priority-btn.urgent label { color: #dc3545; }
 
-    .priority-btn.low    input:checked + label { background: #f8f9fa; border-color: #6c757d; }
-    .priority-btn.normal input:checked + label { background: #e8f0ff; border-color: #0d6efd; }
-    .priority-btn.high   input:checked + label { background: #fff3e8; border-color: #fd7e14; }
-    .priority-btn.urgent input:checked + label { background: #fff0f0; border-color: #dc3545; }
+    .priority-btn.low    input:checked + label { background: rgba(108, 117, 125, 0.1); }
+    .priority-btn.normal input:checked + label { background: rgba(13, 110, 253, 0.1); }
+    .priority-btn.high   input:checked + label { background: rgba(253, 126, 20, 0.1); }
+    .priority-btn.urgent input:checked + label { background: rgba(220, 53, 69, 0.1); }
 
     /* Submit Button */
     .btn-submit {
@@ -135,20 +159,81 @@
         font-weight: 700;
         font-size: .95rem;
         width: 100%;
-        transition: transform .2s, box-shadow .2s, opacity .2s;
+        transition: transform .2s, box-shadow .2s;
         letter-spacing: .4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-submit:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(15,52,96,.3);
-        opacity: .92;
         color: white;
     }
 
-    /* ── Table ── */
+    /* ── Filter Tabs ── */
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+
+    .filter-tab {
+        padding: 6px 16px;
+        border-radius: 50px;
+        border: 1px solid var(--border);
+        font-size: .8rem;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-soft);
+        background: var(--surface-soft);
+        transition: all .2s;
+        white-space: nowrap;
+    }
+
+    .filter-tab.active, .filter-tab:hover {
+        background: #0f3460;
+        border-color: #0f3460;
+        color: white;
+    }
+
+    /* ── Search Bar ── */
+    .search-input {
+        background: var(--surface-soft);
+        color: var(--text);
+        border-radius: 50px;
+        border: 1px solid var(--border);
+        padding: 8px 18px 8px 40px;
+        font-size: .85rem;
+        transition: all .25s;
+        width: 100%;
+        min-width: 200px;
+    }
+
+    .search-input:focus {
+        background: var(--surface);
+        border-color: #0f3460;
+        box-shadow: 0 0 0 3px rgba(15,52,96,.1);
+        outline: none;
+    }
+
+    .search-wrap { position: relative; width: 100%; max-width: 250px; }
+    .search-wrap i {
+        position: absolute;
+        left: 14px; top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted); 
+        font-size: .85rem;
+    }
+
+    /* ── Desktop Table ── */
     .tickets-table thead tr {
-        background: linear-gradient(135deg, #f8f9fa, #f0f2f5);
+        background: var(--surface-soft);
     }
 
     .tickets-table thead th {
@@ -156,7 +241,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: .5px;
-        color: #555;
+        color: var(--muted);
         padding: 14px 16px;
         border: none;
     }
@@ -165,8 +250,8 @@
         padding: 14px 16px;
         vertical-align: middle;
         font-size: .88rem;
-        border-bottom: 1px solid #f0f0f0;
-        color: #333;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
     }
 
     .tickets-table tbody tr {
@@ -174,53 +259,59 @@
     }
 
     .tickets-table tbody tr:hover {
-        background: #f0f5ff;
+        background: var(--surface-soft);
     }
 
-    /* Ticket ID */
+    /* Badges & Chips */
     .ticket-id {
-        background: #e8edf5;
-        color: #0f3460;
-        padding: 3px 10px;
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        padding: 4px 10px;
         border-radius: 8px;
         font-weight: 700;
         font-size: .8rem;
     }
 
-    /* Badges */
     .badge-pro {
         padding: 5px 12px;
         border-radius: 50px;
         font-size: .75rem;
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
 
-    .badge-open     { background: #fff0f0; color: #dc3545; }
-    .badge-progress { background: #fff8e8; color: #fd7e14; }
-    .badge-closed   { background: #f0fff4; color: #28a745; }
+    .badge-open     { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .badge-progress { background: rgba(253, 126, 20, 0.15); color: #fd7e14; }
+    .badge-closed   { background: rgba(40, 167, 69, 0.15); color: #28a745; }
     
-    .badge-urgent   { background: #fff0f0; color: #dc3545; }
-    .badge-high     { background: #fff3e8; color: #fd7e14; }
-    .badge-normal   { background: #e8f0ff; color: #0d6efd; }
-    .badge-low      { background: #f8f9fa; color: #6c757d; }
-    .badge-cat      { background: #f0f0ff; color: #6f42c1; }
+    .badge-urgent   { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+    .badge-high     { background: rgba(253, 126, 20, 0.15); color: #fd7e14; }
+    .badge-normal   { background: rgba(13, 110, 253, 0.15); color: #0d6efd; }
+    .badge-low      { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+    .badge-cat      { background: rgba(111, 66, 193, 0.15); color: #6f42c1; }
+
+    [data-theme="dark"] .badge-pro { filter: brightness(1.2); }
+    [data-theme="dark"] .ticket-id { filter: brightness(1.2); }
 
     /* View Button */
     .btn-view {
         background: transparent;
-        border: 2px solid #0f3460;
-        color: #0f3460;
+        border: 1.5px solid var(--primary);
+        color: var(--primary);
         border-radius: 8px;
-        padding: 5px 14px;
+        padding: 6px 16px;
         font-size: .8rem;
         font-weight: 600;
         transition: all .2s;
         text-decoration: none;
         display: inline-block;
+        text-align: center;
     }
 
     .btn-view:hover {
-        background: #0f3460;
+        background: var(--primary);
         color: white;
     }
 
@@ -232,72 +323,119 @@
 
     .empty-icon-wrap {
         width: 80px; height: 80px;
-        background: linear-gradient(135deg, #f0f4f8, #e8edf2);
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
         margin: 0 auto 16px;
     }
 
-    /* Search Bar */
-    .search-input {
-        border-radius: 50px;
-        border: 2px solid #e8e8e8;
-        padding: 9px 18px 9px 40px;
-        font-size: .88rem;
-        transition: border .25s;
-        width: 220px;
-    }
-
-    .search-input:focus {
-        border-color: #0f3460;
-        box-shadow: none;
-        outline: none;
-    }
-
-    .search-wrap { position: relative; }
-    .search-wrap i {
-        position: absolute;
-        left: 14px; top: 50%;
-        transform: translateY(-50%);
-        color: #aaa; font-size: .85rem;
-    }
-
-    /* Filter Tabs */
-    .filter-tabs {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-
-    .filter-tab {
-        padding: 5px 14px;
-        border-radius: 50px;
-        border: 2px solid #e8e8e8;
-        font-size: .78rem;
-        font-weight: 600;
-        cursor: pointer;
-        color: #666;
-        background: white;
-        transition: all .2s;
-    }
-
-    .filter-tab.active, .filter-tab:hover {
-        background: #0f3460;
-        border-color: #0f3460;
-        color: white;
-    }
-
-    /* Char Counter */
     .char-counter {
         font-size: .75rem;
-        color: #aaa;
+        color: var(--muted);
         text-align: right;
         margin-top: 3px;
     }
 
-    @media (max-width: 768px) {
-        .page-header { padding: 20px; }
-        .pro-card-header { padding: 16px 18px; }
+
+    /* =========================================
+       APP-LIKE MOBILE OPTIMIZATIONS (<768px)
+    ========================================= */
+    @media (max-width: 767.98px) {
+        .container-fluid { padding-left: 12px !important; padding-right: 12px !important; }
+        
+        /* Compact Header */
+        .page-header {
+            padding: 18px 16px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+        }
+        .page-header h3 { font-size: 1.3rem; }
+        .page-header p { font-size: 0.8rem; }
+        .page-header .d-flex { width: 100%; gap: 8px !important; }
+        .page-header .stat-chip { flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px; }
+
+        /* Card Adjustments */
+        .pro-card-header { padding: 16px; flex-direction: column; align-items: flex-start; }
+        .pro-card-header .d-flex { width: 100%; }
+        .search-wrap { max-width: 100%; margin-top: 8px; }
+        
+        .card-body { padding: 16px !important; }
+        .priority-group { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .priority-btn label { padding: 8px; font-size: 0.75rem; }
+
+        /* ── TABLE TO APP-STYLE LIST (MAGIC HAPPENS HERE) ── */
+        .tickets-table, .tickets-table tbody, .tickets-table tr, .tickets-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .tickets-table thead { display: none; /* Hide table headers */ }
+
+        .tickets-table tbody {
+            padding: 12px;
+            background: var(--surface-soft);
+        }
+
+        /* Each Row becomes a Card */
+        .tickets-table tbody tr {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s;
+        }
+
+        .tickets-table tbody tr:hover {
+            transform: translateY(-2px);
+            background: var(--surface);
+        }
+
+        /* Styling each cell inside the card */
+        .tickets-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border: none;
+            font-size: 0.85rem;
+        }
+
+        /* Inject labels using data-label attribute */
+        .tickets-table tbody td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
+        /* Subject formatting */
+        .tickets-table tbody td:nth-child(2) {
+            flex-direction: column;
+            align-items: flex-start;
+            padding-bottom: 10px;
+        }
+        .tickets-table tbody td:nth-child(2)::before { margin-bottom: 4px; }
+        .tickets-table tbody td:nth-child(2) { font-size: 0.95rem; }
+
+        /* Full width button */
+        .tickets-table tbody td:last-child {
+            margin-top: 10px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border);
+            justify-content: center;
+        }
+        .tickets-table tbody td:last-child::before { display: none; }
+        .btn-view { width: 100%; padding: 10px; font-size: 0.85rem; }
+
+        /* Filter Tabs */
+        .filter-tabs-wrapper { padding: 12px; background: var(--surface); }
     }
 </style>
 {% endblock %}
@@ -309,20 +447,21 @@
     <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <h3 class="fw-bold mb-1">
-                <i class="fas fa-headset me-2 text-info"></i> Support Center
+                <i class="fas fa-headset me-2 text-info"></i> Support
             </h3>
-            <p>Get help with your issues and questions — we respond within 24 hours</p>
+            <p>We are here to help — average response within 24h</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <span class="stat-chip"><i class="fas fa-ticket-alt"></i> {{ open_count }} Open</span>
-            <span class="stat-chip"><i class="fas fa-clock"></i> Avg. 24h Response</span>
+        <div class="d-flex gap-2 flex-wrap w-md-100">
+            <span class="stat-chip"><i class="fas fa-ticket-alt text-warning"></i> {{ open_count }} Open Tickets</span>
+            <span class="stat-chip"><i class="fas fa-clock text-success"></i> Quick Support</span>
         </div>
     </div>
 
     <div class="row g-4">
 
+        <!-- CREATE TICKET FORM -->
         <div class="col-lg-4">
-            <div class="pro-card card h-100">
+            <div class="pro-card h-100">
                 <div class="pro-card-header">
                     <div class="header-icon"><i class="fas fa-plus"></i></div>
                     <h5>Create New Ticket</h5>
@@ -334,7 +473,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="fas fa-heading me-1 text-secondary"></i> Subject *
+                                <i class="fas fa-heading me-1 text-secondary opacity-75"></i> Subject *
                             </label>
                             <input
                                 type="text"
@@ -350,7 +489,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="fas fa-tag me-1 text-secondary"></i> Category *
+                                <i class="fas fa-tag me-1 text-secondary opacity-75"></i> Category *
                             </label>
                             <select class="form-select" name="category" required>
                                 <option value="" disabled selected>Select a category</option>
@@ -364,7 +503,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="fas fa-flag me-1 text-secondary"></i> Priority *
+                                <i class="fas fa-flag me-1 text-secondary opacity-75"></i> Priority *
                             </label>
                             <div class="priority-group">
                                 <div class="priority-btn low">
@@ -388,13 +527,13 @@
 
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="fas fa-comment-alt me-1 text-secondary"></i> Message *
+                                <i class="fas fa-comment-alt me-1 text-secondary opacity-75"></i> Message *
                             </label>
                             <textarea
                                 class="form-control"
                                 name="message"
                                 id="messageInput"
-                                rows="5"
+                                rows="4"
                                 placeholder="Describe your issue in detail..."
                                 required
                                 minlength="10"
@@ -415,28 +554,28 @@
             </div>
         </div>
 
+        <!-- MY TICKETS LIST -->
         <div class="col-lg-8">
-            <div class="pro-card card h-100">
+            <div class="pro-card h-100">
+                
                 <div class="pro-card-header justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-2">
                         <div class="header-icon"><i class="fas fa-list"></i></div>
                         <h5>My Tickets</h5>
                     </div>
-                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <div class="search-wrap">
-                            <i class="fas fa-search"></i>
-                            <input
-                                type="text"
-                                class="search-input"
-                                placeholder="Search tickets..."
-                                onkeyup="filterTickets(this.value)"
-                            >
-                        </div>
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input
+                            type="text"
+                            class="search-input"
+                            placeholder="Search tickets..."
+                            onkeyup="filterTickets(this.value)"
+                        >
                     </div>
                 </div>
 
-                <div class="px-4 pt-3 pb-2 border-bottom bg-white">
-                    <div class="filter-tabs">
+                <div class="filter-tabs-wrapper border-bottom" style="border-color: var(--border) !important;">
+                    <div class="filter-tabs px-4 py-3">
                         <span class="filter-tab active" onclick="setFilter('all', this)">All</span>
                         <span class="filter-tab" onclick="setFilter('open', this)">🔴 Open</span>
                         <span class="filter-tab" onclick="setFilter('in progress', this)">🟡 In Progress</span>
@@ -445,7 +584,7 @@
                 </div>
 
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="overflow-x: hidden;">
                         <table class="table tickets-table mb-0" id="ticketsTable">
                             <thead>
                                 <tr>
@@ -461,13 +600,16 @@
                             <tbody id="ticketBody">
                                 {% for ticket in tickets %}
                                 <tr data-status="{{ ticket.status|lower }}">
-                                    <td><span class="ticket-id">#{{ ticket.id }}</span></td>
-                                    
-                                    <td class="fw-semibold">
-                                        {{ ticket.subject[:25] }}{% if ticket.subject|length > 25 %}...{% endif %}
+                                    <!-- Mobile CSS labels added via data-label -->
+                                    <td data-label="ID">
+                                        <span class="ticket-id">#{{ ticket.id }}</span>
                                     </td>
                                     
-                                    <td>
+                                    <td data-label="Subject" class="fw-semibold">
+                                        {{ ticket.subject[:35] }}{% if ticket.subject|length > 35 %}...{% endif %}
+                                    </td>
+                                    
+                                    <td data-label="Category">
                                         <span class="badge-pro badge-cat">
                                             {% if ticket.category == 'task_help' %}🗂️ Task Help
                                             {% elif ticket.category == 'payment' %}💳 Payment
@@ -477,7 +619,7 @@
                                         </span>
                                     </td>
 
-                                    <td>
+                                    <td data-label="Status">
                                         {% if ticket.status == 'Open' %}
                                             <span class="badge-pro badge-open">● Open</span>
                                         {% elif ticket.status == 'In Progress' %}
@@ -487,7 +629,7 @@
                                         {% endif %}
                                     </td>
                                     
-                                    <td>
+                                    <td data-label="Priority">
                                         {% if ticket.priority == 'Low' %}
                                             <span class="badge-pro badge-low">↓ Low</span>
                                         {% elif ticket.priority == 'Normal' %}
@@ -499,11 +641,15 @@
                                         {% endif %}
                                     </td>
                                     
-                                    <td><small class="text-muted">{{ ticket.created_at.strftime('%d-%m-%Y') }}</small></td>
+                                    <td data-label="Date">
+                                        <span style="color: var(--text-soft); font-size: 0.85rem;">
+                                            {{ ticket.created_at.strftime('%d %b %Y') }}
+                                        </span>
+                                    </td>
                                     
-                                    <td>
+                                    <td data-label="Action">
                                         <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" class="btn-view">
-                                            <i class="fas fa-eye me-1"></i> View
+                                            View Details <i class="fas fa-chevron-right ms-1" style="font-size:0.75rem;"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -514,18 +660,18 @@
 
                     <div class="empty-state {% if tickets %}d-none{% endif %}" id="emptyState">
                         <div class="empty-icon-wrap">
-                            <i class="fas fa-inbox text-muted fa-2x"></i>
+                            <i class="fas fa-inbox fa-2x" style="color: var(--muted);"></i>
                         </div>
-                        <h6 class="fw-bold text-dark">No tickets found</h6>
-                        <p class="text-muted small">Try a different filter or create a new ticket.</p>
+                        <h6 class="fw-bold" style="color: var(--text);">No tickets found</h6>
+                        <p class="small" style="color: var(--muted);">Try a different filter or create a new ticket.</p>
                     </div>
 
-                    <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <small class="text-muted">
-                            Showing <strong id="visibleCount">{{ tickets|length }}</strong> tickets
+                    <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-color: var(--border) !important; background: var(--surface);">
+                        <small style="color: var(--muted);">
+                            Showing <strong id="visibleCount" style="color: var(--text);">{{ tickets|length }}</strong> tickets
                         </small>
-                        <small class="text-muted">
-                            <i class="fas fa-shield-alt me-1 text-success"></i> All data is encrypted
+                        <small style="color: var(--muted);">
+                            <i class="fas fa-shield-alt me-1 text-success"></i> Secure & Encrypted
                         </small>
                     </div>
                 </div>
@@ -547,7 +693,7 @@
 
     document.getElementById('ticketForm').addEventListener('submit', function() {
         const btn = document.getElementById('submitBtn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Submitting...';
         btn.disabled = true;
     });
 
@@ -563,10 +709,13 @@
             const matchF = currentFilter === 'all' || status === currentFilter;
 
             if (matchQ && matchF) { 
-                row.style.setProperty('display', 'table-row', 'important'); 
+                // Restore mobile flex card view or table-row view based on window size seamlessly
+                row.style.setProperty('display', '', ''); 
+                row.classList.remove('d-none');
                 count++; 
             } else { 
                 row.style.setProperty('display', 'none', 'important'); 
+                row.classList.add('d-none');
             }
         });
 
