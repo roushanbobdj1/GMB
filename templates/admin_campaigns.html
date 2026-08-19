@@ -1564,14 +1564,11 @@
 
                         {% if campaign.reviews_completed is defined %}
 
-                            {% set progress =
-                                (
-                                    campaign.reviews_completed
-                                    / campaign.total_reviews_required
-                                    * 100
-                                ) | int
-                            %}
-
+                            {% set progress = 0 %}
+                            {% if campaign.total_reviews_required and (campaign.total_reviews_required | int) > 0 %}
+                                {% set progress = (campaign.reviews_completed / campaign.total_reviews_required * 100) | int %}
+                            {% endif %}
+                            
                             {% if progress < 0 %}
                                 {% set progress = 0 %}
                             {% endif %}
@@ -2494,15 +2491,17 @@
             });
         });
 
-        // Pause / Resume / Stop / Delete: keep as NORMAL form submits
+        // Pause / Resume / Stop / Delete / Edit: keep as NORMAL form submits
         // (no AJAX) — backend does redirect(), not JSON, so we don't
         // intercept these. Just make sure the modal closes cleanly
         // before the browser navigates away.
-        document.querySelectorAll(
-            '#allocateModal, [id^="pauseModal"], [id^="stopModal"], [id^="deleteModal"], [id^="editModal"]'
-        );
         document.querySelectorAll('.modal form:not(.allocate-form)').forEach(function (form) {
-            form.addEventListener('submit', function () {
+            form.addEventListener('submit', function (e) {
+                // Check Validation to prevent button freeze on empty input
+                if (!form.checkValidity()) {
+                    return; // Let HTML5 validation show the error, do not disable the button
+                }
+                
                 const submitBtn = form.querySelector('button[type="submit"]');
                 if (submitBtn) {
                     submitBtn.disabled = true;
@@ -2517,6 +2516,5 @@
 
 })();
 </script>
-
 
 {% endblock %}
