@@ -239,22 +239,73 @@ def is_valid_phone(phone):
 
 @app.before_request
 def check_if_blocked():
-    if 'user_id' in session:
-        user = db.session.get(User, session['user_id'])
-        if not user:
-            session.clear()
-            flash('❌ Account deleted or session expired. Please login again.', 'error')
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return None
+
+    try:
+        user = db.session.get(User, user_id)
+
+        # Only logout when we have confirmed that the
+        # user genuinely does not exist in the database.
+        if user is None:
+            logger.warning(
+                "Authenticated session points to missing user_id=%s",
+                user_id
+            )
+
+            session.pop('user_id', None)
+            session.pop('user_email', None)
+            session.pop('user_name', None)
+
+            flash(
+                '❌ Your account no longer exists. Please login again.',
+                'error'
+            )
+
             return redirect(url_for('user_login'))
 
-        if user and getattr(user, 'is_blocked', False):
+        if getattr(user, 'is_blocked', False):
             allowed_routes = [
-                'support_page', 'create_support_ticket', 'view_ticket', 'reply_ticket',
-                'logout', 'static', 'offline', 'serve_uploads'
+                'support_page',
+                'create_support_ticket',
+                'view_ticket',
+                'reply_ticket',
+                'logout',
+                'static',
+                'offline',
+                'serve_uploads'
             ]
-            if request.endpoint and request.endpoint not in allowed_routes:
-                flash('❌ Your account has been blocked by Admin. Please contact support.', 'error')
+
+            if (
+                request.endpoint
+                and request.endpoint not in allowed_routes
+            ):
+                flash(
+                    '❌ Your account has been blocked by Admin. '
+                    'Please contact support.',
+                    'error'
+                )
+
                 return redirect(url_for('support_page'))
 
+    except SQLAlchemyError as e:
+        # IMPORTANT:
+        # Do NOT clear the user's session when the database
+        # temporarily has a connection/query problem.
+        db.session.rollback()
+
+        logger.error(
+            "Database error while validating session for user_id=%s: %s",
+            user_id,
+            e
+        )
+
+        # Let the request continue instead of logging the user out.
+        return None
+
+    return None
 
 def login_required(f):
     @wraps(f)
