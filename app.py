@@ -876,7 +876,7 @@ def view_tasks():
             or_(
                 Campaign.id == None,           
                 Campaign.is_deleted == False, 
-                Task.status.in_(['Submitted', 'Approved']) क
+                Task.status.in_(['Submitted', 'Approved']) 
             )
         )
         .order_by(status_order, Task.assigned_date.desc())
