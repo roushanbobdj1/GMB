@@ -759,8 +759,10 @@
                 </div>
                 <div class="card-body">
                     <form id="adminReplyForm" class="reply-form">
+                        <label class="reply-help-text" for="adminReplyMessage">Reply message</label>
                         <textarea 
                             class="reply-textarea" 
+                            id="adminReplyMessage"
                             name="message" 
                             placeholder="Type your reply here... Help the user with their issue."
                             required
@@ -869,29 +871,49 @@
 
         const ticketId = {{ ticket.id }};
 
+        function appendLiveReply(data) {
+            const container = document.querySelector('.conversation-container');
+            if (!container) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message';
+            bubble.style.animation = 'slideDown 0.3s ease';
+
+            const avatar = document.createElement('div');
+            avatar.className = `message-avatar ${data.is_admin ? 'admin' : 'user'}`;
+            const avatarIcon = document.createElement('i');
+            avatarIcon.className = `fas fa-${data.is_admin ? 'shield-alt' : 'user'}`;
+            avatar.appendChild(avatarIcon);
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            const header = document.createElement('div');
+            header.className = 'message-header';
+            const sender = document.createElement('span');
+            sender.className = `message-sender ${data.is_admin ? 'admin' : ''}`;
+            sender.textContent = data.is_admin ? 'Admin Support' : String(data.user_name || 'User');
+            const time = document.createElement('span');
+            time.className = 'message-time';
+            time.textContent = 'Just now';
+            header.append(sender, time);
+
+            const body = document.createElement('div');
+            body.className = 'message-body';
+            const paragraph = document.createElement('p');
+            paragraph.textContent = String(data.message || '');
+            body.appendChild(paragraph);
+            content.append(header, body);
+            bubble.append(avatar, content);
+            container.appendChild(bubble);
+            bubble.scrollIntoView({ behavior: 'smooth' });
+        }
+
         // ✅ Live chat: join this ticket's room and show student replies instantly
         if (window.gmbSocket) {
             window.gmbSocket.emit('join_ticket', { ticket_id: ticketId });
             window.gmbSocket.on('ticket_reply', function (data) {
                 if (parseInt(data.ticket_id, 10) !== ticketId) return;
-                var container = document.querySelector('.conversation-container');
-                if (!container) return;
-                var bubble = document.createElement('div');
-                bubble.className = 'message';
-                bubble.style.animation = 'slideDown 0.3s ease';
-                bubble.innerHTML =
-                    '<div class="message-avatar ' + (data.is_admin ? 'admin' : 'user') + '">' +
-                        '<i class="fas fa-' + (data.is_admin ? 'shield-alt' : 'user') + '"></i>' +
-                    '</div>' +
-                    '<div class="message-content">' +
-                        '<div class="message-header">' +
-                            '<span class="message-sender ' + (data.is_admin ? 'admin' : '') + '">' + (data.is_admin ? 'Admin Support' : data.user_name) + '</span>' +
-                            '<span class="message-time">Just now</span>' +
-                        '</div>' +
-                        '<div class="message-body"><p>' + data.message + '</p></div>' +
-                    '</div>';
-                container.appendChild(bubble);
-                bubble.scrollIntoView({ behavior: 'smooth' });
+                appendLiveReply(data);
                 if (!data.is_admin) {
                     window.showNotification && window.showNotification('💬 New reply from student on ticket #' + ticketId, 'info');
                 }

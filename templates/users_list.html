@@ -109,12 +109,13 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap toolbar">
             <h5 class="fw-bold mb-0">Registered Users</h5>
             <div class="d-flex flex-wrap toolbar">
-                <select id="statusFilter" class="form-select form-select-sm" style="width:150px;" onchange="applyFilters()">
+                <select id="statusFilter" class="form-select form-select-sm" style="width:150px;" aria-label="Filter users by status" onchange="applyFilters()">
                     <option value="all">All Status</option>
                     <option value="active">Active only</option>
                     <option value="blocked">Blocked only</option>
                 </select>
                 <input type="text" id="searchInput" class="form-control form-control-sm" style="width:220px;"
+                       aria-label="Search users by name or email"
                        placeholder="Search name or email..." oninput="applyFilters()">
             </div>
         </div>

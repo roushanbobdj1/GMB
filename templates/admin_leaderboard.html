@@ -470,6 +470,7 @@
                 </div>
 
                 <form method="POST" action="{{ url_for('admin_leaderboard_settings') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <!-- Switches -->
                     <div class="lb-settings-grid">
@@ -482,6 +483,7 @@
                                     role="switch"
                                     id="is_active"
                                     name="is_active"
+                                    aria-label="Enable leaderboard"
                                     {% if settings.is_active %}checked{% endif %}
                                 >
                             </div>
@@ -502,6 +504,7 @@
                                     role="switch"
                                     id="show_on_dashboard"
                                     name="show_on_dashboard"
+                                    aria-label="Show leaderboard on dashboard"
                                     {% if settings.show_on_dashboard %}checked{% endif %}
                                 >
                             </div>
@@ -522,6 +525,7 @@
                                     role="switch"
                                     id="mask_names"
                                     name="mask_names"
+                                    aria-label="Mask user names"
                                     {% if settings.mask_names %}checked{% endif %}
                                 >
                             </div>
@@ -583,7 +587,7 @@
                                     value="approved_tasks"
                                     {% if settings.ranking_basis == 'approved_tasks' %}selected{% endif %}
                                 >
-                                    Approved Reviews Count
+                                    Approved Tasks Count
                                 </option>
 
                                 <option
@@ -629,6 +633,7 @@
                                         type="text"
                                         class="form-control lb-form-control"
                                         name="prize_1st"
+                                        aria-label="First place prize"
                                         placeholder="1st Prize"
                                         value="{{ settings.prize_1st }}"
                                     >
@@ -642,6 +647,7 @@
                                         type="text"
                                         class="form-control lb-form-control"
                                         name="prize_2nd"
+                                        aria-label="Second place prize"
                                         placeholder="2nd Prize"
                                         value="{{ settings.prize_2nd }}"
                                     >
@@ -655,6 +661,7 @@
                                         type="text"
                                         class="form-control lb-form-control"
                                         name="prize_3rd"
+                                        aria-label="Third place prize"
                                         placeholder="3rd Prize"
                                         value="{{ settings.prize_3rd }}"
                                     >
@@ -725,6 +732,7 @@
                     action="{{ url_for('admin_leaderboard_reset') }}"
                     onsubmit="return confirm('Reset the leaderboard and start a new ranking period? Existing historical data will remain safe.');"
                 >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-danger lb-reset-btn">
                         <i class="fas fa-redo me-1"></i>
                         Reset Leaderboard

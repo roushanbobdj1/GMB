@@ -392,7 +392,8 @@ def check_if_blocked():
                 'reply_ticket',
                 'logout',
                 'static',
-                'offline'
+                'offline',
+                'service_worker'
             ]
 
             if (
@@ -2910,6 +2911,13 @@ def offline():
 @app.route('/static/manifest.json')
 def serve_manifest():
     return send_file('static/manifest.json', mimetype='application/manifest+json')
+
+@app.route('/service-worker.js')
+def service_worker():
+    response = make_response(send_file('static/service-worker.js', mimetype='application/javascript'))
+    response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
 @app.route('/api/sync-pending-tasks', methods=['POST'])
 @login_required

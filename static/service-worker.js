@@ -1,12 +1,14 @@
 // Service Worker for offline functionality.
-// v6: NEVER modify HTML responses and NEVER inject runtime scripts.
+// v7: root-scoped, network-first navigation with a private-data-safe fallback.
 // Dynamic/admin pages always come directly from the server.
 // This avoids stale Bootstrap backdrops, loading overlays and gray-screen UI bugs.
 
-const CACHE_NAME = 'gmb-sw-v6';
+const CACHE_NAME = 'gmb-sw-v7';
 const OFFLINE_URL = '/offline.html';
 const URLS_TO_CACHE = [
     '/static/manifest.json',
+    '/static/images/icon-192x192.png',
+    '/static/images/icon-512x512.png',
     OFFLINE_URL
 ];
 
@@ -45,13 +47,14 @@ self.addEventListener('fetch', event => {
 
     const url = new URL(request.url);
 
-    // Navigation/admin HTML must ALWAYS come from the network.
-    // We deliberately do not read, rewrite, inject into, or cache HTML.
-    if (request.mode === 'navigate' ||
-        request.destination === 'document' ||
-        url.pathname.startsWith('/admin/')) {
+    // Dynamic HTML always comes from the network. We never cache private
+    // user/admin responses; only the standalone offline page is a fallback.
+    if (request.mode === 'navigate' || request.destination === 'document') {
         event.respondWith(
-            fetch(request).catch(() => caches.match(OFFLINE_URL))
+            fetch(request).catch(async () => {
+                const fallback = await caches.match(OFFLINE_URL);
+                return fallback || Response.error();
+            })
         );
         return;
     }

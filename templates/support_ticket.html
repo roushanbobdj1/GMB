@@ -140,6 +140,7 @@
                 <h6 class="fw-bold mb-3"><i class="fas fa-reply me-2"></i> Add a Reply</h6>
                 <form id="replyForm">
                     <div class="mb-3">
+                        <label class="form-label" for="replyMessage">Reply message</label>
                         <textarea class="form-control" id="replyMessage" rows="4" placeholder="Type your message here..." required minlength="5"></textarea>
                     </div>
                     <div class="text-end">
@@ -169,6 +170,28 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
+        function appendChatBubble(isAdmin, message) {
+            if (!chatContainer) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${isAdmin ? 'chat-admin' : 'chat-user'}`;
+            bubble.style.animation = 'slideDown 0.3s ease';
+
+            const meta = document.createElement('div');
+            meta.className = 'chat-meta';
+            const icon = document.createElement('i');
+            icon.className = isAdmin ? 'fas fa-headset' : 'fas fa-user';
+            meta.append(icon, document.createTextNode(isAdmin ? ' Support Team • Just now' : ' You • Just now'));
+
+            const text = document.createElement('p');
+            text.className = 'chat-text';
+            text.textContent = String(message || '');
+
+            bubble.append(meta, text);
+            chatContainer.appendChild(bubble);
+            bubble.scrollIntoView({ behavior: 'smooth' });
+        }
+
         // ✅ Live chat: join this ticket's room and show admin replies instantly
         if (window.gmbSocket) {
             var ticketIdLive = {{ ticket.id }};
@@ -176,16 +199,7 @@
             window.gmbSocket.on('ticket_reply', function (data) {
                 if (parseInt(data.ticket_id, 10) !== ticketIdLive) return;
                 if (data.is_admin) {
-                    const bubble = `
-                        <div class="chat-bubble chat-admin" style="animation: slideDown 0.3s ease;">
-                            <div class="chat-meta">
-                                <i class="fas fa-headset"></i> Support Team &bull; Just now
-                            </div>
-                            <p class="chat-text">${data.message}</p>
-                        </div>
-                    `;
-                    chatContainer.insertAdjacentHTML('beforeend', bubble);
-                    chatContainer.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+                    appendChatBubble(true, data.message);
                     window.showNotification && window.showNotification('💬 New reply from Support Team', 'info');
                 }
             });
@@ -225,20 +239,8 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // Dynamically add the new message to the chat
-                        const newBubble = `
-                            <div class="chat-bubble chat-user" style="animation: slideDown 0.3s ease;">
-                                <div class="chat-meta">
-                                    <i class="fas fa-user"></i> You &bull; Just now
-                                </div>
-                                <p class="chat-text">${message}</p>
-                            </div>
-                        `;
-                        chatContainer.insertAdjacentHTML('beforeend', newBubble);
+                        appendChatBubble(false, message);
                         document.getElementById('replyMessage').value = '';
-                        
-                        // Scroll to new message
-                        chatContainer.lastElementChild.scrollIntoView({ behavior: 'smooth' });
                     } else {
                         window.showNotification(data.message || 'Failed to send reply', 'error');
                     }

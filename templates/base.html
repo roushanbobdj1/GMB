@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#0d6efd">
 <meta name="description"
-    content="GMB Review Earning Platform - Complete task management and earning app">
+    content="Internal feedback, surveys, and task management platform">
 
 <title>{% block title %}GMB Feedback & Task Platform{% endblock %}</title>
 
@@ -2533,7 +2533,7 @@
     <p>
         Powered by
         <strong>GMB Earn</strong>
-        | Helping you earn rewards
+        | Structured feedback and tracked rewards
     </p>
 
 </footer>
@@ -3049,8 +3049,9 @@
 
                     navigator.serviceWorker
                         .register(
-                            "{{ url_for('static', filename='service-worker.js') }}",
+                            "{{ url_for('service_worker') }}",
                             {
+                                scope: "/",
                                 updateViaCache: "none"
                             }
                         )
@@ -4285,6 +4286,12 @@
 <script>
 (function () {
     'use strict';
+
+    // Full page navigation is deliberate: page-specific Socket.IO listeners,
+    // timers and form handlers are then released by the browser on navigation.
+    // Keeping the old shell mounted caused duplicate handlers after revisits.
+    const SPA_ENABLED = false;
+    if (!SPA_ENABLED) return;
 
     if (window.__GMB_SPA_READY__) return;
     window.__GMB_SPA_READY__ = true;

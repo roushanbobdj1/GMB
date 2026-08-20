@@ -472,7 +472,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="mb-3">
-                            <label class="form-label">
+                            <label class="form-label" for="subjectInput">
                                 <i class="fas fa-heading me-1 text-secondary opacity-75"></i> Subject *
                             </label>
                             <input
@@ -488,10 +488,10 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">
+                            <label class="form-label" for="ticketCategory">
                                 <i class="fas fa-tag me-1 text-secondary opacity-75"></i> Category *
                             </label>
-                            <select class="form-select" name="category" required>
+                            <select class="form-select" id="ticketCategory" name="category" required>
                                 <option value="" disabled selected>Select a category</option>
                                 <option value="task_help">🗂️ Task Help</option>
                                 <option value="payment">💳 Payment Issue</option>
@@ -502,7 +502,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">
+                            <label class="form-label" for="messageInput">
                                 <i class="fas fa-flag me-1 text-secondary opacity-75"></i> Priority *
                             </label>
                             <div class="priority-group">
@@ -568,6 +568,8 @@
                         <input
                             type="text"
                             class="search-input"
+                            id="ticketSearch"
+                            aria-label="Search support tickets"
                             placeholder="Search tickets..."
                             onkeyup="filterTickets(this.value)"
                         >
