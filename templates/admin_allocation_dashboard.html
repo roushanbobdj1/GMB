@@ -580,8 +580,8 @@
                         <!-- Header -->
                         <div class="campaign-header">
                             <h5 class="campaign-title">{{ c.campaign_name }}</h5>
-                            <span class="campaign-status-badge {% if c.status == 'Active' %}active{% elif c.status == 'Completed' %}completed{% else %}pending{% endif %}">
-                                <i class="fas fa-{% if c.status == 'Active' %}circle-notch fa-spin{% elif c.status == 'Completed' %}check-circle{% else %}hourglass-half{% endif %}"></i>
+                            <span class="campaign-status-badge {{ c.status_color }}">
+                                <i class="fas fa-{% if c.status_color == 'active' %}circle-notch fa-spin{% elif c.status_color == 'completed' %}check-circle{% else %}hourglass-half{% endif %}"></i>
                                 {{ c.status }}
                             </span>
                         </div>
@@ -593,11 +593,11 @@
                         <div class="metrics-grid mb-2">
                             <div class="metric-card">
                                 <div class="metric-value">{{ c.total_tasks }}</div>
-                                <p class="metric-label">Total Tasks</p>
+                                <p class="metric-label">Planned Slots</p>
                             </div>
                             <div class="metric-card">
                                 <div class="metric-value success">{{ c.assigned }}</div>
-                                <p class="metric-label">Assigned</p>
+                                <p class="metric-label">Assignment Attempts</p>
                             </div>
                             <div class="metric-card">
                                 <div class="metric-value primary">{{ c.completed }}</div>
@@ -605,7 +605,19 @@
                             </div>
                             <div class="metric-card">
                                 <div class="metric-value info">{{ c.pending }}</div>
-                                <p class="metric-label">Pending</p>
+                                <p class="metric-label">Open Slots</p>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">{{ c.active }}</div>
+                                <p class="metric-label">Active / Submitted</p>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">{{ c.expired }}</div>
+                                <p class="metric-label">Expired</p>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">{{ c.cancelled }}</div>
+                                <p class="metric-label">Cancelled</p>
                             </div>
                         </div>
 
@@ -618,7 +630,7 @@
                             <div class="custom-progress">
                                 <div class="custom-progress-bar success" style="width: {{ c.assigned_pct }}%;">
                                     {% if c.assigned_pct > 10 %}
-                                        <span>{{ c.assigned }}/{{ c.total_tasks }}</span>
+                                        <span>{{ c.active + c.completed }}/{{ c.total_tasks }}</span>
                                     {% endif %}
                                 </div>
                             </div>

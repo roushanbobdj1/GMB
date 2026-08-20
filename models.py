@@ -51,6 +51,10 @@ class Campaign(db.Model):
     is_deleted = db.Column(db.Boolean, default=False, index=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
     deleted_by = db.Column(db.Integer, nullable=True)
+    # Rewards are earned for an internal feedback/report task. Any external
+    # business/review link is optional reference material and is not a reward
+    # condition.
+    workflow_type = db.Column(db.String(50), nullable=False, default='InternalFeedback')
     review_texts = db.relationship('CampaignReviewText', backref='campaign', cascade='all, delete-orphan')
     # Hard-delete preserves Task history: tasks retain all data except campaign link.
     tasks = db.relationship('Task', backref='campaign', passive_deletes=True)
@@ -61,6 +65,9 @@ class CampaignReviewText(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id', ondelete='CASCADE'))
     review_text = db.Column(db.Text)
+    usage_count = db.Column(db.Integer, nullable=False, default=0)
+    is_used = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    last_used_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class UserAllocation(db.Model):
@@ -70,6 +77,7 @@ class UserAllocation(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     allocated_task_count = db.Column(db.Integer, default=0)
     allocation_month = db.Column(db.Integer, default=1)
+    allocation_year = db.Column(db.Integer, nullable=True)
     allocated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Task(db.Model):
@@ -77,6 +85,12 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # Campaign is historical metadata. Hard deleting a campaign must not delete a task.
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id', ondelete='SET NULL'), nullable=True, index=True)
+    review_text_id = db.Column(
+        db.Integer,
+        db.ForeignKey('campaign_review_text.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     review_text = db.Column(db.String(1000))
     gmb_link = db.Column(db.String(500))
@@ -85,8 +99,25 @@ class Task(db.Model):
     submission_date = db.Column(db.DateTime)
     status = db.Column(db.String(50), default='Assigned', index=True)
     allocation_month = db.Column(db.Integer, default=1)
+    allocation_year = db.Column(db.Integer, nullable=True)
+    due_date = db.Column(db.DateTime, nullable=True, index=True)
+    expiry_reason = db.Column(db.String(255), nullable=True)
     cancel_reason = db.Column(db.String(255), nullable=True)
+    hidden_at = db.Column(db.DateTime, nullable=True, index=True)
+    reassigned_from_task_id = db.Column(
+        db.Integer,
+        db.ForeignKey('tasks.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
+    task_kind = db.Column(db.String(50), nullable=False, default='InternalFeedback')
     submission = db.relationship('TaskSubmission', backref='task', uselist=False, cascade='all, delete-orphan')
+    review_prompt = db.relationship('CampaignReviewText', foreign_keys=[review_text_id])
+    reassigned_from = db.relationship('Task', remote_side=[id], foreign_keys=[reassigned_from_task_id])
+    activity_logs = db.relationship(
+        'TaskActivityLog', backref='task', cascade='all, delete-orphan',
+        order_by='TaskActivityLog.created_at'
+    )
 
 class TaskSubmission(db.Model):
     __tablename__ = 'task_submissions'
@@ -95,11 +126,29 @@ class TaskSubmission(db.Model):
     screenshot_url = db.Column(db.String(500))
     screenshot_hash = db.Column(db.String(64), index=True)
     review_text_submitted = db.Column(db.Text)
+    posted_review_url = db.Column(db.String(1000), nullable=True)
+    google_place_id = db.Column(db.String(255), nullable=True)
+    posted_date = db.Column(db.Date, nullable=True)
     submitted_date = db.Column(db.DateTime, default=datetime.utcnow)
     verification_status = db.Column(db.String(50), default='Pending')
     admin_notes = db.Column(db.Text)
     verified_date = db.Column(db.DateTime)
     verified_by = db.Column(db.Integer)
+
+
+class TaskActivityLog(db.Model):
+    __tablename__ = 'task_activity_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, nullable=False, index=True)
+    campaign_id = db.Column(db.Integer, nullable=True, index=True)
+    action = db.Column(db.String(50), nullable=False, index=True)
+    from_status = db.Column(db.String(50), nullable=True)
+    to_status = db.Column(db.String(50), nullable=True)
+    reason = db.Column(db.String(500), nullable=True)
+    actor_type = db.Column(db.String(30), nullable=False, default='system')
+    actor_id = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
 
 class Wallet(db.Model):
     __tablename__ = 'wallet'
@@ -187,6 +236,8 @@ class CampaignAllocationProgress(db.Model):
     total_tasks_created = db.Column(db.Integer, nullable=False, default=0)
     total_tasks_assigned = db.Column(db.Integer, nullable=False, default=0)
     total_tasks_completed = db.Column(db.Integer, nullable=False, default=0)
+    total_tasks_expired = db.Column(db.Integer, nullable=False, default=0)
+    total_tasks_cancelled = db.Column(db.Integer, nullable=False, default=0)
     users_count_planned = db.Column(db.Integer, nullable=False, default=0)
     users_count_assigned = db.Column(db.Integer, nullable=False, default=0)
     users_count_completed = db.Column(db.Integer, nullable=False, default=0)

@@ -1460,13 +1460,14 @@
 
                     <div class="campaign-card-body">
 
-                        <!-- GMB LINK -->
+                        <!-- OPTIONAL BUSINESS LINK -->
 
+                        {% if campaign.gmb_link %}
                         <div class="gmb-link-section">
 
                             <div class="gmb-link-label">
                                 <i class="fas fa-link"></i>
-                                <span>GMB Link</span>
+                                <span>Optional Business Link</span>
                             </div>
 
                             <a
@@ -1487,6 +1488,7 @@
                             </a>
 
                         </div>
+                        {% endif %}
 
 
                         <!-- =================================================
@@ -1499,7 +1501,7 @@
 
                                 <div class="metric-label primary">
                                     <i class="fas fa-list-ol"></i>
-                                    <span>Reviews Required</span>
+                                    <span>Feedback Tasks</span>
                                 </div>
 
                                 <div class="metric-value">
@@ -1513,7 +1515,7 @@
 
                                 <div class="metric-label warning">
                                     <i class="fas fa-coins"></i>
-                                    <span>Points/Review</span>
+                                    <span>Points/Report</span>
                                 </div>
 
                                 <div class="metric-value">
@@ -1774,6 +1776,7 @@
                             method="POST"
                             action="/admin/allocate_tasks/{{ campaign.id }}"
                             class="allocate-form"
+                            data-campaign-id="{{ campaign.id }}"
                         >
 
                             <input
@@ -1801,7 +1804,7 @@
                                         id="totalUsers{{ campaign.id }}"
                                         name="total_tasks"
                                         min="1"
-                                        max="100000"
+                                        max="10000"
                                         value="{{ campaign.total_reviews_required }}"
                                         placeholder="Enter total number of tasks"
                                         required
@@ -1809,9 +1812,8 @@
 
                                     <small class="text-muted d-block mt-2">
                                         <i class="fas fa-info-circle"></i>
-                                        Each existing user will get 1 task now;
-                                        extra tasks queue up and auto-assign
-                                        to new users as they register.
+                                        Each eligible user can receive one task from this campaign per month.
+                                        Pending slots auto-fill for existing users as well as new registrations.
                                     </small>
 
                                 </div>
@@ -1826,8 +1828,8 @@
 
                                     <ul>
                                         <li>
-                                            Each user gets
-                                            <strong>1 task</strong> per campaign
+                                            Points are for a verified <strong>internal feedback/report task</strong>,
+                                            never for posting a Google review
                                         </li>
 
                                         <li>
@@ -1836,8 +1838,8 @@
                                         </li>
 
                                         <li>
-                                            Users without a task from this
-                                            campaign get <strong>priority</strong>
+                                            Fair priority: current-month load, historical assignments,
+                                            then last allocation time
                                         </li>
 
                                         <li>
@@ -1858,6 +1860,17 @@
                                         </li>
                                     </ul>
 
+                                </div>
+
+                                <div class="alert alert-light border mt-3 allocation-preview" aria-live="polite">
+                                    <strong><i class="fas fa-eye"></i> Allocation Preview</strong>
+                                    <div class="row g-2 mt-1 small">
+                                        <div class="col-6">Eligible users: <b data-preview="eligible">—</b></div>
+                                        <div class="col-6">Assign now: <b data-preview="immediate">—</b></div>
+                                        <div class="col-6">Pending slots: <b data-preview="pending">—</b></div>
+                                        <div class="col-6">At monthly cap: <b data-preview="capped">—</b></div>
+                                        <div class="col-12">Unused unique prompts: <b data-preview="prompts">—</b></div>
+                                    </div>
                                 </div>
 
                             </div>
@@ -1955,7 +1968,7 @@
                                         id="editTotalUsers{{ campaign.id }}"
                                         name="total_reviews_required"
                                         min="{{ campaign.total_reviews_required }}"
-                                        max="100000"
+                                        max="10000"
                                         value="{{ campaign.total_reviews_required }}"
                                         required
                                     >
@@ -1968,6 +1981,23 @@
                                         eligible users as soon as you save.
                                     </small>
 
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editPrompts{{ campaign.id }}" class="form-label">
+                                        <i class="fas fa-clipboard-question"></i>
+                                        Additional Unique Feedback Prompts
+                                    </label>
+                                    <textarea
+                                        class="form-control"
+                                        id="editPrompts{{ campaign.id }}"
+                                        name="additional_feedback_prompts"
+                                        rows="4"
+                                        placeholder="Required when increasing capacity beyond the existing unique-prompt count. One prompt per line."
+                                    ></textarea>
+                                    <small class="text-muted d-block mt-2">
+                                        Existing prompts stay unchanged for audit integrity. You can also add spare prompts for future expired-task reassignment.
+                                    </small>
                                 </div>
 
                                 <div class="mb-3">
@@ -2279,7 +2309,7 @@
                             <p class="text-muted small mb-0">
                                 <i class="fas fa-info-circle"></i>
                                 All tasks, submissions, allocations and
-                                review texts linked to this campaign will
+                                internal feedback prompts linked to this campaign will
                                 also be deleted.
                             </p>
 
@@ -2424,6 +2454,44 @@
 
         cleanupStuckModal();
 
+        function refreshAllocationPreview(form) {
+            const campaignId = form.dataset.campaignId;
+            const field = form.querySelector('input[name="total_tasks"]');
+            const preview = form.querySelector('.allocation-preview');
+            if (!campaignId || !field || !preview) return;
+            const requested = parseInt(field.value, 10) || 0;
+            fetch('/admin/allocation_preview/' + campaignId + '?total_tasks=' + requested)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.status !== 'success') throw new Error(data.message || 'Preview failed');
+                    preview.querySelector('[data-preview="eligible"]').textContent = data.eligible_users;
+                    preview.querySelector('[data-preview="immediate"]').textContent = data.immediately_assigned;
+                    preview.querySelector('[data-preview="pending"]').textContent = data.pending_slots;
+                    preview.querySelector('[data-preview="capped"]').textContent = data.monthly_cap_users;
+                    preview.querySelector('[data-preview="prompts"]').textContent = data.unused_prompts;
+                })
+                .catch(function () {
+                    preview.querySelectorAll('[data-preview]').forEach(function (node) {
+                        node.textContent = 'Unavailable';
+                    });
+                });
+        }
+
+        document.querySelectorAll('.allocate-form').forEach(function (form) {
+            let previewTimer;
+            const field = form.querySelector('input[name="total_tasks"]');
+            if (field) {
+                field.addEventListener('input', function () {
+                    clearTimeout(previewTimer);
+                    previewTimer = setTimeout(function () { refreshAllocationPreview(form); }, 250);
+                });
+            }
+            const modal = form.closest('.modal');
+            if (modal) modal.addEventListener('shown.bs.modal', function () {
+                refreshAllocationPreview(form);
+            });
+        });
+
         // Only Allocate Tasks uses AJAX (backend for this route returns JSON)
         document.querySelectorAll('.allocate-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
@@ -2437,8 +2505,8 @@
                     alert('❌ Please enter a valid number of tasks (minimum 1)');
                     return;
                 }
-                if (parseInt(totalTasks, 10) > 100000) {
-                    alert('❌ Maximum allowed tasks is 100,000.');
+                if (parseInt(totalTasks, 10) > 10000) {
+                    alert('❌ Maximum allowed tasks is 10,000.');
                     return;
                 }
 
