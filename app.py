@@ -6,8 +6,11 @@ import random
 import logging
 import hashlib
 import secrets
+import base64
+from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from urllib.parse import urlparse
 
 from flask import (
     Flask, render_template, request, redirect, session, url_for, flash,
@@ -24,7 +27,6 @@ except ImportError:
     pass
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_apscheduler import APScheduler
 from flask_socketio import SocketIO, emit, join_room
 from flask_mail import Mail, Message
 from flask_wtf.csrf import CSRFProtect
@@ -32,8 +34,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 import bcrypt
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from sqlalchemy import func, and_, or_, inspect, text, Index
+from sqlalchemy import event, func, and_, or_, inspect, text
+from sqlalchemy.orm import Session as SASession
 
 # App config + models
 from config import Config
@@ -65,9 +69,6 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.co
 mail = Mail(app)
 
 db.init_app(app)
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
 
 # Ensure upload folder exists
 os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
@@ -75,7 +76,7 @@ os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
 # SocketIO (real-time)
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
+    cors_allowed_origins=app.config.get('SOCKETIO_ALLOWED_ORIGINS'),
     async_mode="gevent",
     logger=False,
     engineio_logger=False
@@ -90,11 +91,24 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000 per day", "200 per hour"],
     storage_uri=app.config.get('RATELIMIT_STORAGE_URI', 'memory://'),
+    key_prefix=app.config.get('RATELIMIT_KEY_PREFIX', 'gmb-earn'),
 )
 
+if app.config.get('RATELIMIT_STORAGE_URI') == 'memory://' and os.environ.get('RENDER') == 'true':
+    logger.warning(
+        'REDIS_URL is not configured. Rate limits are process-local; keep one web worker '
+        'or configure Redis before scaling horizontally.'
+    )
+
 # Admin password hashing fallback
-admin_password_str = app.config.get('ADMIN_PASSWORD', 'default_admin_password')
+admin_password_str = app.config['ADMIN_PASSWORD']
 _ADMIN_PASSWORD_HASH = bcrypt.hashpw(admin_password_str.encode('utf-8'), bcrypt.gensalt())
+_ADMIN_CREDENTIAL_FINGERPRINT = hashlib.sha256(
+    f"{app.config['ADMIN_EMAIL'].strip().lower()}\0{admin_password_str}".encode('utf-8')
+).hexdigest()
+_SENSITIVE_DATA_CIPHER = Fernet(base64.urlsafe_b64encode(
+    hashlib.sha256(app.config['SECRET_KEY'].encode('utf-8')).digest()
+))
 
 
 def check_admin_password(candidate: str) -> bool:
@@ -123,30 +137,82 @@ def inject_nav_user_info():
     return data
 
 
-def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
+def utc_now():
+    """Return a naive UTC datetime, matching the existing DateTime columns."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def iso_utc(value):
+    """Serialize existing naive/aware values as valid UTC ISO-8601."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    else:
+        value = value.astimezone(timezone.utc)
+    return value.isoformat().replace('+00:00', 'Z')
+
+
+def password_fingerprint(user):
+    return hashlib.sha256((user.password or '').encode('utf-8')).hexdigest()
+
+
+def encrypt_sensitive(value):
+    if not value:
+        return value
+    return 'enc:' + _SENSITIVE_DATA_CIPHER.encrypt(value.encode('utf-8')).decode('ascii')
+
+
+@app.template_filter('decrypt_sensitive')
+def decrypt_sensitive(value):
+    """Decrypt new values while remaining compatible with legacy plaintext rows."""
+    if not value or not value.startswith('enc:'):
+        return value
     try:
-        notif = Notification(
-            user_id=user_id,
-            message=message,
-            notification_type=notification_type,
-            related_id=related_id,
-            is_read=False
-        )
-        db.session.add(notif)
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
-        logger.error("Failed to persist notification for user %s", user_id)
+        return _SENSITIVE_DATA_CIPHER.decrypt(value[4:].encode('ascii')).decode('utf-8')
+    except (InvalidToken, ValueError, UnicodeError):
+        logger.error('Unable to decrypt a sensitive database value.')
+        return '[unavailable]'
+
+
+def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
+    """Queue a notification in the caller's transaction and emit its event.
+
+    This helper intentionally never commits or rolls back. Transaction ownership
+    remains with the route/service that changed the related business state.
+    """
+    notif = Notification(
+        user_id=user_id,
+        message=message,
+        notification_type=notification_type,
+        related_id=related_id,
+        is_read=False
+    )
+    db.session.add(notif)
 
     payload = {
         'message': message,
         'type': notification_type,
         'related_id': related_id,
-        'created_at': datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')
+        'created_at': utc_now().strftime('%d-%m-%Y %H:%M')
     }
     if extra:
         payload.update(extra)
-    socketio.emit('new_notification', payload, room=f'user_{user_id}')
+    db.session.info.setdefault('pending_socket_notifications', []).append((user_id, payload))
+    return notif
+
+
+@event.listens_for(SASession, 'after_commit')
+def emit_committed_notifications(sqlalchemy_session):
+    """Publish real-time notifications only after their DB transaction commits."""
+    pending = sqlalchemy_session.info.pop('pending_socket_notifications', [])
+    for user_id, payload in pending:
+        socketio.emit('new_notification', payload, room=f'user_{user_id}')
+
+
+@event.listens_for(SASession, 'after_rollback')
+def discard_rolled_back_notifications(sqlalchemy_session):
+    sqlalchemy_session.info.pop('pending_socket_notifications', None)
 
 
 def notify_admins(event, data):
@@ -170,7 +236,11 @@ def ws_join_ticket(data):
     ticket_id = data.get('ticket_id') if isinstance(data, dict) else None
     if not ticket_id:
         return
-    ticket = db.session.get(SupportTicket, int(ticket_id))
+    try:
+        ticket_id = int(ticket_id)
+    except (TypeError, ValueError):
+        return
+    ticket = db.session.get(SupportTicket, ticket_id)
     if not ticket:
         return
     is_owner = session.get('user_id') and ticket.user_id == session.get('user_id')
@@ -180,19 +250,23 @@ def ws_join_ticket(data):
 
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif'})
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg'})
 
 
 def is_valid_image_content(file_storage):
     try:
         file_storage.stream.seek(0)
+        Image.MAX_IMAGE_PIXELS = app.config.get('MAX_IMAGE_PIXELS', 24_000_000)
         img = Image.open(file_storage.stream)
+        width, height = img.size
+        if width > app.config.get('MAX_IMAGE_WIDTH', 8000) or height > app.config.get('MAX_IMAGE_HEIGHT', 8000):
+            return False
         img.verify()
         file_storage.stream.seek(0)
         img2 = Image.open(file_storage.stream)
         fmt = (img2.format or '').lower()
         file_storage.stream.seek(0)
-        allowed_formats = {'png', 'jpeg', 'jpg', 'gif'}
+        allowed_formats = {'png', 'jpeg', 'jpg'}
         return fmt in allowed_formats
     except (UnidentifiedImageError, OSError, ValueError, Exception):
         return False
@@ -235,6 +309,14 @@ def is_valid_phone(phone):
     return True, "Phone is valid"
 
 
+def is_safe_http_url(value):
+    try:
+        parsed = urlparse(value)
+        return parsed.scheme in {'http', 'https'} and bool(parsed.netloc)
+    except (TypeError, ValueError):
+        return False
+
+
 # ----------------- Authentication wrappers & request hooks -----------------
 
 @app.before_request
@@ -266,6 +348,16 @@ def check_if_blocked():
 
             return redirect(url_for('user_login'))
 
+        current_fingerprint = password_fingerprint(user)
+        session_fingerprint = session.get('password_fingerprint')
+        if session_fingerprint and not secrets.compare_digest(session_fingerprint, current_fingerprint):
+            session.clear()
+            flash('🔐 Your password changed. Please login again.', 'info')
+            return redirect(url_for('user_login'))
+        if not session_fingerprint:
+            # Upgrade existing signed sessions without forcing a logout.
+            session['password_fingerprint'] = current_fingerprint
+
         if getattr(user, 'is_blocked', False):
             allowed_routes = [
                 'support_page',
@@ -274,8 +366,7 @@ def check_if_blocked():
                 'reply_ticket',
                 'logout',
                 'static',
-                'offline',
-                'serve_uploads'
+                'offline'
             ]
 
             if (
@@ -320,7 +411,13 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'admin_id' not in session:
+        fingerprint = session.get('admin_credential_fingerprint', '')
+        if (
+            'admin_id' not in session
+            or not fingerprint
+            or not secrets.compare_digest(fingerprint, _ADMIN_CREDENTIAL_FINGERPRINT)
+        ):
+            session.clear()
             flash('❌ Admin login required!', 'error')
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
@@ -330,7 +427,11 @@ def admin_required(f):
 # ----------------- DB Auto-migration helper -----------------
 
 def _create_missing_indexes():
-    """Create indexes/uniqueness guarantees that db.create_all() cannot add to existing tables."""
+    """Apply only additive, non-destructive compatibility changes.
+
+    This function is disabled by default and must only be run as an explicit
+    maintenance action. It never deletes rows or rewrites financial balances.
+    """
     inspector = inspect(db.engine)
     tables = set(inspector.get_table_names())
 
@@ -339,99 +440,12 @@ def _create_missing_indexes():
         if 'screenshot_hash' not in cols:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE task_submissions ADD COLUMN screenshot_hash VARCHAR(64)'))
-        rows = TaskSubmission.query.all()
-        priority = {'Approved': 0, 'Pending': 1, 'Rejected': 2}
-        rows.sort(key=lambda r: (r.task_id, priority.get(r.verification_status, 9), -(r.id or 0)))
-        seen = set()
-        for row in rows:
-            if row.task_id in seen:
-                db.session.delete(row)
-            else:
-                seen.add(row.task_id)
-        db.session.flush()
-        Index('uq_task_submissions_task_id', TaskSubmission.task_id, unique=True).create(db.engine, checkfirst=True)
 
     if 'tasks' in tables:
         cols = {c['name'] for c in inspector.get_columns('tasks')}
         if 'points_per_review' not in cols:
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE tasks ADD COLUMN points_per_review INTEGER DEFAULT 0'))
-        with db.engine.begin() as conn:
-            if db.engine.dialect.name == 'sqlite':
-                conn.execute(text("""
-                    UPDATE tasks SET points_per_review = (
-                        SELECT campaigns.points_per_review FROM campaigns
-                        WHERE campaigns.id = tasks.campaign_id
-                    )
-                    WHERE tasks.campaign_id IS NOT NULL
-                      AND (tasks.points_per_review IS NULL OR tasks.points_per_review = 0)
-                """))
-            else:
-                conn.execute(text("""
-                    UPDATE tasks
-                    SET points_per_review = campaigns.points_per_review
-                    FROM campaigns
-                    WHERE tasks.campaign_id = campaigns.id
-                      AND (tasks.points_per_review IS NULL OR tasks.points_per_review = 0)
-                """))
-
-    if 'user_campaign_task_assignment' in tables:
-        # A task must map to one assignment record. Keep the newest assignment
-        # for any legacy duplicates before adding the unique index.
-        rows = (UserCampaignTaskAssignment.query
-                .order_by(UserCampaignTaskAssignment.task_id.asc(), UserCampaignTaskAssignment.id.desc())
-                .all())
-        seen = set()
-        for row in rows:
-            if row.task_id in seen:
-                db.session.delete(row)
-            else:
-                seen.add(row.task_id)
-        db.session.flush()
-        Index('uq_user_campaign_task_assignment_task_id', UserCampaignTaskAssignment.task_id, unique=True).create(db.engine, checkfirst=True)
-
-    if 'wallet_transactions' in tables:
-        # reference_id is the idempotency key. Never treat NULL/blank legacy
-        # values as the same key; otherwise startup could delete unrelated
-        # transactions just because they predate the idempotency field.
-        rows = (WalletTransaction.query
-                .filter(WalletTransaction.reference_id.isnot(None))
-                .order_by(WalletTransaction.reference_id.asc(), WalletTransaction.id.asc())
-                .all())
-        seen = set()
-        for row in rows:
-            ref = (row.reference_id or '').strip()
-            if not ref:
-                continue
-            if ref in seen:
-                db.session.delete(row)
-            else:
-                seen.add(ref)
-        db.session.flush()
-        Index('uq_wallet_transactions_reference_id', WalletTransaction.reference_id, unique=True).create(db.engine, checkfirst=True)
-
-        # Reconcile wallet balances from the idempotent ledger. This repairs balances
-        # inflated by the old duplicate-approval bug while preserving legitimate
-        # Earn/Redeem/Refund transactions.
-        wallet_totals = {}
-        for tx_type in ('Earn', 'Redeem', 'Refund'):
-            rows = (db.session.query(WalletTransaction.wallet_id, func.coalesce(func.sum(WalletTransaction.points), 0))
-                    .filter(WalletTransaction.transaction_type == tx_type)
-                    .group_by(WalletTransaction.wallet_id).all())
-            for wallet_id, amount in rows:
-                wallet_totals.setdefault(wallet_id, {})[tx_type] = int(amount or 0)
-        for wallet in Wallet.query.all():
-            totals = wallet_totals.get(wallet.id, {})
-            earned = totals.get('Earn', 0)
-            redeemed = totals.get('Redeem', 0)
-            refunded = totals.get('Refund', 0)
-            wallet.total_points = max(0, earned)
-            wallet.redeemed_points = max(0, redeemed - refunded)
-            wallet.available_points = max(0, wallet.total_points - wallet.redeemed_points)
-            user = db.session.get(User, wallet.user_id)
-            if user:
-                user.total_points = wallet.total_points
-                user.redeemed_points = wallet.redeemed_points
 
     if 'campaigns' in tables:
         cols = {c['name'] for c in inspector.get_columns('campaigns')}
@@ -446,7 +460,6 @@ def _create_missing_indexes():
                 conn.execute(text(f'ALTER TABLE campaigns ADD COLUMN deleted_at {datetime_type}'))
             if 'deleted_by' not in cols:
                 conn.execute(text('ALTER TABLE campaigns ADD COLUMN deleted_by INTEGER'))
-            conn.execute(text(f'UPDATE campaigns SET is_deleted = {bool_default} WHERE is_deleted IS NULL'))
 
     if 'tasks' in tables:
         cols = {c['name'] for c in inspector.get_columns('tasks')}
@@ -454,35 +467,14 @@ def _create_missing_indexes():
             with db.engine.begin() as conn:
                 conn.execute(text('ALTER TABLE tasks ADD COLUMN cancel_reason VARCHAR(255)'))
 
-    if 'campaign_allocation_progress' in tables:
-        # Allocation counters are historical state. Startup migration must never
-        # replace total_tasks_created with total_tasks_assigned because that can
-        # erase legitimately created-but-not-yet-assigned tasks.
-        # Only repair impossible NULL/under-count states conservatively.
-        with db.engine.begin() as conn:
-            conn.execute(text("""
-                UPDATE campaign_allocation_progress
-                SET total_tasks_created = CASE
-                    WHEN COALESCE(total_tasks_created, 0) < COALESCE(total_tasks_assigned, 0)
-                    THEN COALESCE(total_tasks_assigned, 0)
-                    ELSE COALESCE(total_tasks_created, 0)
-                END,
-                total_tasks_planned = CASE
-                    WHEN COALESCE(total_tasks_planned, 0) < COALESCE(total_tasks_created, 0)
-                    THEN COALESCE(total_tasks_created, 0)
-                    ELSE COALESCE(total_tasks_planned, 0)
-                END
-            """))
-
-
-with app.app_context():
-    db.create_all()
-    try:
-        _create_missing_indexes()
-        db.session.commit()
-    except Exception as _mig_err:
-        db.session.rollback()
-        logger.warning(f"Auto-migration check skipped/failed: {_mig_err}")
+if app.config.get('RUN_STARTUP_SCHEMA_MAINTENANCE'):
+    with app.app_context():
+        try:
+            db.create_all()
+            _create_missing_indexes()
+        except Exception as _mig_err:
+            logger.exception('Explicit startup schema maintenance failed: %s', _mig_err)
+            raise
 
 
 # ----------------- Domain helpers -----------------
@@ -498,7 +490,7 @@ def get_or_create_wallet(user_id, flush=False):
 
 
 def current_month_task_count(user_id, now=None):
-    now = now or datetime.now(timezone.utc)
+    now = now or utc_now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if now.month == 12:
         next_month = month_start.replace(year=now.year + 1, month=1)
@@ -506,6 +498,7 @@ def current_month_task_count(user_id, now=None):
         next_month = month_start.replace(month=now.month + 1)
     return Task.query.filter(
         Task.user_id == user_id,
+        Task.status != 'Cancelled',
         Task.assigned_date >= month_start,
         Task.assigned_date < next_month
     ).count()
@@ -513,8 +506,10 @@ def current_month_task_count(user_id, now=None):
 
 def assign_one_campaign_task(user, campaign, now=None):
     """Assign at most one task for this campaign/user/month, respecting the campaign pool and 14-task monthly cap."""
-    now = now or datetime.now(timezone.utc)
-    if user.is_blocked or campaign.status != 'Active':
+    now = now or utc_now()
+    if user.is_blocked or campaign.status != 'Active' or campaign.is_deleted:
+        return None
+    if campaign.end_date and campaign.end_date < now.date():
         return None
 
     if current_month_task_count(user.id, now) >= 14:
@@ -544,7 +539,10 @@ def assign_one_campaign_task(user, campaign, now=None):
         return None
 
     review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
-    review_text = random.choice(review_texts).review_text if review_texts else 'Default Review Text'
+    if not review_texts:
+        logger.error('Campaign %s has no review text; assignment skipped.', campaign.id)
+        return None
+    review_text = random.choice(review_texts).review_text
 
     task = Task(
         campaign_id=campaign.id,
@@ -575,6 +573,7 @@ def assign_one_campaign_task(user, campaign, now=None):
     progress.updated_at = now
 
     user.total_tasks_assigned = (user.total_tasks_assigned or 0) + 1
+    user.last_allocation_date = now
     user.calculate_priority()
     return task
 
@@ -670,7 +669,7 @@ def register():
         db.session.flush()
         db.session.add(Wallet(user_id=user.id, total_points=0, available_points=0, redeemed_points=0))
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         tasks_assigned_count = 0
         active_campaigns = Campaign.query.filter_by(status='Active', is_deleted=False).with_for_update().all()
         for campaign in active_campaigns:
@@ -714,7 +713,7 @@ def verify_registration():
 
     if request.method == "POST":
         entered_otp = request.form.get('otp', '').strip()
-        current_time = datetime.now(timezone.utc).timestamp()
+        current_time = utc_now().replace(tzinfo=timezone.utc).timestamp()
 
         if entered_otp != reg_data['otp'] or current_time > reg_data['expires']:
             flash('❌ Invalid or expired OTP!', 'error')
@@ -751,9 +750,10 @@ def user_login():
 
             session['admin_id'] = 1
             session['admin_email'] = email
+            session['admin_credential_fingerprint'] = _ADMIN_CREDENTIAL_FINGERPRINT
 
-            # Make admin session permanent too
-            session.permanent = True
+            # Admin cookies expire with the browser session.
+            session.permanent = False
 
             flash('✅ Admin login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
@@ -782,6 +782,7 @@ def user_login():
             session['user_id'] = user.id
             session['user_email'] = user.email
             session['user_name'] = user.name
+            session['password_fingerprint'] = password_fingerprint(user)
 
             # IMPORTANT:
             # Keep the login session persistent.
@@ -892,19 +893,15 @@ def clear_tasks():
     """✅ Naya feature: user apne Approved/Rejected/Cancelled (complete/history)
     tasks ki list se clear kar sake, taki mahino baad list chhoti/manageable
     rahe. Assigned/Submitted (jo abhi pending hai) kabhi clear nahi hote."""
-    user_id = session.get('user_id')
-    deleted = (
-        Task.query
-        .filter(Task.user_id == user_id, Task.status.in_(['Approved', 'Rejected', 'Cancelled']))
-        .delete(synchronize_session=False)
-    )
-    db.session.commit()
-
-    # ✅ AJAX call (JS fetch) ke liye plain response — page reload nahi hoga
+    # Financial/task audit records must not be hard-deleted. A future schema
+    # migration can add a per-user hidden_at flag without destroying history.
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'status': 'success', 'deleted': deleted})
+        return jsonify({
+            'status': 'error',
+            'message': 'Task history is retained for account and wallet integrity.'
+        }), 409
 
-    flash(f'✅ {deleted} purane task cleared!', 'success')
+    flash('ℹ️ Task history is retained for account and wallet integrity.', 'info')
     return redirect(url_for('view_tasks'))
 
 
@@ -930,19 +927,34 @@ def submit_task(task_id):
         return redirect(url_for('view_tasks'))
 
     if not allowed_file(file.filename) or not is_valid_image_content(file):
-        flash('❌ Invalid file format! Use a genuine PNG, JPG, JPEG or GIF image.', 'error')
+        flash('❌ Invalid file format! Use a genuine PNG, JPG or JPEG image.', 'error')
         return redirect(url_for('view_tasks'))
 
+    review_text_submitted = (request.form.get('review_text') or '').strip()
+    if len(review_text_submitted) > 5000:
+        flash('❌ Submitted review text is too long.', 'error')
+        return redirect(url_for('view_tasks'))
+
+    upload_path = None
     try:
         file.stream.seek(0)
         file_bytes = file.read()
-        screenshot_hash = hashlib.sha256(file_bytes).hexdigest()
+        image = Image.open(BytesIO(file_bytes))
+        image.load()
+        output = BytesIO()
+        if image.format == 'PNG':
+            image.save(output, format='PNG', optimize=True)
+            extension = '.png'
+        else:
+            image.convert('RGB').save(output, format='JPEG', quality=92, optimize=True)
+            extension = '.jpg'
+        safe_bytes = output.getvalue()
+        screenshot_hash = hashlib.sha256(safe_bytes).hexdigest()
 
         duplicate = (
             TaskSubmission.query
             .join(Task, Task.id == TaskSubmission.task_id)
             .filter(
-                Task.user_id == user_id,
                 TaskSubmission.screenshot_hash == screenshot_hash,
                 TaskSubmission.task_id != task_id
             )
@@ -952,10 +964,10 @@ def submit_task(task_id):
             flash('❌ This screenshot has already been submitted before! Please upload a new, unique screenshot.', 'error')
             return redirect(url_for('view_tasks'))
 
-        filename = secure_filename(str(uuid.uuid4()) + '_' + (file.filename or 'screenshot'))
+        filename = secure_filename(str(uuid.uuid4()) + extension)
         upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         with open(upload_path, 'wb') as f:
-            f.write(file_bytes)
+            f.write(safe_bytes)
 
         submission = TaskSubmission.query.filter_by(task_id=task_id).first()
         old_filename = submission.screenshot_url if submission else None
@@ -965,15 +977,15 @@ def submit_task(task_id):
 
         submission.screenshot_url = filename
         submission.screenshot_hash = screenshot_hash
-        submission.review_text_submitted = (request.form.get('review_text') or '').strip() or None
-        submission.submitted_date = datetime.now(timezone.utc)
+        submission.review_text_submitted = review_text_submitted or None
+        submission.submitted_date = utc_now()
         submission.verification_status = 'Pending'
         submission.admin_notes = None
         submission.verified_date = None
         submission.verified_by = None
 
         task.status = 'Submitted'
-        task.submission_date = datetime.now(timezone.utc)
+        task.submission_date = utc_now()
 
         assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task_id).first()
         if assignment:
@@ -998,8 +1010,13 @@ def submit_task(task_id):
         })
         flash('✅ Task submitted successfully!', 'success')
         return redirect(url_for('view_tasks'))
-    except SQLAlchemyError:
+    except (SQLAlchemyError, OSError, ValueError):
         db.session.rollback()
+        if upload_path and os.path.isfile(upload_path):
+            try:
+                os.remove(upload_path)
+            except OSError:
+                logger.warning('Could not remove failed upload %s', upload_path)
         flash('❌ Could not submit task. Please try again.', 'error')
         return redirect(url_for('view_tasks'))
 
@@ -1017,8 +1034,10 @@ def wallet():
         db.session.add(wallet)
         db.session.commit()
 
-    transactions = WalletTransaction.query.filter_by(wallet_id=wallet.id).all()
-    redeem_requests = RedeemRequest.query.filter_by(user_id=user_id).all()
+    transactions = (WalletTransaction.query.filter_by(wallet_id=wallet.id)
+                    .order_by(WalletTransaction.transaction_date.desc()).limit(200).all())
+    redeem_requests = (RedeemRequest.query.filter_by(user_id=user_id)
+                       .order_by(RedeemRequest.requested_at.desc()).limit(100).all())
 
     return render_template("wallet.html",
                          wallet=wallet,
@@ -1038,15 +1057,23 @@ def redeem_points():
 
     payment_method = (request.form.get('payment_method') or '').strip()
     payment_details = (request.form.get('payment_details') or '').strip()
+    allowed_payment_methods = {'UPI', 'Paytm', 'Phone Pay', 'Google Pay'}
 
     if points < 500:
         flash('❌ Minimum 500 points required to redeem! (500 Points = ₹500)', 'error')
         return redirect(url_for('wallet'))
-    if not payment_method or not payment_details:
+    if payment_method not in allowed_payment_methods or not payment_details:
         flash('❌ Payment method and details are required!', 'error')
         return redirect(url_for('wallet'))
-    if len(payment_method) > 50 or len(payment_details) > 200:
+    if len(payment_method) > 50 or len(payment_details) > 64:
         flash('❌ Payment details are too long.', 'error')
+        return redirect(url_for('wallet'))
+    valid_payment_detail = bool(
+        re.fullmatch(r'[0-9]{10}', payment_details)
+        or re.fullmatch(r'[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}', payment_details)
+    )
+    if not valid_payment_detail:
+        flash('❌ Enter a valid 10-digit mobile number or UPI ID.', 'error')
         return redirect(url_for('wallet'))
 
     try:
@@ -1062,7 +1089,7 @@ def redeem_points():
             user_id=user_id,
             points=points,
             payment_method=payment_method,
-            payment_details=payment_details,
+            payment_details=encrypt_sensitive(payment_details),
             status='In Process'
         )
         db.session.add(redeem_req)
@@ -1117,7 +1144,8 @@ def admin_logout():
 @login_required
 def get_notifications():
     user_id = session['user_id']
-    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+    notifications = (Notification.query.filter_by(user_id=user_id)
+                     .order_by(Notification.created_at.desc()).limit(100).all())
     unread_count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
 
     notifications_data = []
@@ -1132,7 +1160,7 @@ def get_notifications():
             # (Invalid Date) — isi wajah se "NaN years/seconds ago" dikh raha
             # tha. ISO-8601 + 'Z' (UTC marker) bhejne se `new Date()` sahi
             # se parse karta hai, chahe browser koi bhi ho.
-            'created_at': notif.created_at.isoformat() + 'Z' if notif.created_at else None,
+            'created_at': iso_utc(notif.created_at),
             'related_id': notif.related_id
         })
 
@@ -1187,7 +1215,8 @@ def clear_notifications():
 @login_required
 def view_notifications():
     user_id = session['user_id']
-    notifications = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).all()
+    notifications = (Notification.query.filter_by(user_id=user_id)
+                     .order_by(Notification.created_at.desc()).limit(200).all())
     return render_template('notifications.html', notifications=notifications)
 
 
@@ -1214,7 +1243,14 @@ def create_support_ticket():
         flash('❌ Subject and message are required!', 'error')
         return redirect(url_for('support_page'))
 
-    if len(subject) < 5 or len(message) < 10:
+    allowed_categories = {'task_help', 'payment', 'account', 'redeem', 'other'}
+    allowed_priorities = {'Low', 'Normal', 'High', 'Urgent'}
+    if category not in allowed_categories:
+        category = 'other'
+    if priority not in allowed_priorities:
+        priority = 'Normal'
+
+    if len(subject) < 5 or len(subject) > 200 or len(message) < 10 or len(message) > 5000:
         flash('❌ Check length of subject/message!', 'error')
         return redirect(url_for('support_page'))
 
@@ -1223,8 +1259,7 @@ def create_support_ticket():
         category=category, priority=priority, status='Open'
     )
     db.session.add(ticket)
-    db.session.commit()
-
+    db.session.flush()
     admin_notification = Notification(
         user_id=None,
         message=f'New support ticket from {db.session.get(User, user_id).name}: {subject}',
@@ -1266,14 +1301,14 @@ def reply_ticket(ticket_id):
         return jsonify({'status': 'error', 'message': 'Ticket is closed'}), 400
 
     message = request.form.get('message', '').strip()
-    if not message or len(message) < 5:
-        return jsonify({'status': 'error', 'message': 'Message must be at least 5 characters'}), 400
+    if not message or len(message) < 5 or len(message) > 5000:
+        return jsonify({'status': 'error', 'message': 'Message must be between 5 and 5000 characters'}), 400
 
     reply = SupportReply(
         ticket_id=ticket_id, user_id=user_id, message=message, is_admin_reply=False
     )
     db.session.add(reply)
-    ticket.updated_at = datetime.now(timezone.utc)
+    ticket.updated_at = utc_now()
     db.session.commit()
 
     reply_data = {
@@ -1334,13 +1369,19 @@ def create_campaign():
             flash('❌ Invalid values! All numeric fields must be numbers.', 'error')
             return render_template("admin_create_campaign.html")
 
-        if not name or not gmb_link or total_reviews <= 0 or points_per_review <= 0 or duration_months <= 0:
+        if (
+            not name or len(name) > 200 or not gmb_link or len(gmb_link) > 500
+            or not is_safe_http_url(gmb_link)
+            or total_reviews <= 0 or total_reviews > 100_000
+            or points_per_review <= 0 or points_per_review > 100_000
+            or duration_months <= 0 or duration_months > 120
+        ):
             flash('❌ Check all required fields.', 'error')
             return render_template("admin_create_campaign.html")
 
         review_texts = request.form.get('review_texts', '').split('\n')
         review_texts = [t.strip() for t in review_texts if t.strip()]
-        if not review_texts:
+        if not review_texts or len(review_texts) > 10_000 or any(len(t) > 1000 for t in review_texts):
             flash('❌ At least one review text is required!', 'error')
             return render_template("admin_create_campaign.html")
 
@@ -1354,7 +1395,7 @@ def create_campaign():
             status='Active', created_by=session['admin_id']
         )
         db.session.add(campaign)
-        db.session.commit()
+        db.session.flush()
 
         for review_text in review_texts:
             text_obj = CampaignReviewText(campaign_id=campaign.id, review_text=review_text)
@@ -1395,7 +1436,7 @@ def _cancel_incomplete_campaign_tasks(campaign, reason, now=None):
     Already Submitted/Approved tasks ko haath nahi lagaya jata — Submitted
     wale admin abhi bhi verify kar sakta hai, Approved wale complete hi hain.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or utc_now()
 
     incomplete_tasks = Task.query.filter(
         Task.campaign_id == campaign.id,
@@ -1442,6 +1483,9 @@ def campaign_action(campaign_id, action):
         # allocate_tasks dono campaign.status == 'Active' check karte hain).
         campaign.status = 'Paused'
     elif action == 'resume':
+        if campaign.end_date and campaign.end_date < utc_now().date():
+            flash('❌ Expired campaigns cannot be resumed. Extend the duration first.', 'error')
+            return redirect(url_for('admin_campaigns'))
         campaign.status = 'Active'
     elif action == 'stop':
         # ✅ Stopped = permanent. Ab koi naya task allocate nahi hoga, aur
@@ -1512,7 +1556,7 @@ def delete_campaign(campaign_id):
     )
 
     campaign.is_deleted = True
-    campaign.deleted_at = datetime.now(timezone.utc)
+    campaign.deleted_at = utc_now()
     campaign.deleted_by = session.get('admin_id')
     if campaign.status != 'Stopped':
         campaign.status = 'Stopped'
@@ -1563,7 +1607,7 @@ def edit_campaign(campaign_id):
         flash('❌ Invalid values! Users count and duration must be numbers.', 'error')
         return redirect(url_for('admin_campaigns'))
 
-    if new_duration_months <= 0:
+    if new_duration_months <= 0 or new_duration_months > 120:
         flash('❌ Duration must be at least 1 month.', 'error')
         return redirect(url_for('admin_campaigns'))
 
@@ -1600,7 +1644,7 @@ def edit_campaign(campaign_id):
     # dabane ki zaroorat nahi.
     allocation_note = ''
     if delta > 0 and campaign.status == 'Active':
-        result = perform_task_allocation(campaign, delta, datetime.now(timezone.utc))
+        result = perform_task_allocation(campaign, delta, utc_now())
         if result['ok']:
             allocation_note = f" {result['assigned']} new task(s) allocated right away."
             if result['pending'] > 0:
@@ -1661,7 +1705,7 @@ def task_verify_action(submission_id, action):
                 'message': f'Submission is already {submission.verification_status.lower()} or task is not pending.'
             }), 409
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         submission.verified_date = now
         submission.verified_by = session.get('admin_id')
 
@@ -1708,6 +1752,10 @@ def task_verify_action(submission_id, action):
                     )
                     progress.updated_at = now
                     progress.is_fully_allocated = (progress.total_tasks_assigned or 0) >= (progress.total_tasks_planned or 0)
+                    progress.users_count_completed = min(
+                        (progress.users_count_completed or 0) + 1,
+                        progress.users_count_assigned or progress.total_tasks_assigned or 0
+                    )
 
             message = f'✅ Task approved! +{points} points credited.'
             extra_data = {
@@ -1727,14 +1775,13 @@ def task_verify_action(submission_id, action):
             message = '❌ Task rejected! You can submit a new screenshot for this task.'
             extra_data = {'action': action, 'task_id': task.id, 'submission_id': submission.id}
 
-        db.session.commit()
-
         notify_user(
             user.id, message,
             notification_type='task_approved' if action == 'approve' else 'task_rejected',
             related_id=task.id,
             extra=extra_data
         )
+        db.session.commit()
         notify_admins('task_verified', {
             'message': f'Task #{task.id} {action}d',
             'task_id': task.id,
@@ -1771,7 +1818,7 @@ def process_redeem(redeem_id, action):
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
     try:
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         if action == 'approve':
             redeem_req.status = 'Completed'
             redeem_req.processed_at = now
@@ -1813,8 +1860,6 @@ def process_redeem(redeem_id, action):
             reject_message = f"❌ Your redeem request for {redeem_req.points} points was rejected. Points refunded to your wallet.{reason_text}"
             message = '❌ Redeem rejected! Points refunded.'
 
-        db.session.commit()
-
         if action == 'approve':
             notify_user(
                 user.id,
@@ -1827,6 +1872,7 @@ def process_redeem(redeem_id, action):
                 user.id, reject_message, notification_type='redeem_rejected', related_id=redeem_req.id,
                 extra={'points': redeem_req.points, 'reason': redeem_req.rejection_reason}
             )
+        db.session.commit()
 
         notify_admins('redeem_processed', {
             'message': f'Redeem request #{redeem_req.id} {action}d',
@@ -1860,19 +1906,26 @@ def users_list():
 @admin_required
 def admin_users_detailed():
     users = User.query.all()
+    task_totals = dict(
+        db.session.query(Task.user_id, func.count(Task.id))
+        .group_by(Task.user_id).all()
+    )
+    approved_totals = dict(
+        db.session.query(Task.user_id, func.count(Task.id))
+        .filter(Task.status == 'Approved').group_by(Task.user_id).all()
+    )
+    wallet_map = {wallet.user_id: wallet for wallet in Wallet.query.all()}
+
     user_data = []
-
     for user in users:
-        tasks = Task.query.filter_by(user_id=user.id).all()
-        wallet = Wallet.query.filter_by(user_id=user.id).first()
-
+        wallet = wallet_map.get(user.id)
         user_data.append({
             'id': user.id,
             'name': user.name,
             'email': user.email,
             'mobile': user.mobile,
-            'tasks_completed': len([t for t in tasks if t.status == 'Approved']),
-            'total_tasks': len(tasks),
+            'tasks_completed': approved_totals.get(user.id, 0),
+            'total_tasks': task_totals.get(user.id, 0),
             'points_earned': wallet.total_points if wallet else 0,
             'points_redeemed': wallet.redeemed_points if wallet else 0,
             'created_at': user.created_at.strftime('%d-%m-%Y') if user.created_at else '',
@@ -1908,10 +1961,14 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
     Caller is responsible for db.session.commit()/rollback() around this
     (matches with_for_update() row locks already taken by the caller).
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or utc_now()
 
     if tasks_to_plan_requested <= 0:
         return {'ok': False, 'message': 'Task count must be greater than zero.', 'assigned': 0, 'pending': 0}
+    if campaign.is_deleted or campaign.status != 'Active':
+        return {'ok': False, 'message': 'Campaign is not active.', 'assigned': 0, 'pending': 0}
+    if campaign.end_date and campaign.end_date < now.date():
+        return {'ok': False, 'message': 'Campaign has expired.', 'assigned': 0, 'pending': 0}
 
     review_texts = [r.review_text for r in CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()]
     if not review_texts:
@@ -1943,6 +2000,10 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
     # Each allocation request increases the campaign's planned pool. If fewer
     # eligible users are available now, registrations can consume the remaining slots later.
     progress.total_tasks_planned = planned + tasks_to_plan
+    progress.users_count_planned = max(
+        progress.users_count_planned or 0,
+        progress.total_tasks_planned
+    )
 
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     next_month = (month_start.replace(year=now.year + 1, month=1)
@@ -1958,6 +2019,7 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
     monthly_counts = dict(
         db.session.query(Task.user_id, func.count(Task.id))
         .filter(
+            Task.status != 'Cancelled',
             Task.assigned_date >= month_start,
             Task.assigned_date < next_month
         )
@@ -1998,6 +2060,7 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
         ))
         notify_task_assigned(user, campaign)
         user.total_tasks_assigned = (user.total_tasks_assigned or 0) + 1
+        user.last_allocation_date = now
         user.calculate_priority()
 
     actual = len(selected)
@@ -2026,7 +2089,7 @@ def allocate_tasks(campaign_id):
         return jsonify({'status': 'error', 'message': 'Task count must be greater than zero.'}), 400
 
     try:
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         campaign = db.session.query(Campaign).with_for_update().filter_by(id=campaign_id).first()
         if not campaign:
             return jsonify({'status': 'error', 'message': 'Campaign not found'}), 404
@@ -2038,10 +2101,6 @@ def allocate_tasks(campaign_id):
             db.session.rollback()
             status_code = 404 if 'eligible' in result['message'].lower() else 400
             return jsonify({'status': 'error', 'message': result['message']}), status_code
-
-        if result['assigned'] == 0:
-            db.session.rollback()
-            return jsonify({'status': 'error', 'message': 'No eligible users found for this month.'}), 404
 
         db.session.commit()
         return jsonify({
@@ -2086,8 +2145,8 @@ def admin_reply_ticket(ticket_id):
         return jsonify({'status': 'error', 'message': 'Ticket not found'}), 404
 
     message = request.form.get('message', '').strip()
-    if len(message) < 5:
-        return jsonify({'status': 'error', 'message': 'Message too short'}), 400
+    if len(message) < 5 or len(message) > 5000:
+        return jsonify({'status': 'error', 'message': 'Message must be between 5 and 5000 characters'}), 400
 
     reply = SupportReply(
         ticket_id=ticket_id,
@@ -2096,7 +2155,11 @@ def admin_reply_ticket(ticket_id):
         is_admin_reply=True
     )
     db.session.add(reply)
-    ticket.updated_at = datetime.now(timezone.utc)
+    ticket.updated_at = utc_now()
+    notify_user(
+        ticket.user.id, f'💬 Admin replied to your support ticket: {ticket.subject}',
+        notification_type='support', related_id=ticket.id
+    )
     db.session.commit()
 
     reply_data = {
@@ -2105,10 +2168,6 @@ def admin_reply_ticket(ticket_id):
         'user_name': 'Admin', 'is_admin': True, 'ticket_id': ticket_id
     }
     socketio.emit('ticket_reply', reply_data, room=f'ticket_{ticket_id}')
-    notify_user(
-        ticket.user.id, f'💬 Admin replied to your support ticket: {ticket.subject}',
-        notification_type='support', related_id=ticket.id
-    )
 
     return jsonify({
         'status': 'success', 'message': 'Reply sent successfully',
@@ -2125,13 +2184,12 @@ def update_ticket_status(ticket_id, status):
 
     ticket.status = status
     if status == 'Closed':
-        ticket.closed_at = datetime.now(timezone.utc)
-    db.session.commit()
-
+        ticket.closed_at = utc_now()
     notify_user(
         ticket.user_id, f'Your support ticket "{ticket.subject}" is now {status}',
         notification_type='support', related_id=ticket.id
     )
+    db.session.commit()
     socketio.emit('ticket_status_changed', {'ticket_id': ticket.id, 'status': status}, room=f'ticket_{ticket.id}')
 
     return jsonify({'status': 'success', 'message': f'Ticket status updated to {status}'})
@@ -2155,6 +2213,7 @@ def sync_pending_tasks():
     return jsonify({'status': 'success', 'synced_tasks': pending, 'message': 'Tasks synced successfully'})
 
 @app.route('/uploads/<filename>')
+@admin_required
 def serve_uploads(filename):
     return send_from_directory(os.path.join(os.getcwd(), app.config.get('UPLOAD_FOLDER', 'uploads')), filename)
 
@@ -2177,7 +2236,7 @@ def campaign_allocation_dashboard():
         completed_tasks = progress.total_tasks_completed or 0
         assigned_pct = (assigned_tasks / planned_tasks * 100) if planned_tasks > 0 else 0
         completed_pct = (completed_tasks / planned_tasks * 100) if planned_tasks > 0 else 0
-        days_remaining = (progress.campaign_deadline - datetime.now(timezone.utc)).days if getattr(progress, 'campaign_deadline', None) else 0
+        days_remaining = (progress.campaign_deadline - utc_now()).days if getattr(progress, 'campaign_deadline', None) else 0
 
         if progress.is_fully_allocated and completed_tasks >= planned_tasks:
             status, status_color = '✅ Campaign Completed', 'success'
@@ -2225,7 +2284,7 @@ def forgot_password():
             user_id=user.id,
             email=email,
             reset_token=otp,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15)
+            expires_at=utc_now() + timedelta(minutes=15)
         )
         db.session.add(token)
         db.session.flush()
@@ -2265,7 +2324,7 @@ def verify_otp():
         return redirect(url_for('forgot_password'))
 
     token_record = db.session.get(PasswordResetToken, token_id)
-    if not token_record or token_record.is_used or not token_record.expires_at or token_record.expires_at < datetime.now(timezone.utc):
+    if not token_record or token_record.is_used or not token_record.expires_at or token_record.expires_at < utc_now():
         session.pop('reset_token_id', None)
         session.pop('otp_verified', None)
         flash('❌ OTP expired. Please request a new one.', 'error')
@@ -2293,7 +2352,7 @@ def set_new_password():
         return redirect(url_for('forgot_password'))
 
     token_record = db.session.get(PasswordResetToken, token_id)
-    if not token_record or token_record.is_used or not token_record.expires_at or token_record.expires_at < datetime.now(timezone.utc):
+    if not token_record or token_record.is_used or not token_record.expires_at or token_record.expires_at < utc_now():
         session.clear()
         flash('❌ Reset session expired. Please request a new OTP.', 'error')
         return redirect(url_for('forgot_password'))
@@ -2355,7 +2414,7 @@ def admin_analytics():
     total_redeemed = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Redeem').scalar() or 0
     total_refunded = db.session.query(db.func.sum(WalletTransaction.points)).filter_by(transaction_type='Refund').scalar() or 0
 
-    today = datetime.now(timezone.utc).date()
+    today = utc_now().date()
     dates = []
     user_counts = []
     for i in range(6, -1, -1):
@@ -2388,7 +2447,7 @@ def admin_analytics():
 
 def _compute_leaderboard(settings, limit=None):
     excluded_ids = {e.user_id for e in LeaderboardExclusion.query.all()}
-    period_start = settings.period_start or datetime.now(timezone.utc)
+    period_start = settings.period_start or utc_now()
     rows = []
 
     if settings.ranking_basis == 'points':
@@ -2475,9 +2534,10 @@ def leaderboard():
         flash('ℹ️ Leaderboard is currently disabled by admin.', 'info')
         return redirect(url_for('user_dashboard'))
 
-    rows = _compute_leaderboard(settings, limit=settings.top_limit)
+    all_rows = _compute_leaderboard(settings)
+    rows = all_rows[:settings.top_limit]
     current_user_id = session.get('user_id')
-    my_rank_row = next((r for r in rows if r['user_id'] == current_user_id), None)
+    my_rank_row = next((r for r in all_rows if r['user_id'] == current_user_id), None)
 
     return render_template(
         "leaderboard.html",
@@ -2510,8 +2570,8 @@ def admin_leaderboard_settings():
     settings.is_active = data.get('is_active') == 'on'
     settings.show_on_dashboard = data.get('show_on_dashboard') == 'on'
     settings.mask_names = data.get('mask_names') == 'on'
-    settings.title = (data.get('title') or settings.title).strip()
-    settings.subtitle = (data.get('subtitle') or settings.subtitle).strip()
+    settings.title = (data.get('title') or settings.title).strip()[:150]
+    settings.subtitle = (data.get('subtitle') or settings.subtitle).strip()[:300]
 
     ranking_basis = data.get('ranking_basis')
     if ranking_basis in ('approved_tasks', 'points'):
@@ -2523,9 +2583,9 @@ def admin_leaderboard_settings():
     except (TypeError, ValueError):
         pass
 
-    settings.prize_1st = (data.get('prize_1st') or '').strip()
-    settings.prize_2nd = (data.get('prize_2nd') or '').strip()
-    settings.prize_3rd = (data.get('prize_3rd') or '').strip()
+    settings.prize_1st = (data.get('prize_1st') or '').strip()[:200]
+    settings.prize_2nd = (data.get('prize_2nd') or '').strip()[:200]
+    settings.prize_3rd = (data.get('prize_3rd') or '').strip()[:200]
 
     try:
         db.session.commit()
@@ -2543,8 +2603,8 @@ def admin_leaderboard_settings():
 def admin_leaderboard_reset():
     settings = LeaderboardSettings.get_settings()
     try:
-        settings.period_start = datetime.now(timezone.utc)
-        settings.last_reset_at = datetime.now(timezone.utc)
+        settings.period_start = utc_now()
+        settings.last_reset_at = utc_now()
         settings.last_reset_by = session.get('admin_id')
         db.session.commit()
         flash('✅ Leaderboard has been reset! New ranking period started.', 'success')
@@ -2569,7 +2629,7 @@ def admin_leaderboard_exclude(user_id):
             db.session.commit()
             return jsonify({'status': 'success', 'message': f'{user.name} included back in leaderboard.', 'excluded': False})
         else:
-            reason = request.form.get('reason', '')
+            reason = request.form.get('reason', '').strip()[:200]
             excl = LeaderboardExclusion(user_id=user_id, excluded_by=session.get('admin_id'), reason=reason)
             db.session.add(excl)
             db.session.commit()
@@ -2596,21 +2656,29 @@ def admin_allocations():
         Campaign.created_at.desc()
     ).all()
 
+    progress_map = {
+        row.campaign_id: row for row in CampaignAllocationProgress.query.all()
+    }
+    all_assignments = UserCampaignTaskAssignment.query.all()
+    assignments_by_campaign = {}
+    assignment_user_ids = set()
+    for assignment in all_assignments:
+        assignments_by_campaign.setdefault(assignment.campaign_id, []).append(assignment)
+        assignment_user_ids.add(assignment.user_id)
+    users_by_id = {
+        user.id: user for user in User.query.filter(User.id.in_(assignment_user_ids)).all()
+    } if assignment_user_ids else {}
+
     allocation_data = []
 
     for campaign in campaigns:
-        progress = CampaignAllocationProgress.query.filter_by(
-            campaign_id=campaign.id
-        ).first()
-
-        assignments = UserCampaignTaskAssignment.query.filter_by(
-            campaign_id=campaign.id
-        ).all()
+        progress = progress_map.get(campaign.id)
+        assignments = assignments_by_campaign.get(campaign.id, [])
 
         assigned_users = []
 
         for assign in assignments:
-            user = User.query.get(assign.user_id)
+            user = users_by_id.get(assign.user_id)
 
             if user:
                 assigned_users.append({
@@ -2697,8 +2765,16 @@ def edit_profile():
         confirm_password = request.form.get('confirm_password')
 
         if name:
+            valid, msg = is_valid_name(name)
+            if not valid:
+                flash(f"❌ {msg}", "error")
+                return redirect(url_for('edit_profile'))
             user.name = name
         if phone:
+            valid, msg = is_valid_phone(phone)
+            if not valid:
+                flash(f"❌ {msg}", "error")
+                return redirect(url_for('edit_profile'))
             user.mobile = phone
 
         if current_password or new_password:
@@ -2722,6 +2798,8 @@ def edit_profile():
             user.set_password(new_password)
 
         db.session.commit()
+        session['user_name'] = user.name
+        session['password_fingerprint'] = password_fingerprint(user)
         flash("✅ Profile updated successfully!", "success")
         return redirect(url_for('user_profile'))
 
@@ -2743,6 +2821,17 @@ def delete_user(user_id):
         return jsonify({'status': 'error', 'message': 'User not found'}), 404
 
     try:
+        has_audit_history = any((
+            Task.query.filter_by(user_id=user.id).first(),
+            RedeemRequest.query.filter_by(user_id=user.id).first(),
+            SupportTicket.query.filter_by(user_id=user.id).first(),
+            WalletTransaction.query.join(Wallet).filter(Wallet.user_id == user.id).first(),
+        ))
+        if has_audit_history:
+            return jsonify({
+                'status': 'error',
+                'message': 'User has task, wallet, redeem or support history. Block the account instead of deleting financial/audit records.'
+            }), 409
         db.session.delete(user)
         db.session.commit()
         return jsonify({'status': 'success', 'message': f'User {user.name} deleted successfully!'})
@@ -2773,24 +2862,23 @@ def toggle_block_user(user_id):
 
 @app.errorhandler(404)
 def page_not_found(e):
-    flash("⚠️ The page you are looking for does not exist.", "warning")
-    if 'admin_id' in session:
-        return redirect(url_for('admin_dashboard'))
-    return redirect(url_for('index'))
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({'status': 'error', 'message': 'Resource not found'}), 404
+    return '<h1>404</h1><p>The page you requested was not found.</p>', 404
 
 @app.errorhandler(405)
 def method_not_allowed(e):
-    flash("❌ Action not allowed. Please use the proper buttons on the dashboard.", "error")
-    if 'admin_id' in session:
-        return redirect(url_for('admin_campaigns'))
-    return redirect(url_for('index'))
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({'status': 'error', 'message': 'Method not allowed'}), 405
+    return '<h1>405</h1><p>This action is not allowed.</p>', 405
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    flash("❌ Something went wrong on our end. Please try again later.", "error")
-    if 'admin_id' in session:
-        return redirect(url_for('admin_dashboard'))
-    return redirect(url_for('index'))
+    db.session.rollback()
+    logger.exception('Unhandled application error: %s', e)
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    return '<h1>500</h1><p>Something went wrong. Please try again later.</p>', 500
 
 # ----------------- App entrypoint -----------------
 

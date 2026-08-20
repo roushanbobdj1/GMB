@@ -27,7 +27,7 @@
                     <td><div class="rr-user-info"><span class="rr-user-name">{{ redeem.user.name }}</span><span class="rr-user-email">{{ redeem.user.email }}</span></div></td>
                     <td><span class="rr-points">₹{{ redeem.points }}</span></td>
                     <td><span class="rr-payment-method">{{ redeem.payment_method }}</span></td>
-                    <td><span class="rr-payment-details">{{ redeem.payment_details }}</span></td>
+                    <td><span class="rr-payment-details">{{ redeem.payment_details|decrypt_sensitive }}</span></td>
                     <td><span class="rr-date">{{ redeem.requested_at.strftime('%d-%m-%Y') if redeem.requested_at else 'N/A' }}</span></td>
                     <td>
                         {% if redeem.status in ['In Process','Pending'] %}<span class="rr-status rr-status-process"><i class="fas fa-clock"></i> In Process</span>
@@ -59,7 +59,7 @@
                 <div class="rr-mobile-grid">
                     <div class="rr-mobile-field"><span class="rr-mobile-label">Payment Method</span><span class="rr-mobile-value">{{ redeem.payment_method }}</span></div>
                     <div class="rr-mobile-field"><span class="rr-mobile-label">Requested On</span><span class="rr-mobile-value">{{ redeem.requested_at.strftime('%d-%m-%Y') if redeem.requested_at else 'N/A' }}</span></div>
-                    <div class="rr-mobile-field full"><span class="rr-mobile-label">Payment Details</span><span class="rr-mobile-value">{{ redeem.payment_details }}</span></div>
+                    <div class="rr-mobile-field full"><span class="rr-mobile-label">Payment Details</span><span class="rr-mobile-value">{{ redeem.payment_details|decrypt_sensitive }}</span></div>
                     <div class="rr-mobile-field"><span class="rr-mobile-label">Status</span><span class="rr-mobile-value">{% if redeem.status in ['In Process','Pending'] %}<span class="rr-status rr-status-process"><i class="fas fa-clock"></i> In Process</span>{% elif redeem.status == 'Completed' %}<span class="rr-status rr-status-completed"><i class="fas fa-check-circle"></i> Completed</span>{% else %}<span class="rr-status rr-status-failed"><i class="fas fa-times-circle"></i> Failed</span>{% endif %}</span></div>
                     <div class="rr-mobile-field"><span class="rr-mobile-label">Reason</span>{% set reason = (redeem.rejection_reason or '').strip() %}{% if reason and reason|lower not in ['failed','fail','rejected','reject'] %}<span class="rr-mobile-value text-danger">{{ reason }}</span>{% else %}<span class="rr-mobile-value text-muted">No reason provided</span>{% endif %}</div>
                 </div>

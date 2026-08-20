@@ -6,7 +6,12 @@ from datetime import timedelta
 logger = logging.getLogger(__name__)
 
 # Treat as production if explicitly on Render or FLASK_ENV=production.
-IS_PRODUCTION = os.environ.get('RENDER') == 'true' or os.environ.get('FLASK_ENV') == 'production'
+IS_PRODUCTION = (
+    os.environ.get('RENDER') == 'true'
+    or os.environ.get('FLASK_ENV', '').lower() == 'production'
+    or os.environ.get('APP_ENV', '').lower() == 'production'
+    or os.environ.get('ENVIRONMENT', '').lower() == 'production'
+)
 
 
 def _require_env(name):
@@ -33,7 +38,9 @@ class Config:
     # won't persist across restarts, which is fine for local dev).
     SECRET_KEY = _require_env('SECRET_KEY') or _secrets.token_hex(32)
 
-    PERMANENT_SESSION_LIFETIME = timedelta(days=365)
+    # User sessions are long-lived for the installed PWA, but admin sessions
+    # are deliberately non-permanent in app.py.
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
     # ---------- Session / cookie security ----------
     SESSION_COOKIE_HTTPONLY = True
@@ -50,9 +57,16 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # ---------- Upload Configuration ----------
-    UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads/screenshots')
+    # Point this at a mounted persistent disk in production. Local container
+    # filesystems (for example Render's default disk) are ephemeral.
+    UPLOAD_FOLDER = os.environ.get(
+        'UPLOAD_FOLDER', os.path.join(os.getcwd(), 'uploads/screenshots')
+    )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    MAX_IMAGE_PIXELS = int(os.environ.get('MAX_IMAGE_PIXELS', 24_000_000))
+    MAX_IMAGE_WIDTH = int(os.environ.get('MAX_IMAGE_WIDTH', 8000))
+    MAX_IMAGE_HEIGHT = int(os.environ.get('MAX_IMAGE_HEIGHT', 8000))
 
     # ---------- Admin credentials ----------
     # No weak hardcoded defaults. Must be set via environment.
@@ -65,6 +79,22 @@ class Config:
 
     # ---------- Rate limiting ----------
     RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')
+    RATELIMIT_KEY_PREFIX = os.environ.get('RATELIMIT_KEY_PREFIX', 'gmb-earn')
+
+    # Database creation/schema repair is an explicit maintenance action. It is
+    # never run merely because a web worker started.
+    RUN_STARTUP_SCHEMA_MAINTENANCE = os.environ.get(
+        'RUN_STARTUP_SCHEMA_MAINTENANCE', 'false'
+    ).lower() == 'true'
+
+    # Comma-separated origins can be supplied in production. Same-origin is
+    # the safe default and does not expose cookie-authenticated Socket.IO to
+    # arbitrary websites.
+    _socket_origins = os.environ.get('SOCKETIO_ALLOWED_ORIGINS', '').strip()
+    SOCKETIO_ALLOWED_ORIGINS = (
+        [origin.strip() for origin in _socket_origins.split(',') if origin.strip()]
+        if _socket_origins else None
+    )
 
     # ---------- Mail config ----------
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')

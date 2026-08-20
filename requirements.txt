@@ -8,14 +8,14 @@ Pillow
 python-dotenv
 gunicorn
 bcrypt
+cryptography
 email-validator
 WTForms
 Flask-WTF
 Flask-Limiter
-psycopg2
+psycopg2-binary
 Flask-SocketIO
 python-socketio
 simple-websocket
-flask_apscheduler
 gevent
 gevent-websocket
