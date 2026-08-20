@@ -5,6 +5,7 @@ import uuid
 import random
 import logging
 import hashlib
+import hmac
 import secrets
 import base64
 import threading
@@ -20,6 +21,7 @@ from flask import (
     jsonify, send_file, send_from_directory, make_response
 )
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 from PIL import Image, UnidentifiedImageError
 
 # Optional: enables local .env file support.
@@ -54,6 +56,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
+if app.config.get('TRUST_PROXY_HEADERS'):
+    # Hostinger/Passenger terminates HTTPS at one trusted reverse proxy.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
 # Database pooling settings to prevent drop connections
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_pre_ping": True,  
@@ -69,6 +75,9 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', app.config.get('MA
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', os.environ.get('MAIL_APP_PASSWORD', app.config.get('MAIL_PASSWORD', '')))
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.config.get('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME']))
 
+if app.config['MAIL_USE_TLS'] and app.config['MAIL_USE_SSL']:
+    raise RuntimeError('MAIL_USE_TLS and MAIL_USE_SSL cannot both be true. Choose one SMTP security mode.')
+
 mail = Mail(app)
 
 db.init_app(app)
@@ -80,7 +89,7 @@ os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
 socketio = SocketIO(
     app,
     cors_allowed_origins=app.config.get('SOCKETIO_ALLOWED_ORIGINS'),
-    async_mode="gevent",
+    async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'threading'),
     logger=False,
     engineio_logger=False
 )
@@ -525,13 +534,57 @@ def _create_missing_indexes():
             if 'total_tasks_cancelled' not in cols:
                 conn.execute(text('ALTER TABLE campaign_allocation_progress ADD COLUMN total_tasks_cancelled INTEGER DEFAULT 0'))
 
-if app.config.get('RUN_STARTUP_SCHEMA_MAINTENANCE'):
+def apply_additive_schema_migrations():
+    """Create only missing tables/columns, serialized across web workers.
+
+    This is intentionally safe for Hostinger/Passenger and Gunicorn startup:
+    no table/column is dropped and no wallet/task row is deleted.
+    """
+    lock_file = None
+    advisory_connection = None
+    try:
+        try:
+            import fcntl
+            lock_path = os.environ.get('SCHEMA_MIGRATION_LOCK_FILE', '/tmp/gmb-schema-migration.lock')
+            lock_file = open(lock_path, 'a+', encoding='utf-8')
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        except (ImportError, OSError):
+            # PostgreSQL's advisory lock below still protects multi-host starts.
+            lock_file = None
+
+        if db.engine.dialect.name == 'postgresql':
+            advisory_connection = db.engine.connect()
+            advisory_connection.execute(text('SELECT pg_advisory_lock(714244328)'))
+
+        db.create_all()
+        _create_missing_indexes()
+        # New tables that reference legacy parents are created after the
+        # parent tables receive their additive compatibility columns.
+        db.create_all()
+        logger.info('Additive schema compatibility check completed.')
+    finally:
+        if advisory_connection is not None:
+            try:
+                advisory_connection.execute(text('SELECT pg_advisory_unlock(714244328)'))
+            finally:
+                advisory_connection.close()
+        if lock_file is not None:
+            try:
+                import fcntl
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            finally:
+                lock_file.close()
+
+
+if (
+    app.config.get('AUTO_APPLY_ADDITIVE_MIGRATIONS')
+    or app.config.get('RUN_STARTUP_SCHEMA_MAINTENANCE')
+):
     with app.app_context():
         try:
-            db.create_all()
-            _create_missing_indexes()
+            apply_additive_schema_migrations()
         except Exception as _mig_err:
-            logger.exception('Explicit startup schema maintenance failed: %s', _mig_err)
+            logger.exception('Additive startup schema migration failed: %s', _mig_err)
             raise
 
 
@@ -910,11 +963,22 @@ def run_task_maintenance(now=None):
         affected.add(campaign.id)
     for campaign_id in affected:
         refresh_campaign_counters(campaign_id, now)
-    if expired or assigned:
+    otp_cutoff = now - timedelta(days=app.config['REGISTRATION_OTP_RETENTION_DAYS'])
+    cleaned_registration_otps = RegistrationOTP.query.filter(
+        or_(
+            and_(RegistrationOTP.consumed_at.isnot(None), RegistrationOTP.consumed_at < otp_cutoff),
+            RegistrationOTP.expires_at < otp_cutoff
+        )
+    ).delete(synchronize_session=False)
+    if expired or assigned or cleaned_registration_otps:
         db.session.commit()
     else:
         db.session.rollback()
-    return {'expired': expired, 'assigned': assigned}
+    return {
+        'expired': expired,
+        'assigned': assigned,
+        'cleaned_registration_otps': cleaned_registration_otps
+    }
 
 
 _task_maintenance_lock = threading.Lock()
@@ -981,6 +1045,103 @@ def user_register():
     return render_template("register.html")
 
 
+def registration_token_hash(token):
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
+
+def registration_otp_hash(token, otp):
+    payload = f'registration\0{token}\0{otp}'.encode('utf-8')
+    return hmac.new(
+        app.config['SECRET_KEY'].encode('utf-8'), payload, hashlib.sha256
+    ).hexdigest()
+
+
+def send_registration_otp_email(email, otp):
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        raise RuntimeError('Registration email is not configured. Set MAIL_USERNAME and MAIL_PASSWORD.')
+    if not app.config.get('MAIL_DEFAULT_SENDER'):
+        raise RuntimeError('MAIL_DEFAULT_SENDER is not configured.')
+
+    message = Message(
+        subject='📧 Verify Your Email - GMB Earn',
+        recipients=[email],
+        body=(
+            f'Your GMB Earn registration OTP is {otp}. '
+            f'It expires in {app.config["REGISTRATION_OTP_TTL_MINUTES"]} minutes. '
+            'Do not share this code with anyone.'
+        ),
+        html=f'''
+            <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px">
+                <h2 style="color:#4f46e5">Verify your GMB Earn email</h2>
+                <p>Use this 6-digit code to finish creating your account:</p>
+                <div style="font-size:32px;font-weight:700;letter-spacing:8px;padding:16px;background:#f3f4f6;text-align:center;border-radius:10px">{otp}</div>
+                <p>This code expires in {app.config['REGISTRATION_OTP_TTL_MINUTES']} minutes.</p>
+                <p style="color:#6b7280">If you did not request this account, ignore this email. Never share this code.</p>
+            </div>
+        '''
+    )
+    mail.send(message)
+
+
+def pending_registration_record(for_update=False):
+    token = session.get('pending_registration_token')
+    if not token:
+        return None, None
+    query = RegistrationOTP.query.filter_by(
+        token_hash=registration_token_hash(token), consumed_at=None
+    )
+    if for_update:
+        query = query.with_for_update()
+    return token, query.first()
+
+
+def finalize_verified_registration(record, now):
+    if User.query.filter_by(email=record.email).first():
+        record.consumed_at = now
+        db.session.commit()
+        session.pop('pending_registration_token', None)
+        flash('ℹ️ This email is already registered. Please sign in.', 'info')
+        return redirect(url_for('user_login'))
+
+    user = User(
+        email=record.email,
+        password=record.password_hash,
+        name=record.name,
+        mobile=record.mobile
+    )
+    db.session.add(user)
+    db.session.flush()
+    db.session.add(Wallet(
+        user_id=user.id, total_points=0, available_points=0, redeemed_points=0
+    ))
+
+    tasks_assigned_count = 0
+    active_campaigns = (
+        Campaign.query.filter_by(status='Active', is_deleted=False)
+        .with_for_update().all()
+    )
+    for campaign in active_campaigns:
+        if assign_one_campaign_task(user, campaign, now):
+            tasks_assigned_count += 1
+
+    if tasks_assigned_count:
+        db.session.add(Notification(
+            user_id=user.id,
+            message=(
+                f'🎉 Welcome! You have {tasks_assigned_count} internal-feedback '
+                'task(s) assigned according to the monthly rules.'
+            ),
+            notification_type='auto_assigned',
+            is_read=False
+        ))
+
+    record.consumed_at = now
+    db.session.commit()
+    session.pop('pending_registration_token', None)
+    flash('✅ Email verified and account created successfully. Please sign in.', 'success')
+    return redirect(url_for('user_login'))
+
+
 @app.route("/register", methods=["POST"])
 @limiter.limit("5 per minute")
 def register():
@@ -989,6 +1150,8 @@ def register():
     password = data.get('password') or ''
     name = (data.get('name') or '').strip()
     phone = (data.get('phone') or '').strip()
+    confirm_password = data.get('confirm_password') or ''
+    terms_accepted = data.get('terms') == 'accepted'
 
     if not email or not password or not name or not phone:
         flash("❌ All fields including Mobile Number are required!", "error")
@@ -1010,72 +1173,155 @@ def register():
     if not valid:
         flash(f"❌ {msg}", "error")
         return redirect(url_for('user_register'))
+    if password != confirm_password:
+        flash('❌ Passwords do not match!', 'error')
+        return redirect(url_for('user_register'))
+    if not terms_accepted:
+        flash('❌ Please accept the Terms & Conditions and Privacy Policy.', 'error')
+        return redirect(url_for('user_register'))
 
     try:
         if User.query.filter_by(email=email).first():
             flash("❌ Email already exists!", "error")
             return redirect(url_for('user_register'))
 
-        user = User(email=email, name=name, mobile=phone)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.flush()
-        db.session.add(Wallet(user_id=user.id, total_points=0, available_points=0, redeemed_points=0))
-
         now = utc_now()
-        tasks_assigned_count = 0
-        active_campaigns = Campaign.query.filter_by(status='Active', is_deleted=False).with_for_update().all()
-        for campaign in active_campaigns:
-            task = assign_one_campaign_task(user, campaign, now)
-            if task:
-                notify_task_assigned(user, campaign)
-                tasks_assigned_count += 1
-
-        if tasks_assigned_count:
-            db.session.add(Notification(
-                user_id=user.id,
-                message=f'🎉 Welcome! You have {tasks_assigned_count} task(s) to complete and earn points! 💰',
-                notification_type='auto_assigned',
-                is_read=False
-            ))
-
+        # Invalidate earlier pending attempts for this address in the same
+        # transaction; no verified user/task/wallet data is touched.
+        RegistrationOTP.query.filter_by(email=email, consumed_at=None).update(
+            {'consumed_at': now}, synchronize_session=False
+        )
+        token = secrets.token_urlsafe(32)
+        otp = f'{secrets.randbelow(1_000_000):06d}'
+        password_hash = bcrypt.hashpw(
+            password.encode('utf-8'), bcrypt.gensalt()
+        ).decode('utf-8')
+        pending = RegistrationOTP(
+            token_hash=registration_token_hash(token),
+            email=email,
+            password_hash=password_hash,
+            name=name,
+            mobile=phone,
+            otp_hash=registration_otp_hash(token, otp),
+            attempts=0,
+            resend_count=0,
+            created_at=now,
+            last_sent_at=now,
+            expires_at=now + timedelta(
+                minutes=app.config['REGISTRATION_OTP_TTL_MINUTES']
+            )
+        )
+        db.session.add(pending)
+        db.session.flush()
+        send_registration_otp_email(email, otp)
         db.session.commit()
-        flash("✅ Registration successful! Tasks assigned according to the monthly allocation rules. 🎉", "success")
-        return redirect(url_for('user_login'))
+        session['pending_registration_token'] = token
+        session.permanent = False
+        flash('✅ Verification OTP sent to your email.', 'success')
+        return redirect(url_for('verify_registration'))
 
     except IntegrityError:
         db.session.rollback()
-        flash("❌ Email already exists or account could not be created. Please try again.", "error")
+        flash("❌ Email already exists or verification could not be started. Please try again.", "error")
         return redirect(url_for('user_register'))
     except Exception as e:
         db.session.rollback()
-        logger.exception(f"Error finalizing registration: {e}")
-        flash('❌ Error saving account. Please try again.', 'error')
+        logger.exception('Unable to send registration OTP: %s', e)
+        flash('❌ OTP email could not be sent. Please check the email address or contact support.', 'error')
         return redirect(url_for('user_register'))
 
 
-# [OTP BYPASSED] - This route remains in the code but won't be used since OTP is stopped.
 @app.route("/verify_registration", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=['POST'])
 def verify_registration():
-    if 'pending_registration' not in session:
+    token, record = pending_registration_record(for_update=request.method == 'POST')
+    if not token or not record:
         flash('❌ Invalid request, please register again.', 'error')
         return redirect(url_for('user_register'))
 
-    reg_data = session['pending_registration']
-    email = reg_data['email']
+    email = record.email
+    now = utc_now()
+    if record.expires_at <= now:
+        record.consumed_at = now
+        db.session.commit()
+        session.pop('pending_registration_token', None)
+        flash('❌ OTP expired. Please register again to receive a new code.', 'error')
+        return redirect(url_for('user_register'))
 
     if request.method == "POST":
         entered_otp = request.form.get('otp', '').strip()
-        current_time = utc_now().replace(tzinfo=timezone.utc).timestamp()
-
-        if entered_otp != reg_data['otp'] or current_time > reg_data['expires']:
-            flash('❌ Invalid or expired OTP!', 'error')
+        if not re.fullmatch(r'\d{6}', entered_otp):
+            flash('❌ Enter the complete 6-digit OTP.', 'error')
             return render_template('verify_registration.html', email=email)
 
-        # Legacy logic (moved to register POST)
-        pass 
+        expected = registration_otp_hash(token, entered_otp)
+        if not hmac.compare_digest(expected, record.otp_hash):
+            record.attempts = (record.attempts or 0) + 1
+            remaining = max(0, app.config['REGISTRATION_OTP_MAX_ATTEMPTS'] - record.attempts)
+            if remaining == 0:
+                record.consumed_at = now
+                session.pop('pending_registration_token', None)
+                db.session.commit()
+                flash('❌ Too many incorrect attempts. Please register again.', 'error')
+                return redirect(url_for('user_register'))
+            db.session.commit()
+            flash(f'❌ Incorrect OTP. {remaining} attempt(s) remaining.', 'error')
+            return render_template('verify_registration.html', email=email)
+
+        try:
+            return finalize_verified_registration(record, now)
+        except IntegrityError:
+            db.session.rollback()
+            session.pop('pending_registration_token', None)
+            flash('ℹ️ This email is already registered. Please sign in.', 'info')
+            return redirect(url_for('user_login'))
+        except Exception as exc:
+            db.session.rollback()
+            logger.exception('Error finalizing verified registration: %s', exc)
+            flash('❌ Account could not be created. Your OTP is still valid; please try again.', 'error')
+            return render_template('verify_registration.html', email=email)
 
     return render_template('verify_registration.html', email=email)
+
+
+@app.route('/resend_registration_otp', methods=['POST'])
+@limiter.limit('3 per 10 minutes')
+def resend_registration_otp():
+    token, record = pending_registration_record(for_update=True)
+    if not token or not record:
+        flash('❌ Registration session expired. Please start again.', 'error')
+        return redirect(url_for('user_register'))
+
+    now = utc_now()
+    elapsed = (now - record.last_sent_at).total_seconds()
+    cooldown = app.config['REGISTRATION_OTP_RESEND_COOLDOWN_SECONDS']
+    if elapsed < cooldown:
+        flash(f'⏳ Please wait {int(cooldown - elapsed) + 1} seconds before resending.', 'info')
+        return redirect(url_for('verify_registration'))
+    if (record.resend_count or 0) >= app.config['REGISTRATION_OTP_MAX_RESENDS']:
+        record.consumed_at = now
+        db.session.commit()
+        session.pop('pending_registration_token', None)
+        flash('❌ Resend limit reached. Please register again.', 'error')
+        return redirect(url_for('user_register'))
+
+    otp = f'{secrets.randbelow(1_000_000):06d}'
+    record.otp_hash = registration_otp_hash(token, otp)
+    record.attempts = 0
+    record.resend_count = (record.resend_count or 0) + 1
+    record.last_sent_at = now
+    record.expires_at = now + timedelta(
+        minutes=app.config['REGISTRATION_OTP_TTL_MINUTES']
+    )
+    try:
+        send_registration_otp_email(record.email, otp)
+        db.session.commit()
+        flash('✅ A new OTP has been sent to your email.', 'success')
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('Unable to resend registration OTP: %s', exc)
+        flash('❌ OTP could not be resent. Please try again later.', 'error')
+    return redirect(url_for('verify_registration'))
 
 
 # ----------------- LOGIN / DASHBOARD -----------------

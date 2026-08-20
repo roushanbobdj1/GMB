@@ -4300,7 +4300,7 @@
     }
 
     function isExcludedPath(pathname) {
-        return /^(\/login|\/register|\/verify_registration|\/forgot_password|\/verify_otp|\/set_new_password|\/reset_password|\/verify_reset_otp|\/logout|\/admin\/login|\/admin\/logout)(?:\/|$)/.test(pathname);
+        return /^(\/login|\/register|\/verify_registration|\/resend_registration_otp|\/forgot_password|\/verify_otp|\/set_new_password|\/reset_password|\/verify_reset_otp|\/logout|\/admin\/login|\/admin\/logout)(?:\/|$)/.test(pathname);
     }
 
     function shouldHandleLink(a, event) {

@@ -678,6 +678,14 @@
 
                 </form>
 
+                <form method="POST" action="{{ url_for('resend_registration_otp') }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="registration-submit" style="background:#f3f4f6;color:#4338ca;box-shadow:none;">
+                        <i class="fas fa-rotate"></i>
+                        <span>Resend OTP</span>
+                    </button>
+                </form>
+
             </div>
 
         </div>

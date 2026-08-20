@@ -1,12 +1,13 @@
 """Idempotent, additive migration for task lifecycle and policy-safe proof data.
 
-Render runs this once before Gunicorn. It creates only missing tables/columns,
-then backfills derived values without deleting historical or financial rows.
+Render/Hostinger runs this before Gunicorn. It creates only missing
+tables/columns, then backfills derived values without deleting historical or
+financial rows.
 """
 
 from datetime import datetime, time, timedelta
 
-from app import app, db, _create_missing_indexes
+from app import app, db, apply_additive_schema_migrations
 from models import (
     Campaign,
     CampaignAllocationProgress,
@@ -110,10 +111,6 @@ def backfill():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-        _create_missing_indexes()
-        # create_all is repeated because the first call may run before legacy
-        # parent tables have received their additive compatibility columns.
-        db.create_all()
+        apply_additive_schema_migrations()
         backfill()
         print('Task lifecycle migration completed successfully.')
