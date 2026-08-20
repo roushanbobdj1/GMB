@@ -837,17 +837,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label>GMB Link / URL</label>
+                        <label>Business Reference Link (Optional)</label>
                         <input type="url" name="link" placeholder="https://www.google.com/maps/place/..." required>
                     </div>
 
                     <div class="form-group">
-                        <label>Review Texts (One per line)</label>
-                        <textarea name="reviews" placeholder="Enter review texts, one per line" required></textarea>
+                        <label>Internal Feedback Prompts (One per line)</label>
+                        <textarea name="reviews" placeholder="Enter one unique feedback question per line" required></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label>Points per Review</label>
+                        <label>Points per Feedback Report</label>
                         <input type="number" name="points" min="1" placeholder="100" required>
                     </div>
 
@@ -883,7 +883,7 @@
 
                         <div class="campaign-details">
                             <div class="detail-item">
-                                <span class="detail-label">Reviews:</span>
+                                <span class="detail-label">Feedback prompts:</span>
                                 <span class="detail-value">{{ c.reviews|length }}</span>
                             </div>
                             <div class="detail-item">
@@ -895,7 +895,7 @@
                                 <span class="detail-value">{{ c.max_users }}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Points per Review:</span>
+                                <span class="detail-label">Points per report:</span>
                                 <span class="detail-value">{{ c.points }}</span>
                             </div>
 

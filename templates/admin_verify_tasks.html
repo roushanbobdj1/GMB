@@ -1468,24 +1468,60 @@
                             </span>
 
                             <span class="verify-campaign">
-                                {{ submission.task.campaign.name }}
+                                {{ submission.task.campaign.name if submission.task.campaign else 'Deleted Campaign' }}
                             </span>
 
                         </div>
 
 
-                        <!-- Review Text -->
+                        <!-- Internal prompt and submitted feedback -->
 
                         <div class="verify-info-box">
 
                             <span class="verify-content-label">
-                                Review Text Submitted
+                                Assigned Internal Prompt
+                            </span>
+
+                            <div class="verify-content-value verify-review-text">
+                                {{ submission.task.review_text }}
+                            </div>
+
+                        </div>
+
+                        <div class="verify-info-box">
+
+                            <span class="verify-content-label">
+                                User Feedback / Report
                             </span>
 
                             <div class="verify-content-value verify-review-text">
                                 {{ submission.review_text_submitted }}
                             </div>
 
+                            <small>
+                                Prompt/response similarity: {{ (submission.task.review_text, submission.review_text_submitted)|similarity_percent }}%.
+                                Similarity is informational only; reward is for genuine internal feedback.
+                            </small>
+
+                        </div>
+
+                        <div class="verify-info-box">
+                            <span class="verify-content-label">Optional Public Review URL</span>
+                            <span class="verify-content-value">
+                                {% if submission.posted_review_url %}
+                                <a href="{{ submission.posted_review_url }}" target="_blank" rel="noopener noreferrer">Open submitted URL</a>
+                                {% else %}Not provided — this does not affect reward eligibility.{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="verify-info-box">
+                            <span class="verify-content-label">Google Place / Business ID</span>
+                            <span class="verify-content-value">{{ submission.google_place_id or 'Not provided' }}</span>
+                        </div>
+
+                        <div class="verify-info-box">
+                            <span class="verify-content-label">Optional Posted Date</span>
+                            <span class="verify-content-value">{{ submission.posted_date.strftime('%d-%m-%Y') if submission.posted_date else 'Not provided' }}</span>
                         </div>
 
 
@@ -1807,9 +1843,16 @@
         button
     ) {
 
-        if (!confirm(
-            'Are you sure you want to reject this task?'
-        )) {
+        const reason = prompt(
+            'Enter the rejection reason (minimum 5 characters). The user will see it:'
+        );
+
+        if (reason === null) {
+            return;
+        }
+
+        if (reason.trim().length < 5) {
+            alert('❌ Please enter a clear rejection reason of at least 5 characters.');
             return;
         }
 
@@ -1837,8 +1880,10 @@
                 method: 'POST',
 
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason.trim() })
             }
         )
 

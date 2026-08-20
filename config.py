@@ -87,6 +87,13 @@ class Config:
         'RUN_STARTUP_SCHEMA_MAINTENANCE', 'false'
     ).lower() == 'true'
 
+    # Task lifecycle maintenance is opportunistic and idempotent. A request
+    # may trigger it after this interval; no destructive monthly reset runs.
+    TASK_DEADLINE_DAYS = max(1, int(os.environ.get('TASK_DEADLINE_DAYS', '7')))
+    TASK_MAINTENANCE_INTERVAL_SECONDS = max(
+        60, int(os.environ.get('TASK_MAINTENANCE_INTERVAL_SECONDS', '300'))
+    )
+
     # Comma-separated origins can be supplied in production. Same-origin is
     # the safe default and does not expose cookie-authenticated Socket.IO to
     # arbitrary websites.
@@ -105,7 +112,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
     # ============ PWA CONFIG ============
-    PWA_NAME = "GMB Review Earning Platform"
+    PWA_NAME = "GMB Feedback & Task Platform"
     PWA_SHORT_NAME = "GMB Earn"
     PWA_START_URL = "/"
     PWA_DISPLAY = "standalone"

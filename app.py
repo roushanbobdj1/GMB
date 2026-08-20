@@ -7,9 +7,12 @@ import logging
 import hashlib
 import secrets
 import base64
+import threading
+import time as time_module
 from io import BytesIO
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 from functools import wraps
+from difflib import SequenceMatcher
 from urllib.parse import urlparse
 
 from flask import (
@@ -173,6 +176,20 @@ def decrypt_sensitive(value):
     except (InvalidToken, ValueError, UnicodeError):
         logger.error('Unable to decrypt a sensitive database value.')
         return '[unavailable]'
+
+
+@app.template_filter('similarity_percent')
+def similarity_percent(values):
+    """Compare two texts for admin review without making similarity a reward rule."""
+    try:
+        left, right = values
+    except (TypeError, ValueError):
+        return 0
+    left = ' '.join((left or '').lower().split())
+    right = ' '.join((right or '').lower().split())
+    if not left or not right:
+        return 0
+    return round(SequenceMatcher(None, left, right).ratio() * 100)
 
 
 def notify_user(user_id, message, notification_type='general', related_id=None, extra=None):
@@ -434,25 +451,46 @@ def _create_missing_indexes():
     """
     inspector = inspect(db.engine)
     tables = set(inspector.get_table_names())
+    is_pg = db.engine.dialect.name != 'sqlite'
+    bool_default = 'FALSE' if is_pg else '0'
+    datetime_type = 'TIMESTAMP' if is_pg else 'DATETIME'
 
     if 'task_submissions' in tables:
         cols = {c['name'] for c in inspector.get_columns('task_submissions')}
-        if 'screenshot_hash' not in cols:
-            with db.engine.begin() as conn:
+        with db.engine.begin() as conn:
+            if 'screenshot_hash' not in cols:
                 conn.execute(text('ALTER TABLE task_submissions ADD COLUMN screenshot_hash VARCHAR(64)'))
+            if 'posted_review_url' not in cols:
+                conn.execute(text('ALTER TABLE task_submissions ADD COLUMN posted_review_url VARCHAR(1000)'))
+            if 'google_place_id' not in cols:
+                conn.execute(text('ALTER TABLE task_submissions ADD COLUMN google_place_id VARCHAR(255)'))
+            if 'posted_date' not in cols:
+                conn.execute(text('ALTER TABLE task_submissions ADD COLUMN posted_date DATE'))
 
     if 'tasks' in tables:
         cols = {c['name'] for c in inspector.get_columns('tasks')}
-        if 'points_per_review' not in cols:
-            with db.engine.begin() as conn:
+        with db.engine.begin() as conn:
+            if 'points_per_review' not in cols:
                 conn.execute(text('ALTER TABLE tasks ADD COLUMN points_per_review INTEGER DEFAULT 0'))
+            if 'review_text_id' not in cols:
+                conn.execute(text('ALTER TABLE tasks ADD COLUMN review_text_id INTEGER'))
+            if 'allocation_year' not in cols:
+                conn.execute(text('ALTER TABLE tasks ADD COLUMN allocation_year INTEGER'))
+            if 'due_date' not in cols:
+                conn.execute(text(f'ALTER TABLE tasks ADD COLUMN due_date {datetime_type}'))
+            if 'expiry_reason' not in cols:
+                conn.execute(text('ALTER TABLE tasks ADD COLUMN expiry_reason VARCHAR(255)'))
+            if 'cancel_reason' not in cols:
+                conn.execute(text('ALTER TABLE tasks ADD COLUMN cancel_reason VARCHAR(255)'))
+            if 'hidden_at' not in cols:
+                conn.execute(text(f'ALTER TABLE tasks ADD COLUMN hidden_at {datetime_type}'))
+            if 'reassigned_from_task_id' not in cols:
+                conn.execute(text('ALTER TABLE tasks ADD COLUMN reassigned_from_task_id INTEGER'))
+            if 'task_kind' not in cols:
+                conn.execute(text("ALTER TABLE tasks ADD COLUMN task_kind VARCHAR(50) DEFAULT 'InternalFeedback'"))
 
     if 'campaigns' in tables:
         cols = {c['name'] for c in inspector.get_columns('campaigns')}
-        is_pg = db.engine.dialect.name != 'sqlite'
-        bool_default = 'FALSE' if is_pg else '0'
-        # Postgres DATETIME type is not valid — must use TIMESTAMP.
-        datetime_type = 'TIMESTAMP' if is_pg else 'DATETIME'
         with db.engine.begin() as conn:
             if 'is_deleted' not in cols:
                 conn.execute(text(f'ALTER TABLE campaigns ADD COLUMN is_deleted BOOLEAN DEFAULT {bool_default}'))
@@ -460,12 +498,32 @@ def _create_missing_indexes():
                 conn.execute(text(f'ALTER TABLE campaigns ADD COLUMN deleted_at {datetime_type}'))
             if 'deleted_by' not in cols:
                 conn.execute(text('ALTER TABLE campaigns ADD COLUMN deleted_by INTEGER'))
+            if 'workflow_type' not in cols:
+                conn.execute(text("ALTER TABLE campaigns ADD COLUMN workflow_type VARCHAR(50) DEFAULT 'InternalFeedback'"))
 
-    if 'tasks' in tables:
-        cols = {c['name'] for c in inspector.get_columns('tasks')}
-        if 'cancel_reason' not in cols:
+    if 'campaign_review_text' in tables:
+        cols = {c['name'] for c in inspector.get_columns('campaign_review_text')}
+        with db.engine.begin() as conn:
+            if 'usage_count' not in cols:
+                conn.execute(text('ALTER TABLE campaign_review_text ADD COLUMN usage_count INTEGER DEFAULT 0'))
+            if 'is_used' not in cols:
+                conn.execute(text(f'ALTER TABLE campaign_review_text ADD COLUMN is_used BOOLEAN DEFAULT {bool_default}'))
+            if 'last_used_at' not in cols:
+                conn.execute(text(f'ALTER TABLE campaign_review_text ADD COLUMN last_used_at {datetime_type}'))
+
+    if 'user_allocations' in tables:
+        cols = {c['name'] for c in inspector.get_columns('user_allocations')}
+        if 'allocation_year' not in cols:
             with db.engine.begin() as conn:
-                conn.execute(text('ALTER TABLE tasks ADD COLUMN cancel_reason VARCHAR(255)'))
+                conn.execute(text('ALTER TABLE user_allocations ADD COLUMN allocation_year INTEGER'))
+
+    if 'campaign_allocation_progress' in tables:
+        cols = {c['name'] for c in inspector.get_columns('campaign_allocation_progress')}
+        with db.engine.begin() as conn:
+            if 'total_tasks_expired' not in cols:
+                conn.execute(text('ALTER TABLE campaign_allocation_progress ADD COLUMN total_tasks_expired INTEGER DEFAULT 0'))
+            if 'total_tasks_cancelled' not in cols:
+                conn.execute(text('ALTER TABLE campaign_allocation_progress ADD COLUMN total_tasks_cancelled INTEGER DEFAULT 0'))
 
 if app.config.get('RUN_STARTUP_SCHEMA_MAINTENANCE'):
     with app.app_context():
@@ -498,10 +556,238 @@ def current_month_task_count(user_id, now=None):
         next_month = month_start.replace(month=now.month + 1)
     return Task.query.filter(
         Task.user_id == user_id,
-        Task.status != 'Cancelled',
+        ~Task.status.in_(['Cancelled', 'Expired']),
         Task.assigned_date >= month_start,
         Task.assigned_date < next_month
     ).count()
+
+
+def month_bounds(now):
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    next_month = (
+        month_start.replace(year=now.year + 1, month=1)
+        if now.month == 12 else month_start.replace(month=now.month + 1)
+    )
+    return month_start, next_month
+
+
+def task_deadline(campaign, assigned_at):
+    due = assigned_at + timedelta(days=app.config['TASK_DEADLINE_DAYS'])
+    if campaign.end_date:
+        due = min(due, datetime.combine(campaign.end_date, time.max))
+    return due
+
+
+def log_task_activity(task, action, from_status=None, to_status=None, reason=None,
+                      actor_type='system', actor_id=None, created_at=None):
+    db.session.add(TaskActivityLog(
+        task_id=task.id,
+        user_id=task.user_id,
+        campaign_id=task.campaign_id,
+        action=action,
+        from_status=from_status,
+        to_status=to_status,
+        reason=reason,
+        actor_type=actor_type,
+        actor_id=actor_id,
+        created_at=created_at or utc_now()
+    ))
+
+
+def occupied_campaign_slots(campaign_id):
+    return Task.query.filter(
+        Task.campaign_id == campaign_id,
+        Task.status.in_(['Assigned', 'Rejected', 'Submitted', 'Approved'])
+    ).count()
+
+
+def refresh_campaign_counters(campaign_id, now=None):
+    """Keep event counters separate while deriving outcome counters safely."""
+    progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign_id).with_for_update().first()
+    if not progress:
+        return None
+    counts = dict(
+        db.session.query(Task.status, func.count(Task.id))
+        .filter(Task.campaign_id == campaign_id)
+        .group_by(Task.status)
+        .all()
+    )
+    total_rows = sum(counts.values())
+    progress.total_tasks_created = total_rows
+    progress.total_tasks_assigned = total_rows
+    progress.total_tasks_completed = counts.get('Approved', 0)
+    progress.total_tasks_expired = counts.get('Expired', 0)
+    progress.total_tasks_cancelled = counts.get('Cancelled', 0)
+    progress.users_count_assigned = db.session.query(func.count(func.distinct(Task.user_id))).filter(
+        Task.campaign_id == campaign_id
+    ).scalar() or 0
+    progress.users_count_completed = db.session.query(func.count(func.distinct(Task.user_id))).filter(
+        Task.campaign_id == campaign_id, Task.status == 'Approved'
+    ).scalar() or 0
+    planned = progress.total_tasks_planned or 0
+    progress.is_fully_allocated = occupied_campaign_slots(campaign_id) >= planned if planned else False
+    progress.updated_at = now or utc_now()
+    return progress
+
+
+def normalize_prompt(value):
+    return ' '.join((value or '').casefold().split())
+
+
+def unused_campaign_prompt(campaign_id):
+    used_texts = {
+        normalize_prompt(row[0]) for row in db.session.query(Task.review_text).filter(
+        Task.campaign_id == campaign_id,
+        Task.review_text.isnot(None)
+        ).all()
+    }
+    prompts = (
+        CampaignReviewText.query
+        .filter(
+            CampaignReviewText.campaign_id == campaign_id,
+            CampaignReviewText.is_used.is_(False)
+        )
+        .order_by(CampaignReviewText.id.asc())
+        .with_for_update()
+        .all()
+    )
+    return next((prompt for prompt in prompts if normalize_prompt(prompt.review_text) not in used_texts), None)
+
+
+def unused_campaign_prompt_count(campaign_id):
+    used_texts = {
+        normalize_prompt(row[0]) for row in db.session.query(Task.review_text).filter(
+        Task.campaign_id == campaign_id,
+        Task.review_text.isnot(None)
+        ).all()
+    }
+    candidates = db.session.query(CampaignReviewText.review_text).filter(
+        CampaignReviewText.campaign_id == campaign_id,
+        CampaignReviewText.is_used.is_(False)
+    ).all()
+    return len({
+        normalize_prompt(row[0]) for row in candidates
+        if normalize_prompt(row[0]) and normalize_prompt(row[0]) not in used_texts
+    })
+
+
+def _candidate_users(campaign, limit, now):
+    month_start, next_month = month_bounds(now)
+    assigned_user_ids = {
+        row[0] for row in db.session.query(UserCampaignTaskAssignment.user_id).filter(
+            UserCampaignTaskAssignment.campaign_id == campaign.id,
+            UserCampaignTaskAssignment.assigned_at >= month_start,
+            UserCampaignTaskAssignment.assigned_at < next_month
+        ).all()
+    }
+    monthly_counts = dict(
+        db.session.query(Task.user_id, func.count(Task.id)).filter(
+            ~Task.status.in_(['Cancelled', 'Expired']),
+            Task.assigned_date >= month_start,
+            Task.assigned_date < next_month
+        ).group_by(Task.user_id).all()
+    )
+    candidates = User.query.filter(User.is_blocked.is_(False)).all()
+    candidates = [
+        user for user in candidates
+        if user.id not in assigned_user_ids and monthly_counts.get(user.id, 0) < 14
+    ]
+    # Exact fairness order. Randomness is used only for a true tie; user.id is
+    # deliberately not a tie-breaker.
+    random.shuffle(candidates)
+    candidates.sort(key=lambda user: (
+        monthly_counts.get(user.id, 0),
+        user.total_tasks_assigned or 0,
+        user.last_allocation_date or datetime.min,
+    ))
+    return candidates[:limit]
+
+
+def _create_campaign_task(user, campaign, prompt, now, reassigned_from_task_id=None):
+    task = Task(
+        campaign_id=campaign.id,
+        review_text_id=prompt.id,
+        user_id=user.id,
+        review_text=prompt.review_text,
+        gmb_link=campaign.gmb_link,
+        status='Assigned',
+        assigned_date=now,
+        due_date=task_deadline(campaign, now),
+        points_per_review=campaign.points_per_review or 0,
+        allocation_month=now.month,
+        allocation_year=now.year,
+        reassigned_from_task_id=reassigned_from_task_id,
+        task_kind='InternalFeedback'
+    )
+    db.session.add(task)
+    db.session.flush()
+    db.session.add(UserCampaignTaskAssignment(
+        user_id=user.id,
+        campaign_id=campaign.id,
+        task_id=task.id,
+        status='Assigned',
+        assigned_at=now
+    ))
+    prompt.usage_count = (prompt.usage_count or 0) + 1
+    prompt.is_used = True
+    prompt.last_used_at = now
+    user.total_tasks_assigned = (user.total_tasks_assigned or 0) + 1
+    user.last_allocation_date = now
+    user.calculate_priority()
+    log_task_activity(
+        task, 'assigned', to_status='Assigned',
+        reason='Reassigned campaign slot' if reassigned_from_task_id else 'Campaign allocation',
+        created_at=now
+    )
+    notify_task_assigned(user, campaign)
+    return task
+
+
+def fill_campaign_open_slots(campaign, limit=None, now=None, reassigned_from_task_id=None):
+    now = now or utc_now()
+    if campaign.is_deleted or campaign.status != 'Active':
+        return 0
+    if campaign.end_date and campaign.end_date < now.date():
+        return 0
+    progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).with_for_update().first()
+    if not progress:
+        return 0
+    planned = progress.total_tasks_planned or 0
+    open_slots = max(0, planned - occupied_campaign_slots(campaign.id))
+    if limit is not None:
+        open_slots = min(open_slots, max(0, limit))
+    if not open_slots:
+        refresh_campaign_counters(campaign.id, now)
+        return 0
+
+    if reassigned_from_task_id is None:
+        used_sources = {
+            row[0] for row in db.session.query(Task.reassigned_from_task_id)
+            .filter(Task.reassigned_from_task_id.isnot(None)).all()
+        }
+        source_query = Task.query.filter(
+            Task.campaign_id == campaign.id,
+            Task.status == 'Expired'
+        )
+        if used_sources:
+            source_query = source_query.filter(~Task.id.in_(used_sources))
+        source = source_query.order_by(Task.assigned_date.asc()).first()
+        reassigned_from_task_id = source.id if source else None
+
+    candidates = _candidate_users(campaign, open_slots, now)
+    assigned = 0
+    for user in candidates:
+        prompt = unused_campaign_prompt(campaign.id)
+        if not prompt:
+            break
+        _create_campaign_task(
+            user, campaign, prompt, now,
+            reassigned_from_task_id=reassigned_from_task_id if assigned == 0 else None
+        )
+        assigned += 1
+    db.session.flush()
+    refresh_campaign_counters(campaign.id, now)
+    return assigned
 
 
 def assign_one_campaign_task(user, campaign, now=None):
@@ -532,49 +818,18 @@ def assign_one_campaign_task(user, campaign, now=None):
     if not progress:
         return None
 
-    planned = progress.total_tasks_planned or progress.total_tasks_created or 0
-    assigned = progress.total_tasks_assigned or 0
-    if assigned >= planned:
+    planned = progress.total_tasks_planned or 0
+    if occupied_campaign_slots(campaign.id) >= planned:
         progress.is_fully_allocated = True
         return None
 
-    review_texts = CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()
-    if not review_texts:
-        logger.error('Campaign %s has no review text; assignment skipped.', campaign.id)
+    prompt = unused_campaign_prompt(campaign.id)
+    if not prompt:
+        logger.error('Campaign %s has no unused feedback prompt; assignment skipped.', campaign.id)
         return None
-    review_text = random.choice(review_texts).review_text
-
-    task = Task(
-        campaign_id=campaign.id,
-        user_id=user.id,
-        review_text=review_text,
-        gmb_link=campaign.gmb_link,
-        status='Assigned',
-        assigned_date=now,
-        points_per_review=campaign.points_per_review or 0,
-        allocation_month=1
-    )
-    db.session.add(task)
+    task = _create_campaign_task(user, campaign, prompt, now)
     db.session.flush()
-
-    assignment = UserCampaignTaskAssignment(
-        user_id=user.id,
-        campaign_id=campaign.id,
-        task_id=task.id,
-        status='Assigned',
-        assigned_at=now
-    )
-    db.session.add(assignment)
-
-    progress.total_tasks_assigned = assigned + 1
-    progress.total_tasks_created = (progress.total_tasks_created or 0) + 1
-    progress.users_count_assigned = (progress.users_count_assigned or 0) + 1
-    progress.is_fully_allocated = progress.total_tasks_assigned >= planned
-    progress.updated_at = now
-
-    user.total_tasks_assigned = (user.total_tasks_assigned or 0) + 1
-    user.last_allocation_date = now
-    user.calculate_priority()
+    refresh_campaign_counters(campaign.id, now)
     return task
 
 
@@ -588,9 +843,107 @@ def sync_user_legacy_points(user, wallet):
 def notify_task_assigned(user, campaign):
     db.session.add(Notification(
         user_id=user.id,
-        message=f'🎉 New task assigned for campaign: {campaign.name}',
+        message=f'🎉 New internal-feedback task assigned for campaign: {campaign.name}',
         notification_type='task_assigned'
     ))
+
+
+def expire_task(task, reason, now=None):
+    now = now or utc_now()
+    if task.status not in ('Assigned', 'Rejected'):
+        return False
+    previous_status = task.status
+    task.status = 'Expired'
+    task.expiry_reason = reason
+    assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task.id).first()
+    if assignment:
+        assignment.status = 'Expired'
+        assignment.completed_at = now
+    log_task_activity(
+        task, 'expired', from_status=previous_status, to_status='Expired',
+        reason=reason, created_at=now
+    )
+    notify_user(
+        task.user_id,
+        f'⌛ Task expired: {reason}',
+        notification_type='task', related_id=task.id
+    )
+    return True
+
+
+def expire_overdue_tasks(now=None, task_id=None):
+    now = now or utc_now()
+    query = Task.query.filter(Task.status.in_(['Assigned', 'Rejected']))
+    if task_id is not None:
+        query = query.filter(Task.id == task_id)
+    tasks = query.all()
+    affected_campaigns = set()
+    expired = 0
+    for task in tasks:
+        campaign = task.campaign
+        campaign_ended = bool(campaign and campaign.end_date and campaign.end_date < now.date())
+        due = task.due_date or (task_deadline(campaign, task.assigned_date or now) if campaign else None)
+        if not campaign_ended and (not due or due > now):
+            continue
+        reason = (
+            'Campaign ended before the task was submitted.'
+            if campaign_ended else 'Task deadline passed before submission.'
+        )
+        if expire_task(task, reason, now):
+            expired += 1
+            if task.campaign_id:
+                affected_campaigns.add(task.campaign_id)
+    db.session.flush()
+    for campaign_id in affected_campaigns:
+        refresh_campaign_counters(campaign_id, now)
+    return expired, affected_campaigns
+
+
+def run_task_maintenance(now=None):
+    """Expire overdue tasks and refill released/pending slots idempotently."""
+    now = now or utc_now()
+    expired, affected = expire_overdue_tasks(now)
+    campaigns = Campaign.query.filter_by(status='Active', is_deleted=False).all()
+    assigned = 0
+    for campaign in campaigns:
+        assigned += fill_campaign_open_slots(campaign, now=now)
+        affected.add(campaign.id)
+    for campaign_id in affected:
+        refresh_campaign_counters(campaign_id, now)
+    if expired or assigned:
+        db.session.commit()
+    else:
+        db.session.rollback()
+    return {'expired': expired, 'assigned': assigned}
+
+
+_task_maintenance_lock = threading.Lock()
+_task_maintenance_last_run = 0.0
+
+
+@app.before_request
+def opportunistic_task_maintenance():
+    """Run lifecycle maintenance at most once per configured interval/worker."""
+    global _task_maintenance_last_run
+    if request.endpoint in {'static', 'serve_uploads', 'offline'}:
+        return None
+    monotonic_now = time_module.monotonic()
+    if monotonic_now - _task_maintenance_last_run < app.config['TASK_MAINTENANCE_INTERVAL_SECONDS']:
+        return None
+    if not _task_maintenance_lock.acquire(blocking=False):
+        return None
+    try:
+        # Set this before work so a transient DB failure does not hammer the DB
+        # on every concurrent request.
+        _task_maintenance_last_run = monotonic_now
+        try:
+            run_task_maintenance()
+        except SQLAlchemyError:
+            db.session.rollback()
+            logger.exception('Task lifecycle maintenance failed.')
+    finally:
+        _task_maintenance_lock.release()
+    return None
 
 
 # ----------------- USER ROUTES -----------------
@@ -866,18 +1219,19 @@ def view_tasks():
         (Task.status == 'Submitted', 1),
         (Task.status == 'Approved', 2),
         (Task.status == 'Cancelled', 2),
+        (Task.status == 'Expired', 2),
         else_=3
     )
     
     tasks = (
         Task.query
         .outerjoin(Campaign, Campaign.id == Task.campaign_id)
-        .filter(Task.user_id == user_id)
+        .filter(Task.user_id == user_id, Task.hidden_at.is_(None))
         .filter(
             or_(
                 Campaign.id == None,           
                 Campaign.is_deleted == False, 
-                Task.status.in_(['Submitted', 'Approved']) 
+                Task.status.in_(['Submitted', 'Approved', 'Cancelled', 'Expired'])
             )
         )
         .order_by(status_order, Task.assigned_date.desc())
@@ -890,18 +1244,21 @@ def view_tasks():
 @app.route("/tasks/clear", methods=["POST"])
 @login_required
 def clear_tasks():
-    """✅ Naya feature: user apne Approved/Rejected/Cancelled (complete/history)
-    tasks ki list se clear kar sake, taki mahino baad list chhoti/manageable
-    rahe. Assigned/Submitted (jo abhi pending hai) kabhi clear nahi hote."""
-    # Financial/task audit records must not be hard-deleted. A future schema
-    # migration can add a per-user hidden_at flag without destroying history.
+    """Hide closed task cards without deleting audit or wallet history."""
+    hidden = Task.query.filter(
+        Task.user_id == session['user_id'],
+        Task.hidden_at.is_(None),
+        Task.status.in_(['Approved', 'Cancelled', 'Expired'])
+    ).update({'hidden_at': utc_now()}, synchronize_session=False)
+    db.session.commit()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({
-            'status': 'error',
-            'message': 'Task history is retained for account and wallet integrity.'
-        }), 409
+            'status': 'success',
+            'hidden': hidden,
+            'message': f'{hidden} closed task(s) hidden. Audit history remains intact.'
+        })
 
-    flash('ℹ️ Task history is retained for account and wallet integrity.', 'info')
+    flash(f'✅ {hidden} closed task(s) hidden. Audit history remains intact.', 'success')
     return redirect(url_for('view_tasks'))
 
 
@@ -913,6 +1270,26 @@ def submit_task(task_id):
 
     if not task or task.user_id != user_id:
         flash('❌ Invalid task!', 'error')
+        return redirect(url_for('view_tasks'))
+
+    now = utc_now()
+    campaign_ended = bool(task.campaign and task.campaign.end_date and task.campaign.end_date < now.date())
+    deadline_passed = bool(task.due_date and task.due_date <= now)
+    if task.status in ('Assigned', 'Rejected') and (campaign_ended or deadline_passed):
+        reason = (
+            'Campaign ended before the task was submitted.'
+            if campaign_ended else 'Task deadline passed before submission.'
+        )
+        expire_task(task, reason, now)
+        db.session.flush()
+        if task.campaign_id:
+            refresh_campaign_counters(task.campaign_id, now)
+        db.session.commit()
+        flash(f'⌛ This task expired and cannot be submitted: {reason}', 'error')
+        return redirect(url_for('view_tasks'))
+
+    if task.status == 'Expired':
+        flash(f'⌛ This task expired and cannot be submitted: {task.expiry_reason or "deadline passed"}', 'error')
         return redirect(url_for('view_tasks'))
 
     # Submitted/Approved tasks cannot be submitted again. Rejected tasks may be
@@ -931,9 +1308,28 @@ def submit_task(task_id):
         return redirect(url_for('view_tasks'))
 
     review_text_submitted = (request.form.get('review_text') or '').strip()
-    if len(review_text_submitted) > 5000:
-        flash('❌ Submitted review text is too long.', 'error')
+    posted_review_url = (request.form.get('posted_review_url') or '').strip()
+    google_place_id = (request.form.get('google_place_id') or '').strip()
+    posted_date_raw = (request.form.get('posted_date') or '').strip()
+    if len(review_text_submitted) < 10 or len(review_text_submitted) > 5000:
+        flash('❌ Internal feedback/report must be between 10 and 5000 characters.', 'error')
         return redirect(url_for('view_tasks'))
+    if posted_review_url and (len(posted_review_url) > 1000 or not is_safe_http_url(posted_review_url)):
+        flash('❌ Optional public review URL is invalid.', 'error')
+        return redirect(url_for('view_tasks'))
+    if len(google_place_id) > 255:
+        flash('❌ Google place/business ID is too long.', 'error')
+        return redirect(url_for('view_tasks'))
+    posted_date = None
+    if posted_date_raw:
+        try:
+            posted_date = datetime.strptime(posted_date_raw, '%Y-%m-%d').date()
+        except ValueError:
+            flash('❌ Posted date is invalid.', 'error')
+            return redirect(url_for('view_tasks'))
+        if posted_date > now.date():
+            flash('❌ Posted date cannot be in the future.', 'error')
+            return redirect(url_for('view_tasks'))
 
     upload_path = None
     try:
@@ -975,22 +1371,34 @@ def submit_task(task_id):
             submission = TaskSubmission(task_id=task_id)
             db.session.add(submission)
 
+        previous_status = task.status
         submission.screenshot_url = filename
         submission.screenshot_hash = screenshot_hash
         submission.review_text_submitted = review_text_submitted or None
-        submission.submitted_date = utc_now()
+        submission.posted_review_url = posted_review_url or None
+        submission.google_place_id = google_place_id or None
+        submission.posted_date = posted_date
+        submission.submitted_date = now
         submission.verification_status = 'Pending'
         submission.admin_notes = None
         submission.verified_date = None
         submission.verified_by = None
 
         task.status = 'Submitted'
-        task.submission_date = utc_now()
+        task.submission_date = now
 
         assignment = UserCampaignTaskAssignment.query.filter_by(task_id=task_id).first()
         if assignment:
             assignment.status = 'Submitted'
             assignment.completed_at = None
+
+        log_task_activity(
+            task,
+            'resubmitted' if previous_status == 'Rejected' else 'submitted',
+            from_status=previous_status,
+            to_status='Submitted',
+            actor_type='user', actor_id=user_id, created_at=now
+        )
 
         db.session.commit()
 
@@ -1370,19 +1778,28 @@ def create_campaign():
             return render_template("admin_create_campaign.html")
 
         if (
-            not name or len(name) > 200 or not gmb_link or len(gmb_link) > 500
-            or not is_safe_http_url(gmb_link)
-            or total_reviews <= 0 or total_reviews > 100_000
+            not name or len(name) > 200 or len(gmb_link) > 500
+            or (gmb_link and not is_safe_http_url(gmb_link))
+            or total_reviews <= 0 or total_reviews > 10_000
             or points_per_review <= 0 or points_per_review > 100_000
             or duration_months <= 0 or duration_months > 120
         ):
             flash('❌ Check all required fields.', 'error')
             return render_template("admin_create_campaign.html")
 
-        review_texts = request.form.get('review_texts', '').split('\n')
-        review_texts = [t.strip() for t in review_texts if t.strip()]
-        if not review_texts or len(review_texts) > 10_000 or any(len(t) > 1000 for t in review_texts):
-            flash('❌ At least one review text is required!', 'error')
+        raw_prompts = request.form.get('review_texts', '').split('\n')
+        prompt_map = {}
+        for prompt in raw_prompts:
+            prompt = prompt.strip()
+            if prompt:
+                prompt_map.setdefault(normalize_prompt(prompt), prompt)
+        prompts = list(prompt_map.values())
+        if (
+            not prompts or len(prompts) > 10_000
+            or any(len(prompt) > 1000 for prompt in prompts)
+            or len(prompts) < total_reviews
+        ):
+            flash('❌ Add at least one unique internal-feedback prompt for every planned task.', 'error')
             return render_template("admin_create_campaign.html")
 
         start_date = datetime.now().date()
@@ -1392,13 +1809,14 @@ def create_campaign():
             name=name, gmb_link=gmb_link, total_reviews_required=total_reviews,
             points_per_review=points_per_review, start_date=start_date,
             end_date=end_date, duration_months=duration_months,
-            status='Active', created_by=session['admin_id']
+            status='Active', created_by=session['admin_id'],
+            workflow_type='InternalFeedback'
         )
         db.session.add(campaign)
         db.session.flush()
 
-        for review_text in review_texts:
-            text_obj = CampaignReviewText(campaign_id=campaign.id, review_text=review_text)
+        for prompt in prompts:
+            text_obj = CampaignReviewText(campaign_id=campaign.id, review_text=prompt)
             db.session.add(text_obj)
         db.session.commit()
 
@@ -1445,6 +1863,7 @@ def _cancel_incomplete_campaign_tasks(campaign, reason, now=None):
 
     cancelled_count = 0
     for task in incomplete_tasks:
+        previous_status = task.status
         task.status = 'Cancelled'
         task.cancel_reason = reason
 
@@ -1453,6 +1872,12 @@ def _cancel_incomplete_campaign_tasks(campaign, reason, now=None):
             assignment.status = 'Cancelled'
             assignment.completed_at = now
 
+        log_task_activity(
+            task, 'cancelled', from_status=previous_status, to_status='Cancelled',
+            reason=reason, actor_type='admin', actor_id=session.get('admin_id'),
+            created_at=now
+        )
+
         notify_user(
             task.user_id,
             f'⚠️ Task for campaign "{campaign.name}" was cancelled — {reason}',
@@ -1460,6 +1885,9 @@ def _cancel_incomplete_campaign_tasks(campaign, reason, now=None):
         )
         cancelled_count += 1
 
+    if cancelled_count:
+        db.session.flush()
+        refresh_campaign_counters(campaign.id, now)
     return cancelled_count
 
 
@@ -1578,14 +2006,13 @@ def delete_campaign(campaign_id):
 @app.route("/admin/campaign/<int:campaign_id>/edit", methods=["POST"])
 @admin_required
 def edit_campaign(campaign_id):
-    """✅ Naya feature: campaign create hone ke baad admin sirf 2 cheezein
+    """Edit campaign capacity/duration and append unique feedback prompts.
     edit kar sake -
       1) Total users/tasks (total_reviews_required) - SIRF BADHA sakta hai,
          taaki already-created tasks/allocation-progress se conflict na ho.
       2) Duration (duration_months) - end_date start_date se dobara
          calculate ho jata hai.
-    Baaki fields (name, gmb_link, points_per_review, review texts) is route
-    se edit nahi hote - scope jaan-bujh kar chhota rakha gaya hai.
+    Existing prompts are immutable audit data; new unique prompts may be added.
     """
     campaign = db.session.query(Campaign).with_for_update().filter_by(id=campaign_id).first()
     if not campaign:
@@ -1611,6 +2038,26 @@ def edit_campaign(campaign_id):
         flash('❌ Duration must be at least 1 month.', 'error')
         return redirect(url_for('admin_campaigns'))
 
+    raw_prompts = request.form.get('additional_feedback_prompts', '').split('\n')
+    raw_prompts = [prompt.strip() for prompt in raw_prompts if prompt.strip()]
+    existing_prompt_values = {
+        normalize_prompt(row[0]) for row in db.session.query(CampaignReviewText.review_text)
+        .filter_by(campaign_id=campaign.id).all()
+    }
+    new_prompt_map = {}
+    for prompt in raw_prompts:
+        key = normalize_prompt(prompt)
+        if key and key not in existing_prompt_values:
+            new_prompt_map.setdefault(key, prompt)
+    new_prompts = list(new_prompt_map.values())
+    if any(len(prompt) > 1000 for prompt in new_prompts):
+        flash('❌ Each feedback prompt must be 1000 characters or less.', 'error')
+        return redirect(url_for('admin_campaigns'))
+    if len(existing_prompt_values) + len(new_prompts) < new_total_reviews_required:
+        needed = new_total_reviews_required - len(existing_prompt_values)
+        flash(f'❌ Add at least {needed} new unique feedback prompt(s) for this task capacity.', 'error')
+        return redirect(url_for('admin_campaigns'))
+
     # ✅ GUARD: total_reviews_required sirf badhaya ja sakta hai, ghataya
     # nahi - ghatane se allocation math (planned vs created tasks) tut
     # sakta hai.
@@ -1634,6 +2081,15 @@ def edit_campaign(campaign_id):
     if campaign.start_date:
         campaign.end_date = campaign.start_date + timedelta(days=30 * new_duration_months)
 
+    for prompt in new_prompts:
+        db.session.add(CampaignReviewText(
+            campaign_id=campaign.id,
+            review_text=prompt,
+            usage_count=0,
+            is_used=False
+        ))
+    db.session.flush()
+
     # ✅ ROOT CAUSE FIX: Pehle sirf `total_reviews_required` (cap) badhta tha,
     # lekin actual "planned pool" (CampaignAllocationProgress.total_tasks_planned)
     # tab tak nahi badhta jab tak admin dobara "Allocate Tasks" button na
@@ -1648,7 +2104,7 @@ def edit_campaign(campaign_id):
         if result['ok']:
             allocation_note = f" {result['assigned']} new task(s) allocated right away."
             if result['pending'] > 0:
-                allocation_note += f" {result['pending']} slot(s) pending — will auto-fill as new users register."
+                allocation_note += f" {result['pending']} slot(s) pending — automatic allocation will retry for eligible users."
         else:
             # Cap badh gaya (safe), lekin abhi allocate nahi ho paya (e.g. no
             # review texts, ya koi eligible user nahi) - admin ko batao,
@@ -1679,8 +2135,15 @@ def edit_campaign(campaign_id):
 @app.route("/admin/verify_tasks")
 @admin_required
 def verify_tasks():
-    submissions = TaskSubmission.query.filter_by(verification_status='Pending').all()
-    return render_template("admin_verify_tasks.html", submissions=submissions)
+    submissions = (
+        TaskSubmission.query.filter_by(verification_status='Pending')
+        .order_by(TaskSubmission.submitted_date.asc()).all()
+    )
+    return render_template(
+        "admin_verify_tasks.html", submissions=submissions,
+        total_approved=TaskSubmission.query.filter_by(verification_status='Approved').count(),
+        total_rejected=TaskSubmission.query.filter_by(verification_status='Rejected').count()
+    )
 
 
 @app.route("/admin/task/<int:submission_id>/<action>", methods=["POST"])
@@ -1695,6 +2158,15 @@ def task_verify_action(submission_id, action):
         return jsonify({'status': 'error', 'message': 'User associated with this task not found or deleted!'}), 404
     if action not in ('approve', 'reject'):
         return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
+
+    admin_reason = ''
+    if action == 'reject':
+        if request.is_json:
+            admin_reason = ((request.get_json(silent=True) or {}).get('reason') or '').strip()
+        else:
+            admin_reason = (request.form.get('reason') or '').strip()
+        if len(admin_reason) < 5 or len(admin_reason) > 500:
+            return jsonify({'status': 'error', 'message': 'Rejection reason must be 5–500 characters.'}), 400
 
     try:
         # Only a currently pending submission can be verified. This makes the
@@ -1743,20 +2215,6 @@ def task_verify_action(submission_id, action):
                 assignment.status = 'Approved'
                 assignment.completed_at = now
 
-            if task.campaign_id:
-                progress = CampaignAllocationProgress.query.filter_by(campaign_id=task.campaign_id).with_for_update().first()
-                if progress:
-                    progress.total_tasks_completed = min(
-                        (progress.total_tasks_completed or 0) + 1,
-                        progress.total_tasks_assigned or progress.total_tasks_planned or 0
-                    )
-                    progress.updated_at = now
-                    progress.is_fully_allocated = (progress.total_tasks_assigned or 0) >= (progress.total_tasks_planned or 0)
-                    progress.users_count_completed = min(
-                        (progress.users_count_completed or 0) + 1,
-                        progress.users_count_assigned or progress.total_tasks_assigned or 0
-                    )
-
             message = f'✅ Task approved! +{points} points credited.'
             extra_data = {
                 'action': action,
@@ -1768,12 +2226,23 @@ def task_verify_action(submission_id, action):
             }
         else:
             submission.verification_status = 'Rejected'
+            submission.admin_notes = admin_reason
             task.status = 'Rejected'
             if assignment:
                 assignment.status = 'Rejected'
                 assignment.completed_at = None
-            message = '❌ Task rejected! You can submit a new screenshot for this task.'
+            message = f'❌ Task rejected: {admin_reason}. You can correct and resubmit it before the deadline.'
             extra_data = {'action': action, 'task_id': task.id, 'submission_id': submission.id}
+
+        log_task_activity(
+            task, 'approved' if action == 'approve' else 'rejected',
+            from_status='Submitted', to_status=task.status,
+            reason=submission.admin_notes,
+            actor_type='admin', actor_id=session.get('admin_id'), created_at=now
+        )
+        db.session.flush()
+        if task.campaign_id:
+            refresh_campaign_counters(task.campaign_id, now)
 
         notify_user(
             user.id, message,
@@ -1970,9 +2439,9 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
     if campaign.end_date and campaign.end_date < now.date():
         return {'ok': False, 'message': 'Campaign has expired.', 'assigned': 0, 'pending': 0}
 
-    review_texts = [r.review_text for r in CampaignReviewText.query.filter_by(campaign_id=campaign.id).all()]
-    if not review_texts:
-        return {'ok': False, 'message': 'No review texts available', 'assigned': 0, 'pending': 0}
+    unused_prompts = unused_campaign_prompt_count(campaign.id)
+    if not unused_prompts:
+        return {'ok': False, 'message': 'No unused internal-feedback prompts are available.', 'assigned': 0, 'pending': 0}
 
     progress = db.session.query(CampaignAllocationProgress).with_for_update().filter_by(campaign_id=campaign.id).first()
     if not progress:
@@ -1983,6 +2452,8 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
             total_tasks_assigned=0,
             users_count_assigned=0,
             total_tasks_completed=0,
+            total_tasks_expired=0,
+            total_tasks_cancelled=0,
             users_count_completed=0
         )
         db.session.add(progress)
@@ -1991,90 +2462,79 @@ def perform_task_allocation(campaign, tasks_to_plan_requested, now=None):
     planned = progress.total_tasks_planned or progress.total_tasks_created or 0
     campaign_cap = campaign.total_reviews_required or 0
     if campaign_cap and planned >= campaign_cap:
-        return {'ok': False, 'message': 'Campaign task limit has already been reached.', 'assigned': 0, 'pending': 0}
+        actual = fill_campaign_open_slots(campaign, tasks_to_plan_requested, now)
+        pending = max(0, planned - occupied_campaign_slots(campaign.id))
+        return {
+            'ok': True,
+            'message': (
+                f'No new slots were created; {actual} existing pending slot(s) were assigned. '
+                f'{pending} slot(s) remain pending.'
+            ),
+            'assigned': actual,
+            'pending': pending
+        }
     allowed_to_plan = campaign_cap - planned if campaign_cap else tasks_to_plan_requested
     tasks_to_plan = min(tasks_to_plan_requested, allowed_to_plan)
     if tasks_to_plan <= 0:
         return {'ok': False, 'message': 'No task slots remain in this campaign.', 'assigned': 0, 'pending': 0}
 
-    # Each allocation request increases the campaign's planned pool. If fewer
-    # eligible users are available now, registrations can consume the remaining slots later.
+    # Each request increases the planned pool. Unfilled slots remain available
+    # to automatic monthly/opportunistic allocation and new registrations.
     progress.total_tasks_planned = planned + tasks_to_plan
     progress.users_count_planned = max(
         progress.users_count_planned or 0,
         progress.total_tasks_planned
     )
 
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    next_month = (month_start.replace(year=now.year + 1, month=1)
-                  if now.month == 12 else month_start.replace(month=now.month + 1))
-
-    assigned_this_month = db.session.query(UserCampaignTaskAssignment.user_id).filter(
-        UserCampaignTaskAssignment.campaign_id == campaign.id,
-        UserCampaignTaskAssignment.assigned_at >= month_start,
-        UserCampaignTaskAssignment.assigned_at < next_month
-    ).all()
-    assigned_user_ids = {row[0] for row in assigned_this_month}
-
-    monthly_counts = dict(
-        db.session.query(Task.user_id, func.count(Task.id))
-        .filter(
-            Task.status != 'Cancelled',
-            Task.assigned_date >= month_start,
-            Task.assigned_date < next_month
-        )
-        .group_by(Task.user_id)
-        .all()
-    )
-
-    # Historical fairness score + current month load. total_tasks_assigned is
-    # incremented only when a task is actually assigned.
-    candidates = User.query.filter(
-        User.is_blocked.is_(False),
-        ~User.id.in_(assigned_user_ids) if assigned_user_ids else True
-    ).all()
-    random.shuffle(candidates)
-    candidates.sort(key=lambda u: ((u.total_tasks_assigned or 0) + monthly_counts.get(u.id, 0), u.id))
-
-    selected = [u for u in candidates if monthly_counts.get(u.id, 0) < 14][:tasks_to_plan]
-
-    for user in selected:
-        task = Task(
-            campaign_id=campaign.id,
-            user_id=user.id,
-            review_text=random.choice(review_texts),
-            gmb_link=campaign.gmb_link,
-            status='Assigned',
-            assigned_date=now,
-            points_per_review=campaign.points_per_review or 0,
-            allocation_month=1
-        )
-        db.session.add(task)
-        db.session.flush()
-        db.session.add(UserCampaignTaskAssignment(
-            user_id=user.id,
-            campaign_id=campaign.id,
-            task_id=task.id,
-            status='Assigned',
-            assigned_at=now
-        ))
-        notify_task_assigned(user, campaign)
-        user.total_tasks_assigned = (user.total_tasks_assigned or 0) + 1
-        user.last_allocation_date = now
-        user.calculate_priority()
-
-    actual = len(selected)
-    progress.total_tasks_created = (progress.total_tasks_created or 0) + actual
-    progress.total_tasks_assigned = (progress.total_tasks_assigned or 0) + actual
-    progress.users_count_assigned = (progress.users_count_assigned or 0) + actual
-    progress.is_fully_allocated = progress.total_tasks_assigned >= progress.total_tasks_planned
-    progress.updated_at = now
-
-    pending = max(0, progress.total_tasks_planned - progress.total_tasks_assigned)
+    actual = fill_campaign_open_slots(campaign, tasks_to_plan, now)
+    pending = max(0, progress.total_tasks_planned - occupied_campaign_slots(campaign.id))
     msg = f'Successfully assigned {actual} tasks!'
     if pending > 0:
-        msg += f' {pending} pending — eligible users registering later can receive them automatically.'
+        msg += (
+            f' {pending} pending — they will auto-fill for eligible users when capacity '
+            'and unique feedback prompts are available.'
+        )
     return {'ok': True, 'message': msg, 'assigned': actual, 'pending': pending}
+
+
+def build_allocation_preview(campaign, requested, now=None):
+    now = now or utc_now()
+    progress = CampaignAllocationProgress.query.filter_by(campaign_id=campaign.id).first()
+    planned = (progress.total_tasks_planned if progress else 0) or 0
+    cap = campaign.total_reviews_required or 0
+    addable = max(0, min(requested, cap - planned if cap else requested))
+    current_open = max(0, planned - occupied_campaign_slots(campaign.id))
+    slots = current_open + addable
+    eligible = _candidate_users(campaign, 100_000, now)
+    unused_prompts = unused_campaign_prompt_count(campaign.id)
+    immediate = min(slots, len(eligible), unused_prompts)
+    monthly_cap_users = sum(
+        current_month_task_count(user.id, now) >= 14
+        for user in User.query.filter(User.is_blocked.is_(False)).all()
+    )
+    return {
+        'eligible_users': len(eligible),
+        'immediately_assigned': immediate,
+        'pending_slots': max(0, slots - immediate),
+        'monthly_cap_users': monthly_cap_users,
+        'unused_prompts': unused_prompts,
+        'addable_slots': addable,
+    }
+
+
+@app.route('/admin/allocation_preview/<int:campaign_id>')
+@admin_required
+def allocation_preview(campaign_id):
+    campaign = Campaign.query.filter_by(id=campaign_id, is_deleted=False).first()
+    if not campaign:
+        return jsonify({'status': 'error', 'message': 'Campaign not found.'}), 404
+    try:
+        requested = int(request.args.get('total_tasks', 0))
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Invalid task count.'}), 400
+    if requested < 0:
+        return jsonify({'status': 'error', 'message': 'Invalid task count.'}), 400
+    return jsonify({'status': 'success', **build_allocation_preview(campaign, requested)})
 
 
 @app.route("/admin/allocate_tasks/<int:campaign_id>", methods=["POST"])
@@ -2232,25 +2692,38 @@ def campaign_allocation_dashboard():
             continue
 
         planned_tasks = progress.total_tasks_planned or progress.total_tasks_created or 0
-        assigned_tasks = progress.total_tasks_assigned or 0
-        completed_tasks = progress.total_tasks_completed or 0
-        assigned_pct = (assigned_tasks / planned_tasks * 100) if planned_tasks > 0 else 0
+        status_counts = dict(
+            db.session.query(Task.status, func.count(Task.id))
+            .filter(Task.campaign_id == campaign.id)
+            .group_by(Task.status).all()
+        )
+        assigned_tasks = sum(status_counts.values())
+        completed_tasks = status_counts.get('Approved', 0)
+        expired_tasks = status_counts.get('Expired', 0)
+        cancelled_tasks = status_counts.get('Cancelled', 0)
+        active_tasks = sum(status_counts.get(status, 0) for status in ('Assigned', 'Rejected', 'Submitted'))
+        occupied_tasks = active_tasks + completed_tasks
+        assigned_pct = (min(occupied_tasks, planned_tasks) / planned_tasks * 100) if planned_tasks > 0 else 0
         completed_pct = (completed_tasks / planned_tasks * 100) if planned_tasks > 0 else 0
         days_remaining = (progress.campaign_deadline - utc_now()).days if getattr(progress, 'campaign_deadline', None) else 0
 
-        if progress.is_fully_allocated and completed_tasks >= planned_tasks:
-            status, status_color = '✅ Campaign Completed', 'success'
-        elif assigned_tasks >= planned_tasks:
-            status, status_color = '✅ All Tasks Assigned', 'success'
+        if completed_tasks >= planned_tasks and planned_tasks:
+            status, status_color = 'Completed', 'completed'
+        elif occupied_tasks >= planned_tasks and planned_tasks:
+            status, status_color = 'All Slots Filled', 'active'
         else:
-            status, status_color = f'⏳ {max(0, planned_tasks - assigned_tasks)} tasks waiting', 'warning'
+            status, status_color = f'{max(0, planned_tasks - occupied_tasks)} Slots Waiting', 'pending'
 
         dashboard_data.append({
             'campaign_id': campaign.id, 'campaign_name': campaign.name,
             'total_tasks': planned_tasks, 'assigned': assigned_tasks,
-            'completed': completed_tasks, 'pending': max(0, planned_tasks - assigned_tasks),
+            'active': active_tasks, 'completed': completed_tasks,
+            'expired': expired_tasks, 'cancelled': cancelled_tasks,
+            'pending': max(0, planned_tasks - occupied_tasks),
             'assigned_pct': round(assigned_pct, 2), 'completed_pct': round(completed_pct, 2),
-            'users_assigned': progress.users_count_assigned, 'users_needed': getattr(progress, 'users_count_planned', 0),
+            'users_assigned': progress.users_count_assigned,
+            'users_completed': progress.users_count_completed,
+            'users_needed': getattr(progress, 'users_count_planned', 0),
             'deadline': progress.campaign_deadline.strftime('%d-%m-%Y') if getattr(progress, 'campaign_deadline', None) else '',
             'days_remaining': days_remaining,
             'status': status, 'status_color': status_color

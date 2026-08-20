@@ -681,7 +681,7 @@
             </div>
             <div class="col header-content">
                 <h1>Create New Campaign</h1>
-                <p>Set up a new campaign to manage GMB reviews and engage users</p>
+                <p>Set up a policy-safe internal feedback or mystery-shopping campaign</p>
             </div>
         </div>
     </div>
@@ -706,7 +706,7 @@
                     <div class="col">
                         <div class="step-indicator">
                             <div class="step-number">3</div>
-                            <p class="step-label">Review Texts</p>
+                            <p class="step-label">Feedback Prompts</p>
                         </div>
                     </div>
                 </div>
@@ -733,7 +733,7 @@
                                     type="text" 
                                     class="form-control" 
                                     name="name" 
-                                    placeholder="e.g., McDonald's GMB Reviews Campaign"
+                                    placeholder="e.g., Store Visit Feedback Campaign"
                                     required
                                 >
                                 <div class="help-text">
@@ -741,20 +741,19 @@
                                 </div>
                             </div>
 
-                            <!-- GMB Link -->
+                            <!-- Optional business reference -->
                             <div class="mb-0">
                                 <label class="form-label">
-                                    <i class="fas fa-link"></i> Google My Business Link
+                                    <i class="fas fa-link"></i> Business / Google Link (Optional)
                                 </label>
                                 <input 
                                     type="url" 
                                     class="form-control" 
                                     name="gmb_link" 
                                     placeholder="https://www.google.com/maps/place/..."
-                                    required
                                 >
                                 <div class="help-text">
-                                    <i class="fas fa-lightbulb"></i> Paste the GMB profile link you want reviews for
+                                    <i class="fas fa-lightbulb"></i> Reference only. Reward must not depend on posting a Google review.
                                 </div>
                             </div>
                         </div>
@@ -769,10 +768,10 @@
                             </h5>
 
                             <div class="row g-4 mb-4">
-                                <!-- Total Reviews Required -->
+                                <!-- Total feedback tasks -->
                                 <div class="col-md-6">
                                     <label class="form-label">
-                                        <i class="fas fa-list-ol"></i> Total Reviews Required
+                                        <i class="fas fa-list-ol"></i> Total Feedback Tasks
                                     </label>
                                     <div class="input-group">
                                         <input 
@@ -780,20 +779,21 @@
                                             class="form-control" 
                                             name="total_reviews" 
                                             min="1"
+                                            max="10000"
                                             placeholder="e.g., 100"
                                             required
                                         >
-                                        <span class="input-group-text">Reviews</span>
+                                        <span class="input-group-text">Tasks</span>
                                     </div>
                                     <div class="help-text">
-                                        <i class="fas fa-lightbulb"></i> Number of reviews needed for this campaign
+                                        <i class="fas fa-lightbulb"></i> Number of internal reports needed for this campaign
                                     </div>
                                 </div>
 
-                                <!-- Points per Review -->
+                                <!-- Points per report -->
                                 <div class="col-md-6">
                                     <label class="form-label">
-                                        <i class="fas fa-coins"></i> Points per Review
+                                        <i class="fas fa-coins"></i> Points per Feedback Report
                                     </label>
                                     <div class="input-group">
                                         <input 
@@ -807,7 +807,7 @@
                                         <span class="input-group-text">Points</span>
                                     </div>
                                     <div class="help-text">
-                                        <i class="fas fa-lightbulb"></i> Reward per completed review
+                                        <i class="fas fa-lightbulb"></i> Reward for verified internal feedback—not a public review
                                     </div>
                                 </div>
                             </div>
@@ -853,29 +853,29 @@
                         <!-- Divider -->
                         <hr class="form-divider">
 
-                        <!-- Section 3: Review Texts -->
+                        <!-- Section 3: unique feedback prompts -->
                         <div class="form-section">
                             <h5 class="section-title">
-                                <i class="fas fa-file-alt"></i> Review Texts
+                                <i class="fas fa-file-alt"></i> Internal Feedback Prompts
                             </h5>
 
                             <label class="form-label">
-                                Add Review Templates (One per Line)
+                                Add Unique Questions/Instructions (One per Line)
                             </label>
                             <textarea 
                                 class="form-control" 
                                 name="review_texts" 
-                                placeholder="Paste review texts here... one per line&#10;&#10;Example:&#10;Great service, highly recommended!&#10;Amazing experience, will visit again.&#10;Best place in town, 5 stars!"
+                                placeholder="One unique prompt per task.&#10;&#10;Example:&#10;Describe the cleanliness and staff behaviour in your own words.&#10;What was the strongest and weakest part of the customer experience?"
                                 required
                             ></textarea>
                             <div class="help-text">
-                                <i class="fas fa-lightbulb"></i> Each line will be assigned as a separate review text for users to post
+                                <i class="fas fa-lightbulb"></i> Prompts guide an internal report. They are never prewritten public-review text and each prompt is assigned once.
                             </div>
 
                             <!-- Review Count Info -->
                             <div class="review-count-box">
                                 <div class="review-count-label">
-                                    <i class="fas fa-check"></i> Reviews Added
+                                    <i class="fas fa-check"></i> Unique Prompts Added
                                 </div>
                                 <div class="review-count-value" id="reviewCount">0</div>
                                 <div class="custom-progress">
@@ -907,10 +907,10 @@
                             </h6>
                             <ul>
                                 <li>Keep campaign name clear and descriptive</li>
-                                <li>Set realistic review targets</li>
+                                <li>Set realistic internal-feedback targets</li>
                                 <li>Reasonable points attract more users</li>
-                                <li>Diverse review texts improve quality</li>
-                                <li>Test GMB link before creating campaign</li>
+                                <li>Add one unique feedback prompt per planned task</li>
+                                <li>Test any optional business reference link</li>
                             </ul>
                         </div>
                     </div>
@@ -920,9 +920,9 @@
                                 <i class="fas fa-shield-alt"></i> Best Practices
                             </h6>
                             <ul>
-                                <li>Reviews should be authentic and relevant</li>
-                                <li>Avoid duplicate or similar texts</li>
-                                <li>Verify all GMB details are correct</li>
+                                <li>Reward internal feedback, surveys or mystery-shopping reports</li>
+                                <li>Do not require a Google review, star rating or prewritten text</li>
+                                <li>Verify all campaign instructions are clear</li>
                                 <li>Set realistic duration based on goals</li>
                                 <li>Monitor campaign performance regularly</li>
                             </ul>
@@ -958,7 +958,11 @@
             }
 
             function updateReviewCount() {
-                const reviewTexts = reviewTextsInput.value.trim().split('\n').filter(line => line.trim());
+                const reviewTexts = [...new Set(
+                    reviewTextsInput.value.trim().split('\n')
+                        .map(line => line.trim().toLocaleLowerCase().replace(/\s+/g, ' '))
+                        .filter(Boolean)
+                )];
                 const totalReviews = parseInt(totalReviewsInput.value) || 0;
                 const count = reviewTexts.length;
                 const percentage = totalReviews > 0 ? Math.min((count / totalReviews) * 100, 100) : 0;
@@ -982,25 +986,35 @@
 
             // Form validation
             campaignForm.addEventListener('submit', function(e) {
-                const reviewTexts = reviewTextsInput.value.trim().split('\n').filter(line => line.trim());
+                const reviewTexts = [...new Set(
+                    reviewTextsInput.value.trim().split('\n')
+                        .map(line => line.trim().toLocaleLowerCase().replace(/\s+/g, ' '))
+                        .filter(Boolean)
+                )];
                 
                 if (reviewTexts.length === 0) {
                     e.preventDefault();
-                    alert('❌ Please add at least one review text');
+                    alert('❌ Please add unique internal-feedback prompts');
                     return false;
                 }
 
                 const totalReviews = parseInt(totalReviewsInput.value) || 0;
                 if (totalReviews === 0) {
                     e.preventDefault();
-                    alert('❌ Please enter number of reviews required');
+                    alert('❌ Please enter the number of feedback tasks');
                     return false;
                 }
 
                 const pointsPerReview = parseInt(pointsPerReviewInput.value) || 0;
                 if (pointsPerReview === 0) {
                     e.preventDefault();
-                    alert('❌ Please enter points per review');
+                    alert('❌ Please enter points per feedback report');
+                    return false;
+                }
+
+                if (reviewTexts.length < totalReviews) {
+                    e.preventDefault();
+                    alert('❌ Add at least one unique feedback prompt for every planned task');
                     return false;
                 }
             });
