@@ -1,20 +1,27 @@
-{% extends 'base.html' %}
-
-{% block content %}
-<div class="container text-center mt-5">
-    <div class="alert alert-warning">
-        <i class="fas fa-wifi-slash fa-3x mb-3"></i>
-        <h2>You're Offline</h2>
-        <p>You can still view cached pages and access previously loaded content.</p>
-        
-        <div class="mt-4">
-            <a href="/" class="btn btn-primary">Go Home</a>
-            <a href="/dashboard" class="btn btn-secondary">Dashboard</a>
-        </div>
-        
-        <p class="mt-3 text-muted">
-            <small>Your data will sync when you're online again</small>
-        </p>
-    </div>
-</div>
-{% endblock %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Offline - GMB Earn</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f5f7fb; color: #172033; font-family: Inter, system-ui, sans-serif; }
+        main { width: min(100%, 520px); padding: 36px 28px; border: 1px solid #dfe6f1; border-radius: 20px; background: #fff; box-shadow: 0 16px 45px rgba(23,32,51,.10); text-align: center; }
+        .icon { width: 72px; height: 72px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50%; background: #fff4d6; color: #9a6800; font-size: 34px; }
+        h1 { margin: 0 0 10px; font-size: clamp(1.6rem, 5vw, 2.1rem); }
+        p { margin: 0 0 24px; color: #5c687d; line-height: 1.6; }
+        button { min-height: 46px; padding: 0 22px; border: 0; border-radius: 12px; background: #0d6efd; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        button:focus-visible { outline: 3px solid rgba(13,110,253,.3); outline-offset: 3px; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="icon" aria-hidden="true">↯</div>
+        <h1>You're offline</h1>
+        <p>This page needs an internet connection. Reconnect and try again; no task or payment action was changed.</p>
+        <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+</body>
+</html>

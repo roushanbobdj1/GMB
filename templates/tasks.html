@@ -581,7 +581,7 @@
         </div>
         <div class="search-wrap">
             <i class="fas fa-search"></i>
-            <input type="text" class="search-input" placeholder="Search tasks..." onkeyup="searchTasks(this.value)">
+            <input type="text" class="search-input" aria-label="Search tasks" placeholder="Search tasks..." onkeyup="searchTasks(this.value)">
         </div>
     </div>
 
@@ -750,36 +750,36 @@
                         {% endif %}
 
                         <div class="mb-4">
-                            <label class="modal-form-label">
+                            <label class="modal-form-label" for="taskPrompt{{ task.id }}">
                                 <i class="fas fa-clipboard-question me-1 text-secondary opacity-50"></i> Internal Feedback Prompt
                             </label>
-                            <textarea class="modal-input bg-light text-secondary" rows="3" readonly style="resize:none;">{{ task.review_text }}</textarea>
+                            <textarea class="modal-input bg-light text-secondary" id="taskPrompt{{ task.id }}" rows="3" readonly style="resize:none;">{{ task.review_text }}</textarea>
                         </div>
 
                         <div class="mb-4">
-                            <label class="modal-form-label">Your Internal Feedback / Report</label>
-                            <textarea class="modal-input" name="review_text" rows="4" minlength="10" maxlength="5000" required placeholder="Write your own genuine feedback. Do not paste a prewritten public review.">{{ task.submission.review_text_submitted if task.submission else '' }}</textarea>
+                            <label class="modal-form-label" for="taskFeedback{{ task.id }}">Your Internal Feedback / Report</label>
+                            <textarea class="modal-input" id="taskFeedback{{ task.id }}" name="review_text" rows="4" minlength="10" maxlength="5000" required placeholder="Write your own genuine feedback. Do not paste a prewritten public review.">{{ task.submission.review_text_submitted if task.submission else '' }}</textarea>
                             <small class="text-secondary">Points are for this internal report—not for posting a Google review.</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="modal-form-label">Public Review URL (Optional)</label>
-                            <input class="modal-input" type="url" name="posted_review_url" maxlength="1000" value="{{ task.submission.posted_review_url if task.submission and task.submission.posted_review_url else '' }}" placeholder="https://...">
+                            <label class="modal-form-label" for="postedReviewUrl{{ task.id }}">Public Review URL (Optional)</label>
+                            <input class="modal-input" id="postedReviewUrl{{ task.id }}" type="url" name="posted_review_url" maxlength="1000" value="{{ task.submission.posted_review_url if task.submission and task.submission.posted_review_url else '' }}" placeholder="https://...">
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="modal-form-label">Google Place / Business ID (Optional)</label>
-                                <input class="modal-input" type="text" name="google_place_id" maxlength="255" value="{{ task.submission.google_place_id if task.submission and task.submission.google_place_id else '' }}">
+                                <label class="modal-form-label" for="placeId{{ task.id }}">Google Place / Business ID (Optional)</label>
+                                <input class="modal-input" id="placeId{{ task.id }}" type="text" name="google_place_id" maxlength="255" value="{{ task.submission.google_place_id if task.submission and task.submission.google_place_id else '' }}">
                             </div>
                             <div class="col-md-6">
-                                <label class="modal-form-label">Posted Date (Optional)</label>
-                                <input class="modal-input" type="date" name="posted_date" value="{{ task.submission.posted_date.strftime('%Y-%m-%d') if task.submission and task.submission.posted_date else '' }}">
+                                <label class="modal-form-label" for="postedDate{{ task.id }}">Posted Date (Optional)</label>
+                                <input class="modal-input" id="postedDate{{ task.id }}" type="date" name="posted_date" value="{{ task.submission.posted_date.strftime('%Y-%m-%d') if task.submission and task.submission.posted_date else '' }}">
                             </div>
                         </div>
 
                         <div class="mb-2">
-                            <label class="modal-form-label">
+                            <label class="modal-form-label" for="screenshot{{ task.id }}">
                                 <i class="far fa-image me-1 text-secondary opacity-50"></i> Screenshot (Proof)
                             </label>
                             <div class="upload-zone" id="uploadZone{{ task.id }}"
@@ -787,7 +787,7 @@
                                  ondragleave="dragLeave('uploadZone{{ task.id }}')"
                                  ondrop="dropFile(event,'uploadZone{{ task.id }}','filePreview{{ task.id }}')">
                                  
-                                <input type="file" name="screenshot" accept="image/*" required
+                                <input type="file" id="screenshot{{ task.id }}" name="screenshot" accept="image/*" required
                                        onchange="previewFile(this,'filePreview{{ task.id }}')">
                                        
                                 <div class="upload-icon {% if task.status == 'Rejected' %}bg-danger{% endif %}">

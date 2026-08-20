@@ -93,7 +93,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <!-- Points Input -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                <label class="form-label fw-600 text-dark mb-2 font-sm" for="pointsInput">
                                     <i class="fas fa-coins text-warning me-1"></i> Points to Redeem
                                 </label>
                                 <div class="input-group">
@@ -134,10 +134,10 @@
 
                             <!-- Payment Method -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                <label class="form-label fw-600 text-dark mb-2 font-sm" for="paymentMethod">
                                     <i class="fas fa-credit-card text-primary me-1"></i> Payment Method <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-select form-select-lg custom-input" name="payment_method" required>
+                                <select class="form-select form-select-lg custom-input" id="paymentMethod" name="payment_method" required>
                                     <option value="" selected>-- Select Method --</option>
                                     <option value="UPI">UPI</option>
                                     <option value="Paytm">Paytm</option>
@@ -148,12 +148,13 @@
 
                             <!-- Payment Details -->
                             <div class="mb-4">
-                                <label class="form-label fw-600 text-dark mb-2 font-sm">
+                                <label class="form-label fw-600 text-dark mb-2 font-sm" for="paymentDetails">
                                     <i class="fas fa-user-check text-primary me-1"></i> Payment Details <span class="text-danger">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     class="form-control form-control-lg custom-input"
+                                    id="paymentDetails"
                                     name="payment_details"
                                     placeholder="UPI ID or Phone Number"
                                     required
@@ -363,6 +364,8 @@
             </div>
         </div>
     </div>
+
+</div>
 
 <style>
 

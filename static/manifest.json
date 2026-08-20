@@ -1,7 +1,8 @@
 {
   "name": "GMB Feedback & Task Platform",
   "short_name": "GMB Earn",
-  "description": "Complete task management and earning app",
+  "id": "/",
+  "description": "Internal feedback, surveys, and task management platform",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -34,20 +35,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/static/images/screenshot-540x720.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/static/images/screenshot-1080x1440.png",
-      "sizes": "1080x1440",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
   "categories": ["productivity", "business"],
   "shortcuts": [
     {
@@ -55,21 +42,21 @@
       "short_name": "Dashboard",
       "description": "View your dashboard",
       "url": "/dashboard",
-      "icons": [{"src": "/static/images/icon-96x96.png", "sizes": "96x96"}]
+      "icons": [{"src": "/static/images/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
     },
     {
       "name": "Tasks",
       "short_name": "Tasks",
       "description": "View pending tasks",
       "url": "/tasks",
-      "icons": [{"src": "/static/images/icon-96x96.png", "sizes": "96x96"}]
+      "icons": [{"src": "/static/images/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
     },
     {
       "name": "Wallet",
       "short_name": "Wallet",
       "description": "Check your wallet",
       "url": "/wallet",
-      "icons": [{"src": "/static/images/icon-96x96.png", "sizes": "96x96"}]
+      "icons": [{"src": "/static/images/icon-192x192.png", "sizes": "192x192", "type": "image/png"}]
     }
   ]
 }
