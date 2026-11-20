@@ -1,0 +1,1105 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - GMB Earn{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --profile-primary: #0d6efd;
+        --profile-primary-dark: #0b5ed7;
+        --profile-secondary: #0dcaf0;
+
+        --profile-success: #198754;
+        --profile-warning: #f59e0b;
+        --profile-danger: #dc3545;
+
+        --profile-text: #1e293b;
+        --profile-text-secondary: #475569;
+        --profile-muted: #64748b;
+
+        --profile-bg: #f8fafc;
+        --profile-card: #ffffff;
+        --profile-border: #e5e7eb;
+        --profile-border-light: #eef2f7;
+
+        --profile-gradient:
+            linear-gradient(
+                135deg,
+                #0d6efd 0%,
+                #0dcaf0 100%
+            );
+
+        --profile-shadow-sm:
+            0 2px 8px rgba(15, 23, 42, 0.05);
+
+        --profile-shadow-md:
+            0 10px 30px rgba(15, 23, 42, 0.08);
+
+        --profile-shadow-lg:
+            0 20px 50px rgba(15, 23, 42, 0.10);
+
+        --profile-transition:
+            220ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* =========================================================
+       PAGE
+    ========================================================== */
+
+    .profile-page {
+        min-height: 100vh;
+
+        padding: 38px 16px 60px;
+
+        background:
+            radial-gradient(
+                circle at 8% 0%,
+                rgba(13, 110, 253, 0.06),
+                transparent 28%
+            ),
+            radial-gradient(
+                circle at 92% 15%,
+                rgba(13, 202, 240, 0.055),
+                transparent 25%
+            ),
+            linear-gradient(
+                180deg,
+                #f8fafc 0%,
+                #ffffff 100%
+            );
+    }
+
+    .profile-container {
+        width: 100%;
+        max-width: 880px;
+        margin: 0 auto;
+    }
+
+    /* =========================================================
+       PROFILE CARD
+    ========================================================== */
+
+    .profile-card {
+        position: relative;
+
+        overflow: hidden;
+
+        background: var(--profile-card);
+
+        border: 1px solid var(--profile-border);
+        border-radius: 20px;
+
+        box-shadow: var(--profile-shadow-lg);
+    }
+
+    .profile-card::before {
+        content: "";
+
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+
+        height: 5px;
+
+        background: var(--profile-gradient);
+
+        z-index: 3;
+    }
+
+    /* =========================================================
+       PROFILE HEADER
+    ========================================================== */
+
+    .profile-header {
+        position: relative;
+
+        padding: 42px 25px 35px;
+
+        text-align: center;
+
+        border-bottom: 1px solid var(--profile-border);
+
+        background:
+            radial-gradient(
+                circle at 50% 0%,
+                rgba(13, 110, 253, 0.08),
+                transparent 45%
+            ),
+            linear-gradient(
+                180deg,
+                #f8fafc 0%,
+                #ffffff 100%
+            );
+    }
+
+    .profile-header::after {
+        content: "";
+
+        position: absolute;
+
+        left: 50%;
+        bottom: -1px;
+
+        width: 70px;
+        height: 3px;
+
+        transform: translateX(-50%);
+
+        border-radius: 10px;
+
+        background: var(--profile-gradient);
+    }
+
+    /* =========================================================
+       AVATAR
+    ========================================================== */
+
+    .profile-avatar-large {
+        position: relative;
+
+        width: 94px;
+        height: 94px;
+
+        margin: 0 auto 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        background: var(--profile-gradient);
+
+        color: #ffffff;
+
+        font-size: 38px;
+
+        box-shadow:
+            0 12px 28px rgba(13, 110, 253, 0.25),
+            0 0 0 7px rgba(13, 110, 253, 0.06);
+
+        transition:
+            transform var(--profile-transition),
+            box-shadow var(--profile-transition);
+    }
+
+    .profile-avatar-large::after {
+        content: "";
+
+        position: absolute;
+
+        right: 4px;
+        bottom: 4px;
+
+        width: 17px;
+        height: 17px;
+
+        border: 3px solid #ffffff;
+
+        border-radius: 50%;
+
+        background: #22c55e;
+    }
+
+    .profile-card:hover .profile-avatar-large {
+        transform: translateY(-2px);
+
+        box-shadow:
+            0 16px 34px rgba(13, 110, 253, 0.30),
+            0 0 0 7px rgba(13, 110, 253, 0.07);
+    }
+
+    /* =========================================================
+       PROFILE NAME
+    ========================================================== */
+
+    .profile-name {
+        margin: 0 0 9px;
+
+        color: var(--profile-text);
+
+        font-size: 28px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: -0.5px;
+    }
+
+    .profile-id {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        padding: 6px 11px;
+
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+
+        background: #eff6ff;
+
+        color: #2563eb;
+
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .profile-id::before {
+        content: "";
+
+        width: 6px;
+        height: 6px;
+
+        border-radius: 50%;
+
+        background: #3b82f6;
+    }
+
+    /* =========================================================
+       BODY
+    ========================================================== */
+
+    .profile-body {
+        padding: 32px;
+    }
+
+    /* =========================================================
+       SECTION
+    ========================================================== */
+
+    .profile-section {
+        margin-bottom: 30px;
+    }
+
+    .profile-section:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        margin-bottom: 16px;
+    }
+
+    .section-heading-icon {
+        width: 36px;
+        height: 36px;
+
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+
+        background: #eff6ff;
+        color: var(--profile-primary);
+
+        font-size: 14px;
+    }
+
+    .section-heading-text {
+        min-width: 0;
+    }
+
+    .section-title {
+        margin: 0;
+
+        color: var(--profile-text);
+
+        font-size: 16px;
+        line-height: 1.2;
+        font-weight: 800;
+    }
+
+    .section-subtitle {
+        margin: 4px 0 0;
+
+        color: var(--profile-muted);
+
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .section-divider {
+        flex: 1;
+
+        height: 1px;
+
+        margin-left: 5px;
+
+        background: var(--profile-border-light);
+    }
+
+    /* =========================================================
+       INFORMATION GRID
+    ========================================================== */
+
+    .info-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap: 13px;
+    }
+
+    .info-item {
+        position: relative;
+
+        min-width: 0;
+
+        padding: 17px;
+
+        overflow: hidden;
+
+        background: #ffffff;
+
+        border: 1px solid var(--profile-border);
+        border-radius: 14px;
+
+        box-shadow: var(--profile-shadow-sm);
+
+        transition:
+            transform var(--profile-transition),
+            border-color var(--profile-transition),
+            box-shadow var(--profile-transition),
+            background var(--profile-transition);
+    }
+
+    .info-item::before {
+        content: "";
+
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        width: 3px;
+
+        background: transparent;
+
+        transition:
+            background var(--profile-transition);
+    }
+
+    .info-item:hover {
+        transform: translateY(-2px);
+
+        border-color: #dbe3ee;
+
+        background: #fbfdff;
+
+        box-shadow: var(--profile-shadow-md);
+    }
+
+    .info-item:hover::before {
+        background: var(--profile-primary);
+    }
+
+    .info-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        margin-bottom: 8px;
+
+        color: var(--profile-muted);
+
+        font-size: 10px;
+        line-height: 1.2;
+        font-weight: 800;
+
+        letter-spacing: 0.65px;
+        text-transform: uppercase;
+    }
+
+    .info-label i {
+        color: #94a3b8;
+
+        font-size: 12px;
+    }
+
+    .info-value {
+        min-width: 0;
+
+        color: var(--profile-text);
+
+        font-size: 15px;
+        line-height: 1.4;
+        font-weight: 750;
+
+        word-break: break-word;
+    }
+
+    /* =========================================================
+       CONTACT ITEMS
+    ========================================================== */
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+    }
+
+    .contact-icon {
+        width: 39px;
+        height: 39px;
+
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+
+        background: #f8fafc;
+        color: var(--profile-primary);
+
+        font-size: 14px;
+    }
+
+    .contact-content {
+        min-width: 0;
+    }
+
+    .contact-content .info-label {
+        margin-bottom: 4px;
+    }
+
+    .contact-content .info-value {
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+    /* =========================================================
+       STATISTICS
+    ========================================================== */
+
+    .stats-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(0, 1fr)
+            );
+
+        gap: 12px;
+    }
+
+    .stat-card {
+        position: relative;
+
+        min-width: 0;
+
+        padding: 18px 15px;
+
+        overflow: hidden;
+
+        border: 1px solid var(--profile-border);
+        border-radius: 14px;
+
+        background: #ffffff;
+
+        box-shadow: var(--profile-shadow-sm);
+
+        transition:
+            transform var(--profile-transition),
+            box-shadow var(--profile-transition),
+            border-color var(--profile-transition);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+
+        border-color: #dbe3ee;
+
+        box-shadow: var(--profile-shadow-md);
+    }
+
+    .stat-card::after {
+        content: "";
+
+        position: absolute;
+
+        right: -25px;
+        bottom: -35px;
+
+        width: 90px;
+        height: 90px;
+
+        border-radius: 50%;
+
+        background: rgba(13, 110, 253, 0.035);
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+
+        margin-bottom: 13px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 10px;
+
+        background: #eff6ff;
+        color: var(--profile-primary);
+
+        font-size: 14px;
+    }
+
+    .stat-label {
+        margin-bottom: 6px;
+
+        color: var(--profile-muted);
+
+        font-size: 10px;
+        line-height: 1.3;
+        font-weight: 800;
+
+        letter-spacing: 0.55px;
+        text-transform: uppercase;
+    }
+
+    .stat-value {
+        color: var(--profile-text);
+
+        font-size: 22px;
+        line-height: 1.1;
+        font-weight: 850;
+    }
+
+    .stat-unit {
+        margin-left: 3px;
+
+        color: var(--profile-muted);
+
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .stat-card.points .stat-icon {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .stat-card.points .stat-value {
+        color: #15803d;
+    }
+
+    .stat-card.completed .stat-icon {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .stat-card.completed .stat-value {
+        color: #2563eb;
+    }
+
+    .stat-card.pending .stat-icon {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .stat-card.pending .stat-value {
+        color: #b45309;
+    }
+
+    .stat-card.total .stat-icon {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    /* =========================================================
+       ACTION BUTTONS
+    ========================================================== */
+
+    .profile-actions {
+        display: flex;
+        align-items: stretch;
+
+        gap: 12px;
+
+        margin-top: 30px;
+        padding-top: 24px;
+
+        border-top: 1px solid var(--profile-border-light);
+    }
+
+    .profile-btn {
+        min-height: 48px;
+
+        flex: 1;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 9px;
+
+        padding: 12px 18px;
+
+        border-radius: 11px;
+
+        font-size: 14px;
+        font-weight: 750;
+
+        text-decoration: none;
+
+        cursor: pointer;
+
+        transition:
+            transform var(--profile-transition),
+            box-shadow var(--profile-transition),
+            background var(--profile-transition),
+            border-color var(--profile-transition),
+            color var(--profile-transition);
+    }
+
+    .profile-btn-primary {
+        border: 1px solid transparent;
+
+        background: var(--profile-gradient);
+
+        color: #ffffff;
+
+        box-shadow:
+            0 5px 16px rgba(13, 110, 253, 0.22);
+    }
+
+    .profile-btn-primary:hover {
+        transform: translateY(-2px);
+
+        color: #ffffff;
+
+        box-shadow:
+            0 9px 24px rgba(13, 110, 253, 0.28);
+    }
+
+    .profile-btn-secondary {
+        border: 1px solid var(--profile-border);
+
+        background: #ffffff;
+
+        color: var(--profile-text-secondary);
+
+        box-shadow: var(--profile-shadow-sm);
+    }
+
+    .profile-btn-secondary:hover {
+        transform: translateY(-2px);
+
+        border-color: #cbd5e1;
+
+        background: #f8fafc;
+
+        color: var(--profile-text);
+    }
+
+    .profile-btn i {
+        font-size: 13px;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================== */
+
+    @media (max-width: 800px) {
+
+        .stats-grid {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+        }
+    }
+
+    @media (max-width: 650px) {
+
+        .profile-page {
+            padding: 22px 12px 40px;
+        }
+
+        .profile-card {
+            border-radius: 16px;
+        }
+
+        .profile-header {
+            padding: 34px 18px 30px;
+        }
+
+        .profile-avatar-large {
+            width: 82px;
+            height: 82px;
+
+            font-size: 32px;
+        }
+
+        .profile-name {
+            font-size: 23px;
+        }
+
+        .profile-body {
+            padding: 24px 18px;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .profile-actions {
+            flex-direction: column;
+        }
+
+        .profile-btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 430px) {
+
+        .profile-page {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        .profile-header {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
+        .profile-body {
+            padding: 22px 14px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card {
+            display: grid;
+
+            grid-template-columns: auto 1fr auto;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 13px 14px;
+        }
+
+        .stat-icon {
+            margin: 0;
+        }
+
+        .stat-label {
+            margin: 0;
+        }
+
+        .stat-value {
+            font-size: 19px;
+        }
+
+        .section-divider {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .profile-card *,
+        .profile-card {
+            transition: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="profile-page">
+
+    <div class="profile-container">
+
+        <div class="profile-card">
+
+            <!-- =================================================
+                 PROFILE HEADER
+            ================================================== -->
+
+            <div class="profile-header">
+
+                <div class="profile-avatar-large">
+                    <i class="fas fa-user"></i>
+                </div>
+
+                <h1 class="profile-name">
+                    {{ user.name }}
+                </h1>
+
+                <span class="profile-id">
+                    User ID: #{{ user.id }}
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 PROFILE BODY
+            ================================================== -->
+
+            <div class="profile-body">
+
+
+                <!-- =================================================
+                     CONTACT INFORMATION
+                ================================================== -->
+
+                <section class="profile-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-heading-icon">
+                            <i class="fas fa-address-card"></i>
+                        </div>
+
+                        <div class="section-heading-text">
+
+                            <h2 class="section-title">
+                                Contact Information
+                            </h2>
+
+                            <p class="section-subtitle">
+                                Your registered account details
+                            </p>
+
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                    </div>
+
+
+                    <div class="info-grid">
+
+                        <!-- Email -->
+
+                        <div class="info-item">
+
+                            <div class="contact-item">
+
+                                <div class="contact-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+
+                                <div class="contact-content">
+
+                                    <div class="info-label">
+                                        Email Address
+                                    </div>
+
+                                    <div class="info-value">
+                                        {{ user.email }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Mobile -->
+
+                        <div class="info-item">
+
+                            <div class="contact-item">
+
+                                <div class="contact-icon">
+                                    <i class="fas fa-phone-alt"></i>
+                                </div>
+
+                                <div class="contact-content">
+
+                                    <div class="info-label">
+                                        Mobile Number
+                                    </div>
+
+                                    <div class="info-value">
+                                        {{ user.mobile if user.mobile else 'Not Provided' }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     ACCOUNT & TASK SUMMARY
+                ================================================== -->
+
+                <section class="profile-section">
+
+                    <div class="section-heading">
+
+                        <div class="section-heading-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+
+                        <div class="section-heading-text">
+
+                            <h2 class="section-title">
+                                Account &amp; Task Summary
+                            </h2>
+
+                            <p class="section-subtitle">
+                                Overview of your activity and earnings
+                            </p>
+
+                        </div>
+
+                        <div class="section-divider"></div>
+
+                    </div>
+
+
+                    <div class="stats-grid">
+
+                        <!-- Total Points -->
+
+                        <div class="stat-card points">
+
+                            <div class="stat-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+
+                            <div class="stat-label">
+                                Total Points Earned
+                            </div>
+
+                            <div class="stat-value">
+                                {{ wallet.total_points if wallet else 0 }}
+                                <span class="stat-unit">Pts</span>
+                            </div>
+
+                        </div>
+
+
+                        <!-- Completed -->
+
+                        <div class="stat-card completed">
+
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+
+                            <div class="stat-label">
+                                Completed Tasks
+                            </div>
+
+                            <div class="stat-value">
+                                {{ completed_tasks }}
+                            </div>
+
+                        </div>
+
+
+                        <!-- Pending -->
+
+                        <div class="stat-card pending">
+
+                            <div class="stat-icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+
+                            <div class="stat-label">
+                                Pending Tasks
+                            </div>
+
+                            <div class="stat-value">
+                                {{ pending_tasks }}
+                            </div>
+
+                        </div>
+
+
+                        <!-- Total -->
+
+                        <div class="stat-card total">
+
+                            <div class="stat-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+
+                            <div class="stat-label">
+                                Total Assigned Tasks
+                            </div>
+
+                            <div class="stat-value">
+                                {{ total_tasks }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================================
+                     ACTIONS
+                ================================================== -->
+
+                <div class="profile-actions">
+
+                    <a
+                        href="/edit_profile"
+                        class="profile-btn profile-btn-primary"
+                    >
+                        <i class="fas fa-user-edit"></i>
+                        <span>Edit Profile</span>
+                    </a>
+
+
+                    <a
+                        href="/dashboard"
+                        class="profile-btn profile-btn-secondary"
+                    >
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Dashboard</span>
+                    </a>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
