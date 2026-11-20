@@ -1,0 +1,6 @@
+{% for user in users %}
+<tr>
+  <td>{{ user.id }}</td><td>{{ user.name }}</td><td>{{ user.email }}</td>
+  <td>{{ 'Blocked' if user.is_blocked else 'Active' }}</td>
+</tr>
+{% else %}<tr><td colspan="4">No users found.</td></tr>{% endfor %}

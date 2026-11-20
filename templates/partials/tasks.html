@@ -1,0 +1,3 @@
+{% for submission in tasks %}
+<tr><td>#{{ submission.task_id }}</td><td>{{ submission.task.user.name if submission.task and submission.task.user else 'Unknown' }}</td><td>{{ submission.verification_status }}</td></tr>
+{% else %}<tr><td colspan="3">No pending tasks.</td></tr>{% endfor %}
