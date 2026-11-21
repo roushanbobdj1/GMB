@@ -1,8 +1,0 @@
-.env
-*.pyc
-__pycache__/
-instance/
-local.db
-*.sqlite
-uploads/screenshots/*
-!uploads/screenshots/.gitkeep
