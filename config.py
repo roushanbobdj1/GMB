@@ -95,7 +95,7 @@ class Config:
     ADMIN_PASSWORD = _admin_password_plain
 
     # ---------- Rate limiting ----------
-    RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')
+    RATELIMIT_STORAGE_URI = 'memory://'
     RATELIMIT_KEY_PREFIX = os.environ.get('RATELIMIT_KEY_PREFIX', 'gmb-earn')
 
     # Database creation/schema repair is an explicit maintenance action. It is
