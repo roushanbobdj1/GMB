@@ -19,3 +19,4 @@ python-socketio
 simple-websocket
 gevent
 gevent-websocket
+psycopg
