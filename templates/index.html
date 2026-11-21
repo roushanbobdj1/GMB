@@ -806,6 +806,161 @@
     [data-theme="dark"] .accordion-button:not(.collapsed) {
         background: linear-gradient(135deg, #374151 0%, #2d3748 100%);
     }
+
+
+    /* ============================================
+       COMPLETE DARK MODE OVERRIDES
+       Supports the existing data-theme attribute,
+       Bootstrap data-bs-theme, and common theme classes.
+       ============================================ */
+    :is(html, body, [data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) {
+        color-scheme: dark;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) {
+        --light: #111827;
+        --muted: #a1a1aa;
+        --border: #374151;
+        --surface: #1f2937;
+        --surface-raised: #273449;
+        --page-bg: #111827;
+        --heading: #f3f4f6;
+        --body-text: #cbd5e1;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, .22);
+        --shadow-md: 0 6px 18px rgba(0, 0, 0, .28);
+        --shadow-lg: 0 12px 28px rgba(0, 0, 0, .34);
+    }
+
+    /* Page and section surfaces */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .container-fluid {
+        color: var(--body-text);
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-section,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .how-it-works-section {
+        background: linear-gradient(135deg, #111827 0%, #1e293b 100%) !important;
+    }
+
+    /* Cards */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .key-point,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-stat-card,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .feature-card,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .step-card,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .accordion-item {
+        background: #1f2937 !important;
+        color: #cbd5e1 !important;
+        border-color: #374151 !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, .22);
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .key-point:hover,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-stat-card:hover,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .feature-card:hover,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .step-card:hover {
+        background: #263449 !important;
+        border-color: #475569 !important;
+    }
+
+    /* Headings and body copy */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-title,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .section-title,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .feature-title,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .step-title,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .stat-value,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .key-point-content h6 {
+        color: #f3f4f6 !important;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-subtitle,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .section-subtitle,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .feature-text,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .step-text,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .key-point-content p,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .stat-label {
+        color: #aebccc !important;
+    }
+
+    /* Inline colors in the How It Works heading/subheading */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .how-it-works-section .section-title,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .how-it-works-section .section-subtitle {
+        color: #f3f4f6 !important;
+    }
+
+    /* FAQ accordion: Bootstrap states and expanded panel */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .accordion-button {
+        background-color: #1f2937 !important;
+        color: #f3f4f6 !important;
+        box-shadow: none !important;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .accordion-button:not(.collapsed) {
+        background: linear-gradient(135deg, #273449 0%, #1f2937 100%) !important;
+        color: #7db4ff !important;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .accordion-button::after {
+        filter: brightness(0) saturate(100%) invert(75%) sepia(15%) saturate(1000%) hue-rotate(185deg);
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .accordion-body {
+        background: #1f2937 !important;
+        color: #aebccc !important;
+        border-top-color: #374151 !important;
+    }
+
+    /* Badges, buttons and small decorative elements */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-badge,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .section-badge {
+        background: rgba(59, 130, 246, .14) !important;
+        color: #93c5fd !important;
+        border-color: rgba(96, 165, 250, .3) !important;
+        box-shadow: none !important;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .cta-button-secondary {
+        background: #1f2937 !important;
+        color: #93c5fd !important;
+        border-color: #60a5fa !important;
+    }
+
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .cta-button-secondary:hover {
+        background: #273449 !important;
+        color: #bfdbfe !important;
+    }
+
+    /* Keep gradient text readable and preserve its gradient */
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-title .google-icon,
+    :is([data-theme="dark"], [data-bs-theme="dark"], .dark-mode, .theme-dark) .hero-title .highlight {
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Smooth theme transition without affecting layout */
+    .hero-section,
+    .how-it-works-section,
+    .key-point,
+    .hero-stat-card,
+    .feature-card,
+    .step-card,
+    .accordion-item,
+    .accordion-button,
+    .accordion-body {
+        transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease, box-shadow 250ms ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hero-section,
+        .how-it-works-section,
+        .key-point,
+        .hero-stat-card,
+        .feature-card,
+        .step-card,
+        .accordion-item,
+        .accordion-button,
+        .accordion-body {
+            transition: none !important;
+        }
+    }
+
 </style>
 {% endblock %}
 
