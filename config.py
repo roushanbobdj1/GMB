@@ -54,11 +54,24 @@ class Config:
     PREFERRED_URL_SCHEME = 'https' if IS_PRODUCTION else 'http'
 
     # ---------- Database (Render fix) ----------
-    _db_url = os.environ.get('DATABASE_URL', '')
+    
+    _db_url = os.environ.get('DATABASE_URL', '').strip()
+
     if _db_url.startswith('postgres://'):
-        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+        _db_url = _db_url.replace(
+            'postgres://',
+            'postgresql+psycopg2://',
+            1
+         )
+    elif _db_url.startswith('postgresql://'):
+        _db_url = _db_url.replace(
+            'postgresql://',
+            'postgresql+psycopg2://',
+            1
+        )
+
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///local.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
     # ---------- Upload Configuration ----------
     # Point this at a mounted persistent disk in production. Local container
