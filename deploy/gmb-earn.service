@@ -1,0 +1,19 @@
+[Unit]
+Description=GMB Earn - Hostinger Production
+After=network.target
+
+[Service]
+Type=simple
+User=gmbapp
+Group=www-data
+WorkingDirectory=/opt/gmb-earn/current
+EnvironmentFile=/etc/gmb-earn.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/gmb-earn/venv/bin/gunicorn --worker-class gthread --workers 1 --threads 8 --timeout 120 --bind 127.0.0.1:8000 app:app
+Restart=always
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
